@@ -14,7 +14,7 @@ const empty = {
 
 export default function Veiculos() {
   const [veiculos, setVeiculos] = useState([]);
-  const [modal, setModal] = useState(null); // null | "criar" | veículo
+  const [modal, setModal] = useState(null);
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -28,17 +28,9 @@ export default function Veiculos() {
 
   useEffect(() => { load(); }, []);
 
-  function abrirCriar() {
-    setForm(empty); setErro(""); setModal("criar");
-  }
-
-  function abrirEditar(v) {
-    setForm({ ...v, preco: v.preco, km: v.km });
-    setErro(""); setModal(v);
-  }
-
+  function abrirCriar() { setForm(empty); setErro(""); setModal("criar"); }
+  function abrirEditar(v) { setForm({ ...v, preco: v.preco, km: v.km }); setErro(""); setModal(v); }
   function fechar() { setModal(null); }
-
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
 
   async function uploadFotos(files) {
@@ -55,9 +47,7 @@ export default function Veiculos() {
     }
   }
 
-  function removerFoto(idx) {
-    set("fotos", form.fotos.filter((_, i) => i !== idx));
-  }
+  function removerFoto(idx) { set("fotos", form.fotos.filter((_, i) => i !== idx)); }
 
   function addOpcional(e) {
     if (e.key === "Enter" && tagInput.trim()) {
@@ -67,9 +57,7 @@ export default function Veiculos() {
     }
   }
 
-  function removerOpcional(idx) {
-    set("opcionais", form.opcionais.filter((_, i) => i !== idx));
-  }
+  function removerOpcional(idx) { set("opcionais", form.opcionais.filter((_, i) => i !== idx)); }
 
   async function salvar() {
     setErro("");
@@ -108,31 +96,26 @@ export default function Veiculos() {
         </button>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+      {/* DESKTOP: tabela */}
+      <div className="card desktop-only" style={{ padding: 0, overflow: "hidden" }}>
         {veiculos.length === 0 ? (
           <div className="empty">Nenhum veículo cadastrado.</div>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Foto</th>
-                <th>Veículo</th>
-                <th>Ano</th>
-                <th>Preço</th>
-                <th>KM</th>
-                <th>Badge</th>
-                <th></th>
+                <th>Foto</th><th>Veículo</th><th>Ano</th>
+                <th>Preço</th><th>KM</th><th>Badge</th><th></th>
               </tr>
             </thead>
             <tbody>
               {veiculos.map(v => (
                 <tr key={v.id}>
                   <td style={{ width: 60 }}>
-                    {v.fotos?.[0] ? (
-                      <img src={v.fotos[0]} alt="" style={{ width: 52, height: 40, objectFit: "cover", borderRadius: 6 }} />
-                    ) : (
-                      <div style={{ width: 52, height: 40, background: "var(--surface2)", borderRadius: 6 }} />
-                    )}
+                    {v.fotos?.[0]
+                      ? <img src={v.fotos[0]} alt="" style={{ width: 52, height: 40, objectFit: "cover", borderRadius: 6 }} />
+                      : <div style={{ width: 52, height: 40, background: "var(--surface2)", borderRadius: 6 }} />
+                    }
                   </td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{v.marca} {v.modelo}</div>
@@ -157,6 +140,39 @@ export default function Veiculos() {
         )}
       </div>
 
+      {/* MOBILE: cards */}
+      <div className="mobile-only veiculo-cards">
+        {veiculos.length === 0 ? (
+          <div className="empty">Nenhum veículo cadastrado.</div>
+        ) : veiculos.map(v => (
+          <div key={v.id} className="veiculo-card">
+            {v.fotos?.[0] && (
+              <img src={v.fotos[0]} alt="" className="veiculo-card-foto" />
+            )}
+            <div className="veiculo-card-info">
+              <div className="veiculo-card-top">
+                <div>
+                  <div className="veiculo-card-nome">{v.marca} {v.modelo}</div>
+                  <div className="veiculo-card-detalhe">{v.ano} · {v.cambio} · {v.combustivel}</div>
+                </div>
+                {v.badge && <span className="badge badge-yellow">{v.badge}</span>}
+              </div>
+              <div className="veiculo-card-bottom">
+                <div>
+                  <div className="veiculo-card-preco">{brl(v.preco)}</div>
+                  <div className="veiculo-card-km">{Number(v.km).toLocaleString("pt-BR")} km</div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => abrirEditar(v)}><Pencil size={14} /></button>
+                  <button className="btn btn-danger btn-sm" onClick={() => remover(v.id)}><Trash2 size={14} /></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Modal (igual para desktop e mobile) */}
       {modal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && fechar()}>
           <div className="modal">
@@ -224,7 +240,6 @@ export default function Veiculos() {
                 </div>
               </div>
 
-              {/* Opcionais */}
               <div className="form-group">
                 <label>Opcionais (Enter para adicionar)</label>
                 <div className="tag-input-wrap">
@@ -244,7 +259,6 @@ export default function Veiculos() {
                 </div>
               </div>
 
-              {/* Fotos */}
               <div className="form-group">
                 <label>Fotos</label>
                 <label className="btn btn-ghost" style={{ cursor: "pointer", width: "fit-content" }}>
