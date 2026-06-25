@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const BASE = import.meta.env.VITE_API_URL || "https://api.laautomoveis.com.br";
 
 function token() {
   return localStorage.getItem("la_token");
