@@ -77,10 +77,103 @@ const MOCK_KANBAN={
   pos_venda:[],
 };
 const MOCK_DASH={
+  /* ── aba Oportunidades ── */
   resumo:{total_leads:37,total_leads_delta:8,vendas:8,meta_vendas:12,conversao:21,conversao_delta:3,perdidas:6,resp_media_min:4,ticket_medio:38500,receita_total:308000},
-  funil:[{estagio:"Leads recebidos",total:37,pct:100},{estagio:"Primeiro contato",total:31,pct:84},{estagio:"Visita agendada",total:18,pct:48},{estagio:"Proposta enviada",total:14,pct:38},{estagio:"Crédito análise",total:10,pct:27},{estagio:"Negociando",total:8,pct:21},{estagio:"Venda fechada",total:8,pct:21}],
-  vendedores:[{nome:"Dariana",iniciais:"DA",total_leads:16,vendas:4},{nome:"Alex",iniciais:"AL",total_leads:12,vendas:3},{nome:"Wolni",iniciais:"WO",total_leads:9,vendas:1}],
-  canais:[{nome:"WhatsApp",cor:"#25D366",total:18},{nome:"Site",cor:"#7ba7e0",total:10},{nome:"Indicação",cor:"#C8A84B",total:6},{nome:"Facebook",cor:"#5b7bc4",total:3}],
+  funil:[
+    {estagio:"Leads recebidos",  total:37,pct:100},
+    {estagio:"Primeiro contato", total:31,pct:84},
+    {estagio:"Visita agendada",  total:18,pct:48},
+    {estagio:"Proposta enviada", total:14,pct:38},
+    {estagio:"Crédito análise",  total:10,pct:27},
+    {estagio:"Negociando",       total:8, pct:21},
+    {estagio:"Venda fechada",    total:8, pct:21},
+  ],
+  vendedores:[
+    {nome:"Dariana",iniciais:"DA",total_leads:16,vendas:4},
+    {nome:"Alex",   iniciais:"AL",total_leads:12,vendas:3},
+    {nome:"Wolni",  iniciais:"WO",total_leads:9, vendas:1},
+  ],
+  // canais alinhados com tags Chatwoot: whatsapp | site | indicacao | facebook
+  canais:[
+    {nome:"WhatsApp", cor:"#25D366",total:18},
+    {nome:"Site",     cor:"#7ba7e0",total:10},
+    {nome:"Indicação",cor:"#C8A84B",total:6},
+    {nome:"Facebook", cor:"#5b7bc4",total:3},
+  ],
+  // últimas oportunidades (alimentado por tags Chatwoot + estágio CRM)
+  ultimas_oportunidades:[
+    {nome:"Carlos Mendes",veiculo:"HB20 2022",canal:"whatsapp",estagio:"Negociando",vendedor:"Dariana",vendedor_iniciais:"DA",score:82},
+    {nome:"Lucia Ferreira",veiculo:"Kwid 2023",canal:"facebook",estagio:"Proposta",vendedor:"Dariana",vendedor_iniciais:"DA",score:58},
+    {nome:"Roberto Alves",veiculo:"Gol 2020",canal:"indicacao",estagio:"Visita",vendedor:"Wolni",vendedor_iniciais:"WO",score:55},
+  ],
+
+  /* ── aba Jornada ── */
+  jornada:{
+    ciclo_medio_dias:4.8,
+    etapas:[
+      {icone:"📋",nome:"1º contato",  tempo:"4min"},
+      {icone:"🚗",nome:"Interesse",   tempo:"1.2h"},
+      {icone:"📄",nome:"Proposta",    tempo:"3.5h"},
+      {icone:"🤝",nome:"Negociação",  tempo:"2.1d"},
+      {icone:"✅",nome:"Fechamento",  tempo:"0.8d"},
+    ],
+  },
+  agente_ia:{
+    leads_qualif:29, leads_quentes:12,
+    tempo_qualif_min:3.2,
+    score_quente:12,
+    mornos_reat:4,
+    taxa_resposta:78,
+    handoffs:12,
+    followups:18,
+    nps_medio:72,
+  },
+  // follow-ups de hoje (D+1, D+3, D+7…) — tags Chatwoot mapeadas
+  followups_hoje:[
+    {cliente_nome:"Carlos Mendes", motivo:"proposta HB20", tipo:"D+1", horario:"09:00", vendedor_iniciais:"DA"},
+    {cliente_nome:"Lucia Ferreira",motivo:"fotos Kwid",    tipo:"D+3", horario:"11:00", vendedor_iniciais:"DA"},
+    {cliente_nome:"Diego Martins", motivo:"recuperar oportunidade",tipo:"D+7",horario:"14:00",vendedor_iniciais:"AL"},
+    {cliente_nome:"Roberto Alves", motivo:"assinatura",    tipo:"D+1", horario:"16:30", vendedor_iniciais:"WO"},
+  ],
+  // gráfico barras leads 7 dias
+  leads_7dias:[
+    {dia:"Seg",total:4},{dia:"Ter",total:7},{dia:"Qua",total:5},
+    {dia:"Qui",total:9},{dia:"Sex",total:6},{dia:"Sáb",total:3},{dia:"Dom",total:3},
+  ],
+  // motivos de perda (alimentado por tag "motivo_perda_*" no Chatwoot)
+  motivos_perda:[
+    {motivo:"Preço acima do esperado",total:3},
+    {motivo:"Comprou em outra loja",  total:2},
+    {motivo:"Desistiu da compra",     total:1},
+  ],
+
+  /* ── aba Estoque ── */
+  estoque:{
+    no_patio:34,novos_patio:3,
+    tempo_medio_dias:22,meta_dias:18,
+    views_hoje:312,views_delta:47,
+    parados_30d:5,
+    mais_visualizados:[
+      {nome:"HB20 2022 1.0T Comfort",   views:142,dias:8},
+      {nome:"Gol 2020 1.0 MPI Trendline",views:98, dias:12},
+      {nome:"Onix 2021 Plus Premier",   views:87, dias:19},
+      {nome:"Kwid 2023 Intense",        views:61, dias:5},
+      {nome:"Fiat Argo 2022 Drive",     views:54, dias:24},
+    ],
+    parados_lista:[
+      {nome:"Sandero 2019 Expression",views:18,dias:38},
+      {nome:"Celta 2011 LS",          views:7, dias:45},
+      {nome:"Palio 2015 Attractive",  views:12,dias:33},
+    ],
+    por_marca:[
+      {marca:"Volkswagen",total:9},
+      {marca:"Chevrolet", total:7},
+      {marca:"Fiat",      total:6},
+      {marca:"Hyundai",   total:5},
+      {marca:"Outros",    total:7},
+    ],
+    sugestao_ia:"Republique o Sandero 2019 Expression com ajuste de preço (−R$ 2.500) — parado há 38 dias com poucas visualizações.",
+  },
 };
 function hoje(h,off=0){const d=new Date();d.setDate(d.getDate()+off);const[hh,mm]=h.split(":");d.setHours(+hh,+mm,0,0);return d.toISOString();}
 function emMin(m){const d=new Date();d.setMinutes(d.getMinutes()+m,0,0);return d.toISOString();}
