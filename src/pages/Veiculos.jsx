@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
 import { api } from "../lib/api.js";
 
-const CAMBIOS = ["Automático", "Manual"];
-const COMBUSTIVEIS = ["Flex", "Gasolina", "Diesel", "Híbrido"];
-const BADGES = ["", "Destaque", "Seminovo", "Oportunidade"];
+const CAMBIOS = ["Automático", "Manual", "CVT"];
+const COMBUSTIVEIS = ["Flex", "Gasolina", "Diesel", "Elétrico", "Híbrido"];
+const BADGES = ["", "Destaque", "Seminovo", "Oportunidade", "Novo"];
+const TIPOS = ["Hatch", "Sedan", "SUV", "Picape", "Perua"];
 
 const empty = {
-  marca: "", modelo: "", ano: new Date().getFullYear(), preco: "",
-  km: "", cambio: "Automático", combustivel: "Flex", cor: "",
-  portas: 4, fotos: [], opcionais: [], badge: "", detalhe: "", ativo: true,
+  marca:"", modelo:"", tipo:"", ano:new Date().getFullYear(), preco:"",
+  km:"", cambio:"Automático", combustivel:"Flex", cor:"",
+  portas:4, fotos:[], opcionais:[], badge:"", detalhe:"", ativo:true,
 };
 
 export default function Veiculos() {
@@ -20,18 +20,18 @@ export default function Veiculos() {
   const [uploading, setUploading] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [erro, setErro] = useState("");
+  const [confirmarDel, setConfirmarDel] = useState(null);
 
   async function load() {
     const data = await api.getVeiculos().catch(() => []);
     setVeiculos(data);
   }
-
   useEffect(() => { load(); }, []);
 
   function abrirCriar() { setForm(empty); setErro(""); setModal("criar"); }
-  function abrirEditar(v) { setForm({ ...v, preco: v.preco, km: v.km }); setErro(""); setModal(v); }
+  function abrirEditar(v) { setForm({...v}); setErro(""); setModal(v); }
   function fechar() { setModal(null); }
-  function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
+  function set(k, v) { setForm(f => ({...f, [k]:v})); }
 
   async function uploadFotos(files) {
     setUploading(true);
@@ -40,131 +40,124 @@ export default function Veiculos() {
       [...files].forEach(f => fd.append("fotos", f));
       const { urls } = await api.uploadFotos(fd);
       set("fotos", [...form.fotos, ...urls]);
-    } catch (e) {
-      alert("Erro no upload: " + e.message);
-    } finally {
-      setUploading(false);
-    }
+    } catch(e) { alert("Erro no upload: " + e.message); }
+    finally { setUploading(false); }
   }
 
-  function removerFoto(idx) { set("fotos", form.fotos.filter((_, i) => i !== idx)); }
+  function removerFoto(idx) { set("fotos", form.fotos.filter((_,i) => i!==idx)); }
 
   function addOpcional(e) {
-    if (e.key === "Enter" && tagInput.trim()) {
+    if (e.key==="Enter" && tagInput.trim()) {
       e.preventDefault();
       set("opcionais", [...form.opcionais, tagInput.trim()]);
       setTagInput("");
     }
   }
-
-  function removerOpcional(idx) { set("opcionais", form.opcionais.filter((_, i) => i !== idx)); }
+  function removerOpcional(idx) { set("opcionais", form.opcionais.filter((_,i) => i!==idx)); }
 
   async function salvar() {
     setErro("");
-    if (!form.marca || !form.modelo || !form.preco || !form.km) {
-      setErro("Preencha os campos obrigatórios: marca, modelo, preço e km.");
+    if (!form.marca||!form.modelo||!form.tipo||!form.preco||!form.km) {
+      setErro("Preencha: marca, modelo, categoria, preço e km.");
       return;
     }
     setLoading(true);
     try {
-      const payload = { ...form, preco: Number(form.preco), km: Number(form.km), ano: Number(form.ano), portas: Number(form.portas) };
-      if (modal === "criar") await api.criarVeiculo(payload);
+      const payload = {...form, preco:Number(form.preco), km:Number(form.km), ano:Number(form.ano), portas:Number(form.portas)};
+      if (modal==="criar") await api.criarVeiculo(payload);
       else await api.editarVeiculo(modal.id, payload);
-      await load();
-      fechar();
-    } catch (e) {
-      setErro(e.message);
-    } finally {
-      setLoading(false);
-    }
+      await load(); fechar();
+    } catch(e) { setErro(e.message); }
+    finally { setLoading(false); }
   }
 
-  async function remover(id) {
-    if (!confirm("Remover este veículo do estoque?")) return;
-    await api.removerVeiculo(id);
+  async function confirmarRemover() {
+    if (!confirmarDel) return;
+    await api.removerVeiculo(confirmarDel.id).catch(() => {});
+    setConfirmarDel(null);
     await load();
   }
 
-  const brl = n => Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const brl = n => Number(n).toLocaleString("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:0});
 
   return (
     <div>
       <div className="page-header">
-        <h1>Veículos</h1>
+        <h1 className="page-title"><i className="ti ti-car"/> Veículos</h1>
         <button className="btn btn-primary" onClick={abrirCriar}>
-          <Plus size={15} /> Novo veículo
+          <i className="ti ti-plus"/> Novo veículo
         </button>
       </div>
 
       {/* DESKTOP: tabela */}
-      <div className="card desktop-only" style={{ padding: 0, overflow: "hidden" }}>
-        {veiculos.length === 0 ? (
-          <div className="empty">Nenhum veículo cadastrado.</div>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Foto</th><th>Veículo</th><th>Ano</th>
-                <th>Preço</th><th>KM</th><th>Badge</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {veiculos.map(v => (
-                <tr key={v.id}>
-                  <td style={{ width: 60 }}>
-                    {v.fotos?.[0]
-                      ? <img src={v.fotos[0]} alt="" style={{ width: 52, height: 40, objectFit: "cover", borderRadius: 6 }} />
-                      : <div style={{ width: 52, height: 40, background: "var(--surface2)", borderRadius: 6 }} />
-                    }
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600 }}>{v.marca} {v.modelo}</div>
-                    <div style={{ color: "var(--muted)", fontSize: 12 }}>{v.cambio} · {v.combustivel} · {v.cor}</div>
-                  </td>
-                  <td>{v.ano}</td>
-                  <td style={{ fontWeight: 600, color: "var(--brand)" }}>{brl(v.preco)}</td>
-                  <td>{Number(v.km).toLocaleString("pt-BR")} km</td>
-                  <td>
-                    {v.badge ? <span className="badge badge-yellow">{v.badge}</span> : <span className="badge badge-gray">—</span>}
-                  </td>
-                  <td style={{ width: 90 }}>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => abrirEditar(v)}><Pencil size={13} /></button>
-                      <button className="btn btn-danger btn-sm" onClick={() => remover(v.id)}><Trash2 size={13} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="card d-desktop" style={{padding:0,overflow:"hidden"}}>
+        {veiculos.length===0 ? <div className="empty-state"><i className="ti ti-car"/><p>Nenhum veículo cadastrado.</p></div> : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Foto</th><th>Veículo</th><th>Ano</th><th>Preço</th><th>KM</th><th>Badge</th><th></th></tr></thead>
+              <tbody>
+                {veiculos.map(v => (
+                  <tr key={v.id}>
+                    <td style={{width:70}}>
+                      {v.fotos?.[0]
+                        ? <img src={v.fotos[0]} alt="" style={{width:60,height:46,objectFit:"cover",borderRadius:8}}/>
+                        : <div style={{width:60,height:46,background:"var(--surface2)",borderRadius:8}}/>}
+                    </td>
+                    <td>
+                      <div style={{fontWeight:600,color:"var(--fg)"}}>{v.marca} {v.modelo}</div>
+                      <div style={{color:"var(--muted)",fontSize:12}}>{v.cambio} · {v.combustivel} · {v.cor}</div>
+                    </td>
+                    <td style={{color:"var(--muted)"}}>{v.ano}</td>
+                    <td style={{fontWeight:700,color:"var(--brand)"}}>{brl(v.preco)}</td>
+                    <td style={{color:"var(--muted)"}}>{Number(v.km).toLocaleString("pt-BR")} km</td>
+                    <td>{v.badge ? <span className="badge badge-brand">{v.badge}</span> : <span className="badge badge-muted">—</span>}</td>
+                    <td>
+                      <div style={{display:"flex",gap:6}}>
+                        <button className="btn btn-ghost btn-icon" onClick={() => abrirEditar(v)} title="Editar"><i className="ti ti-edit"/></button>
+                        <button className="btn btn-danger btn-icon" onClick={() => setConfirmarDel(v)} title="Excluir"><i className="ti ti-trash"/></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* MOBILE: cards */}
-      <div className="mobile-only veiculo-cards">
-        {veiculos.length === 0 ? (
-          <div className="empty">Nenhum veículo cadastrado.</div>
-        ) : veiculos.map(v => (
-          <div key={v.id} className="veiculo-card">
+      <div className="d-mobile" style={{gap:12}}>
+        {veiculos.length===0 ? <div className="empty-state"><i className="ti ti-car"/><p>Nenhum veículo cadastrado.</p></div>
+        : veiculos.map(v => (
+          <div key={v.id} style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden",marginBottom:0}}>
+            {/* Foto capa */}
             {v.fotos?.[0] && (
-              <img src={v.fotos[0]} alt="" className="veiculo-card-foto" />
-            )}
-            <div className="veiculo-card-info">
-              <div className="veiculo-card-top">
-                <div>
-                  <div className="veiculo-card-nome">{v.marca} {v.modelo}</div>
-                  <div className="veiculo-card-detalhe">{v.ano} · {v.cambio} · {v.combustivel}</div>
-                </div>
-                {v.badge && <span className="badge badge-yellow">{v.badge}</span>}
+              <div style={{position:"relative"}}>
+                <img src={v.fotos[0]} alt="" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
+                {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
+                {!v.ativo && <span className="badge badge-muted" style={{position:"absolute",top:10,left:10}}>Oculto</span>}
               </div>
-              <div className="veiculo-card-bottom">
-                <div>
-                  <div className="veiculo-card-preco">{brl(v.preco)}</div>
-                  <div className="veiculo-card-km">{Number(v.km).toLocaleString("pt-BR")} km</div>
+            )}
+            <div style={{padding:"14px 14px 16px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:17,fontWeight:700,color:"var(--fg)",lineHeight:1.2}}>{v.marca} {v.modelo}</div>
+                  <div style={{fontSize:13,color:"var(--muted)",marginTop:4}}>{v.ano} · {v.cambio} · {v.combustivel}</div>
+                  {v.cor && <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>Cor: {v.cor}</div>}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => abrirEditar(v)}><Pencil size={14} /></button>
-                  <button className="btn btn-danger btn-sm" onClick={() => remover(v.id)}><Trash2 size={14} /></button>
+              </div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                <div>
+                  <div style={{fontSize:20,fontWeight:800,color:"var(--brand)"}}>{brl(v.preco)}</div>
+                  <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{Number(v.km).toLocaleString("pt-BR")} km</div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn btn-ghost" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirEditar(v)}>
+                    <i className="ti ti-edit"/> Editar
+                  </button>
+                  <button className="btn btn-danger" style={{padding:"8px 14px",fontSize:13}} onClick={() => setConfirmarDel(v)}>
+                    <i className="ti ti-trash"/>
+                  </button>
                 </div>
               </div>
             </div>
@@ -172,121 +165,102 @@ export default function Veiculos() {
         ))}
       </div>
 
-      {/* Modal (igual para desktop e mobile) */}
+      {/* Modal editar/criar */}
       {modal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && fechar()}>
-          <div className="modal">
+        <div className="modal-overlay" onClick={e => e.target===e.currentTarget && fechar()}>
+          <div className="modal" style={{maxWidth:560}}>
+            <div className="modal-handle"/>
             <div className="modal-header">
-              <h2>{modal === "criar" ? "Novo Veículo" : "Editar Veículo"}</h2>
-              <button className="btn btn-ghost btn-sm" onClick={fechar}><X size={16} /></button>
+              <h2 className="modal-title">{modal==="criar" ? "Novo veículo" : "Editar veículo"}</h2>
+              <button onClick={fechar} style={{background:"none",border:"none",color:"var(--muted)",fontSize:24,cursor:"pointer",padding:4}}><i className="ti ti-x"/></button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div className="form-row cols-2">
-                <div className="form-group">
-                  <label>Marca *</label>
-                  <input value={form.marca} onChange={e => set("marca", e.target.value)} placeholder="Ex: Volkswagen" />
-                </div>
-                <div className="form-group">
-                  <label>Modelo *</label>
-                  <input value={form.modelo} onChange={e => set("modelo", e.target.value)} placeholder="Ex: Nivus Highline" />
-                </div>
-              </div>
+            <div className="form-group"><label className="form-label">Marca *</label><input className="form-input" value={form.marca} onChange={e=>set("marca",e.target.value)} placeholder="Ex: Volkswagen"/></div>
+            <div className="form-group"><label className="form-label">Modelo *</label><input className="form-input" value={form.modelo} onChange={e=>set("modelo",e.target.value)} placeholder="Ex: Nivus Highline"/></div>
+            <div className="form-group">
+              <label className="form-label">Categoria *</label>
+              <select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>
+                <option value="" disabled>Selecione...</option>
+                {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
 
-              <div className="form-row cols-3">
-                <div className="form-group">
-                  <label>Ano *</label>
-                  <input type="number" value={form.ano} onChange={e => set("ano", e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Preço (R$) *</label>
-                  <input type="number" value={form.preco} onChange={e => set("preco", e.target.value)} placeholder="119900" />
-                </div>
-                <div className="form-group">
-                  <label>KM *</label>
-                  <input type="number" value={form.km} onChange={e => set("km", e.target.value)} placeholder="18500" />
-                </div>
-              </div>
+            <div className="form-grid">
+              <div className="form-group"><label className="form-label">Ano *</label><input className="form-input" type="number" value={form.ano} onChange={e=>set("ano",e.target.value)}/></div>
+              <div className="form-group"><label className="form-label">Preço (R$) *</label><input className="form-input" type="number" value={form.preco} onChange={e=>set("preco",e.target.value)} placeholder="119900"/></div>
+              <div className="form-group"><label className="form-label">KM *</label><input className="form-input" type="number" value={form.km} onChange={e=>set("km",e.target.value)} placeholder="18500"/></div>
+              <div className="form-group"><label className="form-label">Câmbio</label><select className="form-input" value={form.cambio} onChange={e=>set("cambio",e.target.value)}>{CAMBIOS.map(c=><option key={c}>{c}</option>)}</select></div>
+              <div className="form-group"><label className="form-label">Combustível</label><select className="form-input" value={form.combustivel} onChange={e=>set("combustivel",e.target.value)}>{COMBUSTIVEIS.map(c=><option key={c}>{c}</option>)}</select></div>
+              <div className="form-group"><label className="form-label">Cor</label><input className="form-input" value={form.cor} onChange={e=>set("cor",e.target.value)} placeholder="Ex: Prata"/></div>
+              <div className="form-group"><label className="form-label">Badge</label><select className="form-input" value={form.badge} onChange={e=>set("badge",e.target.value)}>{BADGES.map(b=><option key={b} value={b}>{b||"Sem badge"}</option>)}</select></div>
+              <div className="form-group"><label className="form-label">Detalhe</label><input className="form-input" value={form.detalhe} onChange={e=>set("detalhe",e.target.value)} placeholder="Ex: Único dono"/></div>
+            </div>
 
-              <div className="form-row cols-3">
-                <div className="form-group">
-                  <label>Câmbio</label>
-                  <select value={form.cambio} onChange={e => set("cambio", e.target.value)}>
-                    {CAMBIOS.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Combustível</label>
-                  <select value={form.combustivel} onChange={e => set("combustivel", e.target.value)}>
-                    {COMBUSTIVEIS.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Cor</label>
-                  <input value={form.cor} onChange={e => set("cor", e.target.value)} placeholder="Ex: Prata" />
-                </div>
+            <div className="form-group">
+              <label className="form-label">Opcionais (Enter para adicionar)</label>
+              <div className="tag-input-wrap">
+                {form.opcionais.map((op,i) => (
+                  <span key={i} className="tag">{op}<button onClick={()=>removerOpcional(i)}>×</button></span>
+                ))}
+                <input className="tag-input" value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={addOpcional} placeholder="Ex: Câmera de ré..."/>
               </div>
+            </div>
 
-              <div className="form-row cols-2">
-                <div className="form-group">
-                  <label>Badge</label>
-                  <select value={form.badge} onChange={e => set("badge", e.target.value)}>
-                    {BADGES.map(b => <option key={b} value={b}>{b || "Sem badge"}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Detalhe (ex: Único dono)</label>
-                  <input value={form.detalhe} onChange={e => set("detalhe", e.target.value)} />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Opcionais (Enter para adicionar)</label>
-                <div className="tag-input-wrap">
-                  {form.opcionais.map((op, i) => (
-                    <span key={i} className="tag">
-                      {op}
-                      <button onClick={() => removerOpcional(i)}>×</button>
-                    </span>
+            <div className="form-group">
+              <label className="form-label">Fotos</label>
+              <label className="btn btn-ghost" style={{cursor:"pointer",width:"fit-content",marginBottom:10}}>
+                <i className="ti ti-upload"/> {uploading ? "Enviando..." : "Enviar fotos"}
+                <input type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>uploadFotos(e.target.files)} disabled={uploading}/>
+              </label>
+              {form.fotos.length>0 && (
+                <div className="foto-grid">
+                  {form.fotos.map((url,i) => (
+                    <div key={i} className="foto-item">
+                      <img src={url} alt=""/>
+                      {i===0 && <div style={{position:"absolute",bottom:4,left:4,background:"var(--brand)",color:"#0c0c0a",fontSize:9,padding:"2px 6px",borderRadius:4,fontWeight:700}}>CAPA</div>}
+                      <button className="foto-remove" onClick={()=>removerFoto(i)}>×</button>
+                    </div>
                   ))}
-                  <input
-                    className="tag-input"
-                    value={tagInput}
-                    onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={addOpcional}
-                    placeholder="Ex: Câmera de ré..."
-                  />
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className="form-group">
-                <label>Fotos</label>
-                <label className="btn btn-ghost" style={{ cursor: "pointer", width: "fit-content" }}>
-                  <Upload size={14} />
-                  {uploading ? "Enviando..." : "Enviar fotos"}
-                  <input type="file" accept="image/*" multiple style={{ display: "none" }}
-                    onChange={e => uploadFotos(e.target.files)} disabled={uploading} />
-                </label>
-                {form.fotos.length > 0 && (
-                  <div className="foto-grid">
-                    {form.fotos.map((url, i) => (
-                      <div key={i} className="foto-item">
-                        <img src={url} alt="" />
-                        <button className="foto-remove" onClick={() => removerFoto(i)}>×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:16,padding:"10px 0"}}>
+              <input type="checkbox" checked={form.ativo} onChange={e=>set("ativo",e.target.checked)} style={{width:18,height:18,accentColor:"var(--brand)"}}/>
+              <span style={{fontSize:14,color:"var(--fg)"}}>Publicado no site</span>
+            </label>
 
-              {erro && <div style={{ color: "var(--danger)", fontSize: 13 }}>{erro}</div>}
+            {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:"rgba(224,82,82,.1)",borderRadius:8}}>{erro}</div>}
 
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button className="btn btn-ghost" onClick={fechar}>Cancelar</button>
-                <button className="btn btn-primary" onClick={salvar} disabled={loading}>
-                  {loading ? "Salvando..." : "Salvar"}
-                </button>
-              </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-ghost" onClick={fechar} style={{flex:1}}>Cancelar</button>
+              <button className="btn btn-primary" onClick={salvar} disabled={loading} style={{flex:1}}>
+                {loading ? <span className="spinner"/> : <><i className="ti ti-device-floppy"/> Salvar</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmação excluir */}
+      {confirmarDel && (
+        <div className="modal-overlay" onClick={() => setConfirmarDel(null)}>
+          <div className="modal" style={{maxWidth:360}} onClick={e=>e.stopPropagation()}>
+            <div className="modal-handle"/>
+            <div style={{textAlign:"center",padding:"10px 0 20px"}}>
+              <i className="ti ti-alert-triangle" style={{fontSize:52,color:"var(--danger)",marginBottom:12,display:"block"}}/>
+              <h2 style={{fontSize:17,fontWeight:700,color:"var(--fg)",marginBottom:8}}>Excluir veículo?</h2>
+              <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.5}}>
+                <strong style={{color:"var(--fg)"}}>{confirmarDel.marca} {confirmarDel.modelo} {confirmarDel.ano}</strong><br/>
+                será removido do estoque e do site.<br/>
+                <span style={{color:"var(--danger)",fontSize:13}}>Esta ação não pode ser desfeita.</span>
+              </p>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-ghost" onClick={() => setConfirmarDel(null)} style={{flex:1}}>Cancelar</button>
+              <button className="btn btn-danger" onClick={confirmarRemover} style={{flex:1,background:"var(--danger)",color:"white"}}>
+                <i className="ti ti-trash"/> Excluir
+              </button>
             </div>
           </div>
         </div>
