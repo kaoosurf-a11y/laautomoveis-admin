@@ -1,7 +1,9 @@
+import { getToken, logout } from "../auth.js";
+
 const BASE = import.meta.env.VITE_API_URL || "https://api.laautomoveis.com.br";
 
 function token() {
-  return localStorage.getItem("la_token");
+  return getToken();
 }
 
 function headers(isFormData = false) {
@@ -17,7 +19,7 @@ async function req(method, path, body, isFormData = false) {
     body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
   });
   if (res.status === 401) {
-    localStorage.removeItem("la_token");
+    logout();
     window.location.href = "/admin/";
     return;
   }
@@ -47,4 +49,7 @@ export const api = {
   getLeadsFinanciamento: () => req("GET", "/api/leads/financiamento"),
   marcarLidoContato: (id) => req("PATCH", `/api/leads/contato/${id}/lido`),
   marcarLidoFinanciamento: (id) => req("PATCH", `/api/leads/financiamento/${id}/lido`),
+
+  // Equipe
+  getUsers: () => req("GET", "/api/admin/users"),
 };
