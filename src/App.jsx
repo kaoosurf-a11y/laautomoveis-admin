@@ -7,7 +7,6 @@ import CRM from "./pages/CRM.jsx";
 import FollowUps from "./pages/FollowUps.jsx";
 import Agenda from "./pages/Agenda.jsx";
 import Veiculos from "./pages/Veiculos.jsx";
-import Leads from "./pages/Leads.jsx";
 import Equipe from "./pages/Equipe.jsx";
 
 function Priv({ children }) {
@@ -31,7 +30,6 @@ export default function App() {
       <Route path="/followups" element={<Priv><FollowUps /></Priv>} />
       <Route path="/agenda"    element={<Priv><Agenda /></Priv>} />
       <Route path="/veiculos"  element={<Priv><Veiculos /></Priv>} />
-      <Route path="/leads"     element={<Priv><Leads /></Priv>} />
       <Route path="/equipe"    element={<OwnerOnly><Equipe /></OwnerOnly>} />
       <Route path="*"          element={<Navigate to="/" replace />} />
     </Routes>
