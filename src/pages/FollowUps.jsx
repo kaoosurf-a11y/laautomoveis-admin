@@ -5,8 +5,12 @@ export default function FollowUps(){
   const[data,setData]=useState({hoje:[],vencidos:[]});
   const[aba,setAba]=useState("hoje");
   const[loading,setLoading]=useState(true);
+  const[erro,setErro]=useState(null);
 
-  useEffect(()=>{getFollowups().then(d=>{setData(d);setLoading(false);});},[]);
+  useEffect(()=>{
+    getFollowups().then(d=>{setData(d);setLoading(false);})
+      .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
+  },[]);
 
   const upd=(id,changes)=>setData(d=>({
     hoje:d.hoje.map(f=>f.id===id?{...f,...changes}:f),
@@ -19,6 +23,7 @@ export default function FollowUps(){
   const lista=aba==="hoje"?data.hoje:data.vencidos;
   const resumo={hoje:data.hoje?.length||0,pendentes:data.hoje?.filter(f=>!f.enviado)?.length||0,responderam:data.hoje?.filter(f=>f.respondeu)?.length||0};
 
+  if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
 
   return(

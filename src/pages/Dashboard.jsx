@@ -305,10 +305,12 @@ export default function Dashboard() {
   const [periodo, setPeriodo] = useState("mes");
   const [aba, setAba]       = useState("oportunidades");
   const [notif, setNotif]   = useState(null);
+  const [erro, setErro]     = useState(null);
   const user = getUser();
 
   useEffect(() => {
     setLoading(true);
+    setErro(null);
     getDashboard(periodo).then(d => {
       setData(d);
       setLoading(false);
@@ -317,11 +319,20 @@ export default function Dashboard() {
         const q = d.ultimas_oportunidades.find(o => o.score >= 80);
         if (q) setNotif(q);
       }
+    }).catch(() => {
+      setErro("Erro ao carregar dados. Tente novamente.");
+      setLoading(false);
     });
   }, [periodo]);
 
   const roleLabel = { owner:"Administrador", manager:"Gerente", agent:"Vendedor" }[user?.role] || "";
 
+  if (erro) return (
+    <div className="empty-state">
+      <i className="ti ti-alert-triangle"/>
+      <p>{erro}</p>
+    </div>
+  );
   if (loading) return (
     <div className="empty-state">
       <i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/>

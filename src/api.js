@@ -37,21 +37,21 @@ export async function deletarVeiculo(id)    { return req(`/veiculos/${id}`,{meth
 export async function getLeads()            { try { return await req("/leads"); } catch { return {contato:MOCK_LEADS,financiamento:[]}; } }
 export async function marcarLido(id,tipo)   { return req(`/leads/${id}/lido`,{method:"PATCH",body:JSON.stringify({tipo})}); }
 export async function getCRMKanban() {
-  try { const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:""; return await req(`/api/crm/kanban${q}`); }
-  catch { return MOCK_KANBAN; }
+  const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
+  return req(`/api/crm/kanban${q}`);
 }
 export async function moverLead(id,est)    { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est})}); }
 export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method:"POST",body:JSON.stringify(d)}); }
-export async function getDashboard(p="mes"){ try { return await req(`/api/dashboard?periodo=${p}`); } catch { return MOCK_DASH; } }
+export async function getDashboard(p="mes"){ return req(`/api/dashboard?periodo=${p}`); }
 export async function getFollowups() {
-  try { const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:""; return await req(`/api/followups${q}`); }
-  catch { return MOCK_FU; }
+  const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
+  return req(`/api/followups${q}`);
 }
 export async function marcarFollowupEnviado(id)   { return req(`/api/followups/${id}/enviado`,{method:"PATCH"}); }
 export async function marcarFollowupRespondeu(id) { return req(`/api/followups/${id}/respondeu`,{method:"PATCH"}); }
 export async function getAgenda(data) {
-  try { const u=getUser(); const q=new URLSearchParams(); if(data)q.set("data",data); if(u?.role==="agent")q.set("vendedor_id",u.id); return await req(`/api/agenda?${q}`); }
-  catch { return MOCK_AG; }
+  const u=getUser(); const q=new URLSearchParams(); if(data)q.set("data",data); if(u?.role==="agent")q.set("vendedor_id",u.id);
+  return req(`/api/agenda?${q}`);
 }
 export async function criarAgendamento(d)             { return req("/api/agenda",{method:"POST",body:JSON.stringify(d)}); }
 export async function atualizarStatusAgendamento(id,s){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({status:s})}); }

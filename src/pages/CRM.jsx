@@ -96,9 +96,14 @@ export default function CRM(){
   const[leadSel,setLeadSel]=useState(null);
   const[novoModal,setNovoModal]=useState(false);
   const[isMobile,setIsMobile]=useState(window.innerWidth<768);
+  const[erro,setErro]=useState(null);
 
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
-  const load=useCallback(()=>{setLoading(true);getCRMKanban().then(k=>{setKanban(k);setLoading(false);});},[]);
+  const load=useCallback(()=>{
+    setLoading(true);setErro(null);
+    getCRMKanban().then(k=>{setKanban(k);setLoading(false);})
+      .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
+  },[]);
   useEffect(()=>{load();},[load]);
 
   async function handleMover(id,est){try{await moverLead(id,est);}catch{}load();}
@@ -106,6 +111,7 @@ export default function CRM(){
   const todos=ESTAGIOS.flatMap(e=>(kanban[e.key]||[]).map(l=>({...l,estagio:e.key})));
   const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
 
+  if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
 
   return(

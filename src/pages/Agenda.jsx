@@ -78,8 +78,14 @@ export default function Agenda(){
   const[diaSel,setDiaSel]=useState(new Date());
   const[loading,setLoading]=useState(true);
   const[novoModal,setNovoModal]=useState(false);
+  const[erro,setErro]=useState(null);
 
-  function load(){setLoading(true);const data=diaSel.toISOString().split("T")[0];getAgenda(data).then(a=>{setAgs(a);setLoading(false);}).catch(()=>setLoading(false));}
+  function load(){
+    setLoading(true);setErro(null);
+    const data=diaSel.toISOString().split("T")[0];
+    getAgenda(data).then(a=>{setAgs(a);setLoading(false);})
+      .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
+  }
   useEffect(()=>{load();},[diaSel]);
 
   const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-3+i);return d;});
@@ -97,8 +103,9 @@ export default function Agenda(){
         {dias.map((d,i)=>{const isHoje=mesmoDia(d,hoje);const isSel=mesmoDia(d,diaSel);const ns=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return(<button key={i} className={`dia-btn ${isHoje?"hoje":""} ${isSel?"selected":""}`} onClick={()=>setDiaSel(d)}><span className="dia-num">{d.getDate()}</span><span className="dia-nome">{ns[d.getDay()]}</span></button>);})}
       </div>
       <div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>{fmtDia(diaSel)} · {doDia.filter(a=>a.status!=="cancelado").length} agendamentos</div>
-      {loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
-      {!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
+      {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
+      {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
+      {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
       {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=><AgendaCard key={ag.id} ag={ag} onStatus={handleStatus}/>)}</>}
       {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=><AgendaCard key={ag.id} ag={ag} onStatus={handleStatus}/>)}</>}
       {novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
