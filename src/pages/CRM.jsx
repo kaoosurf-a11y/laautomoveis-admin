@@ -6,7 +6,8 @@ const ESTAGIOS=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},{key:"em_contato",label:"Em contato",cor:"#C8A84B"},
   {key:"apresentacao",label:"Apresentação",cor:"#e6a817"},{key:"visita_agendada",label:"Visita agendada",cor:"#8E44AD"},
   {key:"proposta",label:"Proposta",cor:"#2980B9"},{key:"credito_analise",label:"Crédito análise",cor:"#e67e22"},
-  {key:"negociando",label:"Negociando",cor:"#27AE60"},{key:"fechado",label:"Fechado",cor:"#4caf7d"},
+  {key:"negociando",label:"Negociando",cor:"#27AE60"},{key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
+  {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
 ];
 const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E44AD","WI":"#27AE60"};
@@ -48,7 +49,11 @@ function LeadModal({lead,onClose,onMover}){
         </div>
         <div className="form-group">
           <label className="form-label">Mover para estágio</label>
-          <select className="form-input" value={est} onChange={e=>{setEst(e.target.value);onMover(lead.id,e.target.value);}}>
+          <select className="form-input" value={est} onChange={e=>{
+            const novo=e.target.value;setEst(novo);
+            const motivo=novo==="fechado_perdido"?(window.prompt("Motivo da perda (opcional):")||undefined):undefined;
+            onMover(lead.id,novo,motivo);
+          }}>
             {ESTAGIOS.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
           </select>
         </div>
@@ -106,7 +111,7 @@ export default function CRM(){
   },[]);
   useEffect(()=>{load();},[load]);
 
-  async function handleMover(id,est){try{await moverLead(id,est);}catch{}load();}
+  async function handleMover(id,est,motivo){try{await moverLead(id,est,motivo);}catch{}load();}
 
   const todos=ESTAGIOS.flatMap(e=>(kanban[e.key]||[]).map(l=>({...l,estagio:e.key})));
   const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
@@ -174,7 +179,7 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est)=>{handleMover(id,est);setLeadSel(null);}}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}}/>}
       {novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );

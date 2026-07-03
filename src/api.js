@@ -40,7 +40,7 @@ export async function getCRMKanban() {
   const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
   return req(`/api/crm/kanban${q}`);
 }
-export async function moverLead(id,est)    { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est})}); }
+export async function moverLead(id,est,motivo) { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est,motivo})}); }
 export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method:"POST",body:JSON.stringify(d)}); }
 export async function getDashboard(p="mes"){ return req(`/api/dashboard?periodo=${p}`); }
 export async function getFollowups() {
