@@ -2,13 +2,26 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getCRMKanban, moverLead, criarLeadCRM, criarFollowup } from "../api.js";
 import { getRole } from "../auth.js";
 
-const TIPOS_FOLLOWUP=[
-  {key:"inatividade",label:"Sem retorno do cliente",icone:"ti-clock-pause"},
-  {key:"indecisao",label:"Pediu tempo pra pensar",icone:"ti-hourglass"},
-  {key:"enviado_site",label:"Mandado pro site",icone:"ti-world"},
-  {key:"negociacao_parada",label:"Negociação parada",icone:"ti-player-pause"},
+// Rótulos pro badge "Follow-up ativo" no card/modal (inclui match_estoque, disparado
+// pelo sistema, não por botão do vendedor).
+const FOLLOWUP_LABEL={
+  vai_pensar:"Vai pensar",
+  pos_venda_satisfacao:"Pós-venda",
+  perdido_preco:"Perdido — preço",
+  perdido_sem_credito:"Perdido — sem crédito",
+  perdido_nao_achou:"Perdido — não achou",
+  match_estoque:"Veículo compatível chegou!",
+};
+
+// Submotivos de "Venda perdida" — cada um move pra fechado_perdido com o motivo
+// certo e, exceto "Comprou em outro lugar" (perda definitiva, sem follow-up),
+// dispara o follow-up de reengajamento correspondente.
+const SUBMOTIVOS_PERDA=[
+  {key:"perdido_preco",label:"Preço",motivo:"Preço"},
+  {key:"perdido_sem_credito",label:"Sem crédito",motivo:"Sem crédito"},
+  {key:"perdido_nao_achou",label:"Não achou o que procurava",motivo:"Não achou o que procurava"},
+  {key:"comprou_outro",label:"Comprou em outro lugar",motivo:"Comprou em outro lugar"},
 ];
-const FOLLOWUP_LABEL=Object.fromEntries(TIPOS_FOLLOWUP.map(t=>[t.key,t.label]));
 
 const ESTAGIOS=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
@@ -18,6 +31,9 @@ const ESTAGIOS=[
   {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
 ];
+// Fechado (ganho)/(perdido) só se alcançam pelos botões "Resultado da negociação"
+// (marcam motivo estruturado + disparam follow-up) — não pelo dropdown genérico.
+const ESTAGIOS_DROPDOWN=ESTAGIOS.filter(e=>e.key!=="fechado_ganho"&&e.key!=="fechado_perdido");
 const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E44AD","WI":"#27AE60"};
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
@@ -27,14 +43,23 @@ function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],
 function LeadModal({lead,onClose,onMover,onFollowup,readOnly}){
   const[est,setEst]=useState(lead.estagio||"novo_lead");
   const[fuEnviado,setFuEnviado]=useState(null);
-  const[fuObs,setFuObs]=useState("");
-  const[motivoPerda,setMotivoPerda]=useState("");
-  async function marcarFollowup(tipo){
-    try{await onFollowup(lead.id,tipo,fuObs||undefined);setFuEnviado(tipo);}catch{}
+  const[mostrarSubmotivos,setMostrarSubmotivos]=useState(false);
+  async function marcarVaiPensar(){
+    try{await onFollowup(lead.id,"vai_pensar");setFuEnviado("vai_pensar");}catch{}
+  }
+  function marcarVendaFeita(){
+    setEst("fechado_ganho");
+    onMover(lead.id,"fechado_ganho");
+    onFollowup(lead.id,"pos_venda_satisfacao").catch(()=>{});
+  }
+  function marcarVendaPerdida(sub){
+    setEst("fechado_perdido");
+    onMover(lead.id,"fechado_perdido",sub.motivo);
+    if(sub.key!=="comprou_outro") onFollowup(lead.id,sub.key,sub.motivo).catch(()=>{});
   }
   function handleEstagio(novo){
     setEst(novo);
-    if(novo!=="fechado_perdido") onMover(lead.id,novo);
+    onMover(lead.id,novo);
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
@@ -70,34 +95,37 @@ function LeadModal({lead,onClose,onMover,onFollowup,readOnly}){
             <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[fuEnviado||lead.followup_tipo]}
           </div>
         }
-        {readOnly?(
-          <div className="form-group">
-            <label className="form-label">Estágio</label>
-            <div style={{fontSize:14,fontWeight:600,color:"var(--fg)"}}>{ESTAGIOS.find(e=>e.key===est)?.label}</div>
-          </div>
-        ):(<>
         <div className="form-group">
-          <label className="form-label">Iniciar follow-up</label>
-          <input className="form-input" style={{fontSize:12,padding:"6px 10px"}} placeholder="Observação (opcional)" value={fuObs} onChange={e=>setFuObs(e.target.value)}/>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
-            {TIPOS_FOLLOWUP.map(t=>(
-              <button key={t.key} className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12}} onClick={()=>marcarFollowup(t.key)}>
-                <i className={`ti ${t.icone}`} style={{fontSize:13}}/> {t.label}
-              </button>
-            ))}
-          </div>
+          <label className="form-label">Estágio atual</label>
+          <div style={{fontSize:14,fontWeight:600,color:ESTAGIOS.find(e=>e.key===est)?.cor||"var(--fg)"}}>{ESTAGIOS.find(e=>e.key===est)?.label}</div>
         </div>
+        {!readOnly&&(<>
         <div className="form-group">
-          <label className="form-label">Mover para estágio</label>
-          <select className="form-input" value={est} onChange={e=>handleEstagio(e.target.value)}>
-            {ESTAGIOS.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
-          </select>
-          {est==="fechado_perdido"&&(
-            <div style={{display:"flex",gap:6,marginTop:8}}>
-              <input className="form-input" style={{marginBottom:0,fontSize:12}} placeholder="Motivo da perda (opcional)" value={motivoPerda} onChange={e=>setMotivoPerda(e.target.value)}/>
-              <button className="btn btn-primary" style={{padding:"6px 14px",fontSize:12,flexShrink:0}} onClick={()=>onMover(lead.id,"fechado_perdido",motivoPerda||undefined)}>Confirmar</button>
+          <label className="form-label">Resultado da negociação</label>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <button className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12}} onClick={marcarVaiPensar}>
+              <i className="ti ti-hourglass" style={{fontSize:13}}/> Vai pensar
+            </button>
+            <button className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12,color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={marcarVendaFeita}>
+              <i className="ti ti-check" style={{fontSize:13}}/> Venda feita
+            </button>
+            <button className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12,color:"var(--danger)",borderColor:"rgba(224,82,82,.3)"}} onClick={()=>setMostrarSubmotivos(s=>!s)}>
+              <i className="ti ti-x" style={{fontSize:13}}/> Venda perdida
+            </button>
+          </div>
+          {mostrarSubmotivos&&(
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8,padding:8,background:"var(--surface2)",borderRadius:8}}>
+              {SUBMOTIVOS_PERDA.map(sm=>(
+                <button key={sm.key} className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12}} onClick={()=>marcarVendaPerdida(sm)}>{sm.label}</button>
+              ))}
             </div>
           )}
+        </div>
+        <div className="form-group">
+          <label className="form-label">Mover pra outro estágio</label>
+          <select className="form-input" value={est} onChange={e=>handleEstagio(e.target.value)}>
+            {ESTAGIOS_DROPDOWN.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
+          </select>
         </div>
         </>)}
         <button className="btn btn-ghost" onClick={onClose} style={{width:"100%"}}>Fechar</button>

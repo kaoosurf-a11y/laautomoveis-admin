@@ -3,8 +3,9 @@ import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu } from "..
 import { getRole } from "../auth.js";
 
 const TIPO_LABEL={
-  inatividade:"Sem retorno",indecisao:"Pensando",
-  enviado_site:"Mandado pro site",negociacao_parada:"Negociação parada",
+  vai_pensar:"Vai pensar",pos_venda_satisfacao:"Pós-venda",
+  perdido_preco:"Perdido — preço",perdido_sem_credito:"Perdido — sem crédito",
+  perdido_nao_achou:"Perdido — não achou",match_estoque:"Veículo compatível chegou!",
 };
 
 export default function FollowUps(){
