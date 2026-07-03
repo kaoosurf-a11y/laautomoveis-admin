@@ -140,15 +140,19 @@ export default function CRM(){
   const[erro,setErro]=useState(null);
 
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
-  const load=useCallback(()=>{
-    setLoading(true);setErro(null);
+  const load=useCallback((silent)=>{
+    if(!silent) setLoading(true);
+    setErro(null);
     getCRMKanban().then(k=>{setKanban(k);setLoading(false);})
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   },[]);
   useEffect(()=>{load();},[load]);
 
-  async function handleMover(id,est,motivo){try{await moverLead(id,est,motivo);}catch{}load();}
-  async function handleFollowup(id,tipo,motivo){await criarFollowup(id,tipo,motivo);load();}
+  // silent=true nos refreshes pós-ação: evita desmontar a página (e fechar o modal
+  // aberto) toda vez que mover um card ou criar um follow-up — antes voltava pro
+  // spinner de tela cheia a cada clique.
+  async function handleMover(id,est,motivo){try{await moverLead(id,est,motivo);}catch{}load(true);}
+  async function handleFollowup(id,tipo,motivo){await criarFollowup(id,tipo,motivo);load(true);}
 
   const todos=ESTAGIOS.flatMap(e=>(kanban[e.key]||[]).map(l=>({...l,estagio:e.key})));
   const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
