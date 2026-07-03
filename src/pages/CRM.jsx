@@ -27,9 +27,14 @@ function Orig({o}){const m={whatsapp:["#25D366","WA"],site:["#7ba7e0","Site"],in
 function LeadModal({lead,onClose,onMover,onFollowup}){
   const[est,setEst]=useState(lead.estagio||"novo_lead");
   const[fuEnviado,setFuEnviado]=useState(null);
+  const[fuObs,setFuObs]=useState("");
+  const[motivoPerda,setMotivoPerda]=useState("");
   async function marcarFollowup(tipo){
-    const motivo=window.prompt(`Observação pro follow-up "${FOLLOWUP_LABEL[tipo]}" (opcional):`)||undefined;
-    try{await onFollowup(lead.id,tipo,motivo);setFuEnviado(tipo);}catch{}
+    try{await onFollowup(lead.id,tipo,fuObs||undefined);setFuEnviado(tipo);}catch{}
+  }
+  function handleEstagio(novo){
+    setEst(novo);
+    if(novo!=="fechado_perdido") onMover(lead.id,novo);
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
@@ -67,7 +72,8 @@ function LeadModal({lead,onClose,onMover,onFollowup}){
         }
         <div className="form-group">
           <label className="form-label">Iniciar follow-up</label>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <input className="form-input" style={{fontSize:12,padding:"6px 10px"}} placeholder="Observação (opcional)" value={fuObs} onChange={e=>setFuObs(e.target.value)}/>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
             {TIPOS_FOLLOWUP.map(t=>(
               <button key={t.key} className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12}} onClick={()=>marcarFollowup(t.key)}>
                 <i className={`ti ${t.icone}`} style={{fontSize:13}}/> {t.label}
@@ -77,13 +83,15 @@ function LeadModal({lead,onClose,onMover,onFollowup}){
         </div>
         <div className="form-group">
           <label className="form-label">Mover para estágio</label>
-          <select className="form-input" value={est} onChange={e=>{
-            const novo=e.target.value;setEst(novo);
-            const motivo=novo==="fechado_perdido"?(window.prompt("Motivo da perda (opcional):")||undefined):undefined;
-            onMover(lead.id,novo,motivo);
-          }}>
+          <select className="form-input" value={est} onChange={e=>handleEstagio(e.target.value)}>
             {ESTAGIOS.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
           </select>
+          {est==="fechado_perdido"&&(
+            <div style={{display:"flex",gap:6,marginTop:8}}>
+              <input className="form-input" style={{marginBottom:0,fontSize:12}} placeholder="Motivo da perda (opcional)" value={motivoPerda} onChange={e=>setMotivoPerda(e.target.value)}/>
+              <button className="btn btn-primary" style={{padding:"6px 14px",fontSize:12,flexShrink:0}} onClick={()=>onMover(lead.id,"fechado_perdido",motivoPerda||undefined)}>Confirmar</button>
+            </div>
+          )}
         </div>
         <button className="btn btn-ghost" onClick={onClose} style={{width:"100%"}}>Fechar</button>
       </div>
