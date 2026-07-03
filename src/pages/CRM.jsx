@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, criarFollowup } from "../api.js";
 import { isManager } from "../auth.js";
+
+const TIPOS_FOLLOWUP=[
+  {key:"inatividade",label:"Sem retorno do cliente",icone:"ti-clock-pause"},
+  {key:"indecisao",label:"Pediu tempo pra pensar",icone:"ti-hourglass"},
+  {key:"enviado_site",label:"Mandado pro site",icone:"ti-world"},
+  {key:"negociacao_parada",label:"Negociação parada",icone:"ti-player-pause"},
+];
+const FOLLOWUP_LABEL=Object.fromEntries(TIPOS_FOLLOWUP.map(t=>[t.key,t.label]));
 
 const ESTAGIOS=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},{key:"em_contato",label:"Em contato",cor:"#C8A84B"},
@@ -16,8 +24,13 @@ function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
 function Orig({o}){const m={whatsapp:["#25D366","WA"],site:["#7ba7e0","Site"],indicacao:["#C8A84B","Ind"],facebook:["#5b7bc4","FB"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 
-function LeadModal({lead,onClose,onMover}){
+function LeadModal({lead,onClose,onMover,onFollowup}){
   const[est,setEst]=useState(lead.estagio||"novo_lead");
+  const[fuEnviado,setFuEnviado]=useState(null);
+  async function marcarFollowup(tipo){
+    const motivo=window.prompt(`Observação pro follow-up "${FOLLOWUP_LABEL[tipo]}" (opcional):`)||undefined;
+    try{await onFollowup(lead.id,tipo,motivo);setFuEnviado(tipo);}catch{}
+  }
   return(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -46,6 +59,21 @@ function LeadModal({lead,onClose,onMover}){
           {lead.troca&&<span className="badge badge-warning"><i className="ti ti-arrows-exchange" style={{fontSize:12}}/>Tem troca</span>}
           {lead.financiamento&&<span className="badge badge-brand"><i className="ti ti-credit-card" style={{fontSize:12}}/>Financiamento</span>}
           {lead.origem&&<Orig o={lead.origem}/>}
+        </div>
+        {(lead.followup_tipo||fuEnviado)&&
+          <div className="badge badge-warning" style={{marginBottom:14,display:"inline-flex"}}>
+            <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[fuEnviado||lead.followup_tipo]}
+          </div>
+        }
+        <div className="form-group">
+          <label className="form-label">Iniciar follow-up</label>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {TIPOS_FOLLOWUP.map(t=>(
+              <button key={t.key} className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12}} onClick={()=>marcarFollowup(t.key)}>
+                <i className={`ti ${t.icone}`} style={{fontSize:13}}/> {t.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="form-group">
           <label className="form-label">Mover para estágio</label>
@@ -112,6 +140,7 @@ export default function CRM(){
   useEffect(()=>{load();},[load]);
 
   async function handleMover(id,est,motivo){try{await moverLead(id,est,motivo);}catch{}load();}
+  async function handleFollowup(id,tipo,motivo){await criarFollowup(id,tipo,motivo);load();}
 
   const todos=ESTAGIOS.flatMap(e=>(kanban[e.key]||[]).map(l=>({...l,estagio:e.key})));
   const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
@@ -141,6 +170,7 @@ export default function CRM(){
                   <div className="crm-list-nome">{lead.nome}</div>
                   <div className="crm-list-sub">{lead.veiculo_interesse} · {est?.label}</div>
                   <div style={{display:"flex",gap:6,marginTop:4,alignItems:"center"}}><Temp t={lead.temperatura}/><Score s={lead.score}/>{lead.origem&&<Orig o={lead.origem}/>}</div>
+                  {lead.followup_tipo&&<div style={{fontSize:10,color:"var(--warning)",marginTop:4}}><i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}</div>}
                 </div>
                 <div className="av" style={{background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B",fontSize:10}}>{lead.vendedor_iniciais}</div>
               </div>
@@ -163,6 +193,7 @@ export default function CRM(){
                     <div key={lead.id} className="kanban-card" onClick={()=>setLeadSel({...lead,estagio:est.key})}>
                       <div className="kanban-card-nome">{lead.nome}</div>
                       <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
+                      {lead.followup_tipo&&<div style={{fontSize:10,color:"var(--warning)",marginBottom:4}}><i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}</div>}
                       <div className="kanban-card-footer">
                         <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}</div>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -179,7 +210,7 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} onFollowup={handleFollowup}/>}
       {novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );

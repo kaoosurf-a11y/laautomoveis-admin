@@ -49,6 +49,7 @@ export async function getFollowups() {
 }
 export async function marcarFollowupEnviado(id)   { return req(`/api/followups/${id}/enviado`,{method:"PATCH"}); }
 export async function marcarFollowupRespondeu(id) { return req(`/api/followups/${id}/respondeu`,{method:"PATCH"}); }
+export async function criarFollowup(lead_id,tipo,motivo) { return req("/api/followups",{method:"POST",body:JSON.stringify({lead_id,tipo,motivo})}); }
 export async function getAgenda(data) {
   const u=getUser(); const q=new URLSearchParams(); if(data)q.set("data",data); if(u?.role==="agent")q.set("vendedor_id",u.id);
   return req(`/api/agenda?${q}`);

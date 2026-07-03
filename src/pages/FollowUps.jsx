@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu } from "../api.js";
 
+const TIPO_LABEL={
+  inatividade:"Sem retorno",indecisao:"Pensando",
+  enviado_site:"Mandado pro site",negociacao_parada:"Negociação parada",
+};
+
 export default function FollowUps(){
   const[data,setData]=useState({hoje:[],vencidos:[]});
   const[aba,setAba]=useState("hoje");
@@ -48,7 +53,8 @@ export default function FollowUps(){
             <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
             <div className="fu-info">
               <div className="fu-nome">{f.cliente_nome}</div>
-              <div className="fu-sub">{f.veiculo} · <span style={{color:"var(--brand)"}}>{f.tipo}</span></div>
+              <div className="fu-sub">{f.veiculo} · <span style={{color:"var(--brand)"}}>{TIPO_LABEL[f.tipo]||f.tipo}</span></div>
+              {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
             </div>
             <div className="fu-actions">
               {f.telefone&&<a href={`https://wa.me/55${f.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}

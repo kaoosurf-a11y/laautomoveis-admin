@@ -100,7 +100,10 @@ function TabOportunidades({ data }) {
 
 function TabJornada({ data }) {
   const { jornada, agente_ia, followups_hoje } = data;
-  const TIPO_LABEL = { "D+1":"D1","D+3":"D3","D+7":"D7","D+15":"D15","D+30":"D30" };
+  const TIPO_LABEL = {
+    inatividade:"Sem retorno", indecisao:"Pensando",
+    enviado_site:"Mandado pro site", negociacao_parada:"Negociação parada",
+  };
   return (
     <>
       {/* Timeline jornada */}
