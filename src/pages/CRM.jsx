@@ -22,7 +22,7 @@ const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E4
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
-function Orig({o}){const m={whatsapp:["#25D366","WA"],site:["#7ba7e0","Site"],indicacao:["#C8A84B","Ind"],facebook:["#5b7bc4","FB"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
+function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 
 function LeadModal({lead,onClose,onMover,onFollowup,readOnly}){
   const[est,setEst]=useState(lead.estagio||"novo_lead");
@@ -107,7 +107,7 @@ function LeadModal({lead,onClose,onMover,onFollowup,readOnly}){
 }
 
 function NovoModal({onClose,onCriado}){
-  const[form,setForm]=useState({nome:"",telefone:"",veiculo_interesse:"",origem:"whatsapp"});
+  const[form,setForm]=useState({nome:"",telefone:"",veiculo_interesse:"",origem:"organico"});
   const[loading,setLoading]=useState(false);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   async function submit(){if(!form.nome||!form.veiculo_interesse)return;setLoading(true);try{await criarLeadCRM(form);onCriado();}catch{}setLoading(false);onClose();}
@@ -124,8 +124,7 @@ function NovoModal({onClose,onCriado}){
         <div className="form-group"><label className="form-label">Veículo *</label><input className="form-input" value={form.veiculo_interesse} onChange={e=>set("veiculo_interesse",e.target.value)} placeholder="Ex: HB20 2022"/></div>
         <div className="form-group"><label className="form-label">Origem</label>
           <select className="form-input" value={form.origem} onChange={e=>set("origem",e.target.value)}>
-            <option value="whatsapp">WhatsApp</option><option value="site">Site</option>
-            <option value="indicacao">Indicação</option><option value="facebook">Facebook</option><option value="direto">Direto na loja</option>
+            <option value="organico">Orgânico</option><option value="site">Site</option><option value="anuncio">Anúncio</option>
           </select>
         </div>
         <div style={{display:"flex",gap:8}}>
