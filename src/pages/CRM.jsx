@@ -15,14 +15,13 @@ const FOLLOWUP_LABEL={
   match_estoque:"Veículo compatível chegou!",
 };
 
-// 9 colunas do Kanban. Redesenho 2026-07: "Em contato"+"Negociando" viraram uma
-// coluna só ("negociando"/"Em negociação" — eram só fases sequenciais sem gatilho).
-// sem_credito/vai_pensar/nao_achou_carro/parou_responder são os "motivos pós-
-// atendimento": arrastar o card pra uma delas JÁ dispara o follow-up automático
-// correspondente no backend (routes/crm.js) — não tem passo separado de marcar tag.
-// fechado_perdido continua existindo como catch-all pra motivos que não se encaixam
-// nas 4 específicas (preço, comprou em outro lugar, desistiu por outro motivo).
-const ESTAGIOS=[
+// Colunas do Kanban. Redesenho 2026-07: "Em contato"+"Negociando" viraram uma coluna
+// só ("negociando"/"Em negociação" — eram só fases sequenciais sem gatilho). sem_credito/
+// vai_pensar/nao_achou_carro/parou_responder são os "motivos pós-atendimento": arrastar
+// o card pra uma delas JÁ dispara o follow-up automático correspondente no backend
+// (routes/crm.js) — não tem passo separado de marcar tag. fechado_perdido continua
+// existindo como catch-all pra motivos que não se encaixam nas 4 específicas.
+const ESTAGIOS_ADMIN=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
@@ -33,19 +32,45 @@ const ESTAGIOS=[
   {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
 ];
+// Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou — ele não
+// precisa das 2 colunas iniciais separadas, só decidir o desfecho. "Novo lead" e
+// "Em negociação" viram uma coluna virtual só ("Para atender"); `estagiosDb` lista
+// quais valores reais de estagio caem nela (o card guarda o estagio real, não
+// "para_atender" — isso é só agrupamento visual).
+const ESTAGIOS_VENDEDOR=[
+  {key:"para_atender",label:"Para atender",cor:"#C8A84B",estagiosDb:["novo_lead","negociando"]},
+  {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
+  {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
+  {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
+  {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
+  {key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
+  {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
+  {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
+];
+function leadsDaColuna(est,kanban){
+  return est.estagiosDb ? est.estagiosDb.flatMap(k=>kanban[k]||[]) : (kanban[est.key]||[]);
+}
+function colunaVisual(estagios,estagioReal){
+  return estagios.find(e=>e.key===estagioReal || e.estagiosDb?.includes(estagioReal));
+}
 const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E44AD","WI":"#27AE60"};
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
 function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 
-function LeadModal({lead,onClose,onMover,readOnly}){
-  const[est,setEst]=useState(lead.estagio||"novo_lead");
+function LeadModal({lead,onClose,onMover,readOnly,estagios}){
+  const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
   const[motivoPerdido,setMotivoPerdido]=useState("");
-  function handleEstagio(novo){
-    setEst(novo);
-    if(novo==="fechado_perdido")return; // espera o motivo opcional antes de confirmar
-    onMover(lead.id,novo);
+  const colAtual=colunaVisual(estagios,est);
+  function handleEstagio(novoKey){
+    const alvo=estagios.find(e=>e.key===novoKey);
+    // Coluna virtual ("Para atender"): manda pro último estagio real do grupo
+    // (negociando) — o vendedor já deve ter conversado se está movendo de volta.
+    const real=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : novoKey;
+    setEst(real);
+    if(real==="fechado_perdido")return; // espera o motivo opcional antes de confirmar
+    onMover(lead.id,real);
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
@@ -84,10 +109,10 @@ function LeadModal({lead,onClose,onMover,readOnly}){
         <div className="form-group">
           <label className="form-label">Estágio {readOnly?"":"— arraste o card no board pra mudar, ou selecione aqui"}</label>
           {readOnly?(
-            <div style={{fontSize:14,fontWeight:600,color:ESTAGIOS.find(e=>e.key===est)?.cor||"var(--fg)"}}>{ESTAGIOS.find(e=>e.key===est)?.label}</div>
+            <div style={{fontSize:14,fontWeight:600,color:colAtual?.cor||"var(--fg)"}}>{colAtual?.label}</div>
           ):(<>
-            <select className="form-input" value={est} onChange={e=>handleEstagio(e.target.value)}>
-              {ESTAGIOS.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
+            <select className="form-input" value={colAtual?.key||est} onChange={e=>handleEstagio(e.target.value)}>
+              {estagios.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
             </select>
             {est==="fechado_perdido"&&(
               <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -134,7 +159,10 @@ function NovoModal({onClose,onCriado}){
 }
 
 export default function CRM(){
-  const readOnly=getRole()==="manager";
+  const role=getRole();
+  const readOnly=role==="manager";
+  // Vendedor vê "Para atender" fundido; owner/manager continuam com o funil completo.
+  const estagios=role==="agent"?ESTAGIOS_VENDEDOR:ESTAGIOS_ADMIN;
   const[kanban,setKanban]=useState({});
   const[loading,setLoading]=useState(true);
   const[busca,setBusca]=useState("");
@@ -165,7 +193,7 @@ export default function CRM(){
   // mesmo efeito.
   async function handleMover(id,est,motivo){try{await moverLead(id,est,motivo);}catch{}load(true);}
 
-  const todos=ESTAGIOS.flatMap(e=>(kanban[e.key]||[]).map(l=>({...l,estagio:e.key})));
+  const todos=estagios.flatMap(e=>leadsDaColuna(e,kanban));
   const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
 
   function onCardDragStart(e,lead){
@@ -188,7 +216,11 @@ export default function CRM(){
       if(lead)setLeadSel({...lead,estagio:"fechado_perdido"});
       return;
     }
-    handleMover(leadId,estKey);
+    // Coluna virtual ("Para atender", vendedor) não é um estagio real — arrastar de
+    // volta pra ela manda pro último estagio do grupo (negociando).
+    const alvo=estagios.find(e=>e.key===estKey);
+    const realKey=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : estKey;
+    handleMover(leadId,realKey);
   }
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
@@ -209,7 +241,7 @@ export default function CRM(){
         <div className="crm-list">
           {filtrados.length===0&&<div className="empty-state"><i className="ti ti-inbox"/><p>Nenhum lead</p></div>}
           {filtrados.map(lead=>{
-            const est=ESTAGIOS.find(e=>e.key===lead.estagio);
+            const est=colunaVisual(estagios,lead.estagio);
             return(
               <div key={lead.id} className="crm-list-item" style={{borderLeft:`3px solid ${est?.cor||"var(--border)"}`}} onClick={()=>setLeadSel(lead)}>
                 <div style={{flex:1,minWidth:0}}>
@@ -225,8 +257,8 @@ export default function CRM(){
         </div>
       ):(
         <div className="kanban-board" ref={boardRef}>
-          {ESTAGIOS.map(est=>{
-            const leads=(kanban[est.key]||[]).filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
+          {estagios.map(est=>{
+            const leads=leadsDaColuna(est,kanban).filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
             return(
               <div key={est.key} className="kanban-col">
                 <div className="kanban-col-header" style={{borderTop:`2px solid ${est.cor}`}}>
@@ -247,7 +279,7 @@ export default function CRM(){
                       className="kanban-card"
                       draggable={!readOnly}
                       onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
-                      onClick={()=>setLeadSel({...lead,estagio:est.key})}
+                      onClick={()=>setLeadSel(lead)}
                       style={{cursor:readOnly?"pointer":"grab"}}
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
@@ -269,7 +301,7 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} readOnly={readOnly}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} readOnly={readOnly} estagios={estagios}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );
