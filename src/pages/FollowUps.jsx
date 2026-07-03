@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu } from "../api.js";
+import { getRole } from "../auth.js";
 
 const TIPO_LABEL={
   inatividade:"Sem retorno",indecisao:"Pensando",
@@ -7,6 +8,7 @@ const TIPO_LABEL={
 };
 
 export default function FollowUps(){
+  const readOnly=getRole()==="manager";
   const[data,setData]=useState({hoje:[],vencidos:[]});
   const[aba,setAba]=useState("hoje");
   const[loading,setLoading]=useState(true);
@@ -58,9 +60,9 @@ export default function FollowUps(){
             </div>
             <div className="fu-actions">
               {f.telefone&&<a href={`https://wa.me/55${f.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}
-              {!f.enviado?<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarEnviado(f.id)}><i className="ti ti-send" style={{fontSize:14}}/> Enviado</button>
+              {!f.enviado?(readOnly?null:<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarEnviado(f.id)}><i className="ti ti-send" style={{fontSize:14}}/> Enviado</button>)
                 :<span className="badge badge-brand" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Enviado</span>}
-              {f.enviado&&!f.respondeu&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Respondeu</button>}
+              {f.enviado&&!f.respondeu&&!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Respondeu</button>}
               {f.respondeu&&<span className="badge badge-success" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Respondeu</span>}
             </div>
           </div>

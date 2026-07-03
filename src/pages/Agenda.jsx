@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getAgenda, criarAgendamento, atualizarStatusAgendamento } from "../api.js";
-import { isManager, getUser } from "../auth.js";
+import { isManager, getUser, getRole } from "../auth.js";
 
 const TIPOS={test_drive:{label:"Test drive",icon:"🚗",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"🏢",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"📋",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"🤝",cor:"#8E44AD"}};
 const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)"};
@@ -12,7 +12,7 @@ function mesmoDia(a,b){return a.toDateString()===b.toDateString();}
 function minAte(iso){return Math.round((new Date(iso)-Date.now())/60000);}
 function getStatus(ag){const m=minAte(ag.data_hora);if(ag.status==="confirmado"&&m>0&&m<=30)return "em_breve";return ag.status;}
 
-function AgendaCard({ag,onStatus}){
+function AgendaCard({ag,onStatus,readOnly}){
   const status=getStatus(ag);
   const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"📅",cor:"var(--muted)"};
   const min=minAte(ag.data_hora);
@@ -33,14 +33,14 @@ function AgendaCard({ag,onStatus}){
         <a href={`https://wa.me/55${ag.cliente_tel}`} target="_blank" rel="noopener noreferrer" className="btn-wa" style={{padding:"4px 10px"}}><i className="ti ti-brand-whatsapp" style={{fontSize:14}}/> WA</a>
       </div>
       {ag.observacoes&&<div style={{fontSize:12,color:"var(--muted)",fontStyle:"italic",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>{ag.observacoes}</div>}
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+      {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
         {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&<>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"realizado")}><i className="ti ti-check"/> Realizado</button>
           <button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-user-x"/> Não veio</button>
         </>}
-      </div>
+      </div>}
     </div>
   );
 }
@@ -74,6 +74,7 @@ function NovoModal({onClose,onCriado}){
 }
 
 export default function Agenda(){
+  const readOnly=getRole()==="manager";
   const[ags,setAgs]=useState([]);
   const[diaSel,setDiaSel]=useState(new Date());
   const[loading,setLoading]=useState(true);
@@ -98,7 +99,7 @@ export default function Agenda(){
 
   return(
     <div>
-      <div className="page-header"><h1 className="page-title"><i className="ti ti-calendar-event"/> Agenda</h1><button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> Agendar</button></div>
+      <div className="page-header"><h1 className="page-title"><i className="ti ti-calendar-event"/> Agenda</h1>{!readOnly&&<button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> Agendar</button>}</div>
       <div className="dias-nav">
         {dias.map((d,i)=>{const isHoje=mesmoDia(d,hoje);const isSel=mesmoDia(d,diaSel);const ns=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return(<button key={i} className={`dia-btn ${isHoje?"hoje":""} ${isSel?"selected":""}`} onClick={()=>setDiaSel(d)}><span className="dia-num">{d.getDate()}</span><span className="dia-nome">{ns[d.getDay()]}</span></button>);})}
       </div>
@@ -106,9 +107,9 @@ export default function Agenda(){
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
       {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=><AgendaCard key={ag.id} ag={ag} onStatus={handleStatus}/>)}</>}
-      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=><AgendaCard key={ag.id} ag={ag} onStatus={handleStatus}/>)}</>}
-      {novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
+      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=><AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
+      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=><AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
+      {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
     </div>
   );
 }

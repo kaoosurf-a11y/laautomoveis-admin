@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getCRMKanban, moverLead, criarLeadCRM, criarFollowup } from "../api.js";
-import { isManager } from "../auth.js";
+import { getRole } from "../auth.js";
 
 const TIPOS_FOLLOWUP=[
   {key:"inatividade",label:"Sem retorno do cliente",icone:"ti-clock-pause"},
@@ -24,7 +24,7 @@ function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
 function Orig({o}){const m={whatsapp:["#25D366","WA"],site:["#7ba7e0","Site"],indicacao:["#C8A84B","Ind"],facebook:["#5b7bc4","FB"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 
-function LeadModal({lead,onClose,onMover,onFollowup}){
+function LeadModal({lead,onClose,onMover,onFollowup,readOnly}){
   const[est,setEst]=useState(lead.estagio||"novo_lead");
   const[fuEnviado,setFuEnviado]=useState(null);
   const[fuObs,setFuObs]=useState("");
@@ -70,6 +70,12 @@ function LeadModal({lead,onClose,onMover,onFollowup}){
             <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[fuEnviado||lead.followup_tipo]}
           </div>
         }
+        {readOnly?(
+          <div className="form-group">
+            <label className="form-label">Estágio</label>
+            <div style={{fontSize:14,fontWeight:600,color:"var(--fg)"}}>{ESTAGIOS.find(e=>e.key===est)?.label}</div>
+          </div>
+        ):(<>
         <div className="form-group">
           <label className="form-label">Iniciar follow-up</label>
           <input className="form-input" style={{fontSize:12,padding:"6px 10px"}} placeholder="Observação (opcional)" value={fuObs} onChange={e=>setFuObs(e.target.value)}/>
@@ -93,6 +99,7 @@ function LeadModal({lead,onClose,onMover,onFollowup}){
             </div>
           )}
         </div>
+        </>)}
         <button className="btn btn-ghost" onClick={onClose} style={{width:"100%"}}>Fechar</button>
       </div>
     </div>
@@ -131,6 +138,7 @@ function NovoModal({onClose,onCriado}){
 }
 
 export default function CRM(){
+  const readOnly=getRole()==="manager";
   const[kanban,setKanban]=useState({});
   const[loading,setLoading]=useState(true);
   const[busca,setBusca]=useState("");
@@ -164,7 +172,7 @@ export default function CRM(){
     <div>
       <div className="page-header">
         <h1 className="page-title"><i className="ti ti-target"/> CRM Pipeline</h1>
-        <button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus" style={{fontSize:16}}/> Novo lead</button>
+        {!readOnly&&<button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus" style={{fontSize:16}}/> Novo lead</button>}
       </div>
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         <input className="form-input" style={{maxWidth:220,marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
@@ -222,8 +230,8 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} onFollowup={handleFollowup}/>}
-      {novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} onFollowup={handleFollowup} readOnly={readOnly}/>}
+      {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );
 }
