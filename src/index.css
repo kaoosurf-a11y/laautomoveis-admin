@@ -160,7 +160,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
 
 /* ── Kanban ── */
-.kanban-board{display:flex;gap:12px;overflow-x:auto;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory}
+.kanban-board{display:flex;gap:12px;overflow-x:auto;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2)}
+.kanban-board::-webkit-scrollbar{height:14px}
+.kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
+.kanban-board::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px;border:3px solid var(--surface2)}
+.kanban-board::-webkit-scrollbar-thumb:hover{background:#dbb95a}
 .kanban-col{flex-shrink:0;width:230px;scroll-snap-align:start}
 .kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none}
 .kanban-col-title{font-size:12px;font-weight:600;color:var(--fg)}
@@ -199,14 +203,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 /* ── Notificação ── */
 .notif-banner{
-  position:fixed;top:calc(var(--topbar-h) + 8px);left:12px;right:12px;z-index:400;
+  position:fixed;bottom:calc(var(--bottom-h) + env(safe-area-inset-bottom) + 10px);left:12px;right:12px;z-index:400;
   background:var(--surface);border:1px solid var(--brand);
   border-left:4px solid var(--brand);border-radius:12px;
   padding:12px;display:flex;align-items:center;gap:10px;
   box-shadow:0 4px 24px rgba(0,0,0,.5);animation:slideDown .25s ease;
 }
 @media(min-width:1024px){.notif-banner{top:12px;max-width:420px;left:50%;transform:translateX(-50%)}}
-@keyframes slideDown{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideDown{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
 @media(min-width:1024px){@keyframes slideDown{from{transform:translateX(-50%) translateY(-8px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}}
 .notif-icon{width:38px;height:38px;background:rgba(200,168,75,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--brand);font-size:20px;flex-shrink:0}
 .notif-body{flex:1;min-width:0}
@@ -325,3 +329,4 @@ img{max-width:100%;height:auto}
 .form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--fg);font-size:15px;outline:none;-webkit-appearance:none}
 .form-group input:focus,.form-group select:focus{border-color:var(--brand)}
 .btn-sm{padding:6px 12px;font-size:12px;min-height:34px}
+@media(min-width:1024px){.notif-banner{top:16px;bottom:auto;max-width:440px;left:50%;right:auto;transform:translateX(calc(-50% + 110px))}}

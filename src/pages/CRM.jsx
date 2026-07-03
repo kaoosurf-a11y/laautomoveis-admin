@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getCRMKanban, moverLead, criarLeadCRM, criarFollowup } from "../api.js";
 import { getRole } from "../auth.js";
 
@@ -145,8 +145,13 @@ export default function CRM(){
   const[novoModal,setNovoModal]=useState(false);
   const[isMobile,setIsMobile]=useState(window.innerWidth<768);
   const[erro,setErro]=useState(null);
+  const boardRef=useRef(null);
 
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
+  // Sempre abre no início do board (coluna "Novo lead") — sem isso o scroll horizontal
+  // podia ficar parado numa posição do carregamento anterior e dar a impressão de que
+  // colunas diferentes aparecem pra cada pessoa, quando é só a posição do scroll.
+  useEffect(()=>{if(boardRef.current)boardRef.current.scrollLeft=0;},[loading]);
   const load=useCallback((silent)=>{
     if(!silent) setLoading(true);
     setErro(null);
@@ -197,7 +202,7 @@ export default function CRM(){
           })}
         </div>
       ):(
-        <div className="kanban-board">
+        <div className="kanban-board" ref={boardRef}>
           {ESTAGIOS.map(est=>{
             const leads=(kanban[est.key]||[]).filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
             return(
