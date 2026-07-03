@@ -11,10 +11,10 @@ const TIPOS_FOLLOWUP=[
 const FOLLOWUP_LABEL=Object.fromEntries(TIPOS_FOLLOWUP.map(t=>[t.key,t.label]));
 
 const ESTAGIOS=[
-  {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},{key:"em_contato",label:"Em contato",cor:"#C8A84B"},
-  {key:"apresentacao",label:"Apresentação",cor:"#e6a817"},{key:"visita_agendada",label:"Visita agendada",cor:"#8E44AD"},
-  {key:"proposta",label:"Proposta",cor:"#2980B9"},{key:"credito_analise",label:"Crédito análise",cor:"#e67e22"},
-  {key:"negociando",label:"Negociando",cor:"#27AE60"},{key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
+  {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
+  {key:"em_contato",label:"Em contato",cor:"#C8A84B"},
+  {key:"negociando",label:"Negociando",cor:"#27AE60"},
+  {key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
   {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
 ];
