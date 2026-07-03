@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita } from "../api.js";
 import { getRole } from "../auth.js";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
@@ -62,7 +62,15 @@ function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],
 function LeadModal({lead,onClose,onMover,readOnly,estagios}){
   const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
   const[motivoPerdido,setMotivoPerdido]=useState("");
+  const[agendando,setAgendando]=useState(false);
+  const[agendado,setAgendado]=useState(false);
   const colAtual=colunaVisual(estagios,est);
+  async function handleAgendar(){
+    if(!confirm(`A Lara vai iniciar uma conversa no WhatsApp com ${lead.nome} pra marcar a visita. Confirma?`))return;
+    setAgendando(true);
+    try{await agendarVisita(lead.id);setAgendado(true);}catch{alert("Erro ao iniciar agendamento. Tente de novo.");}
+    setAgendando(false);
+  }
   function handleEstagio(novoKey){
     const alvo=estagios.find(e=>e.key===novoKey);
     // Coluna virtual ("Para atender"): manda pro último estagio real do grupo
@@ -106,6 +114,17 @@ function LeadModal({lead,onClose,onMover,readOnly,estagios}){
             <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[lead.followup_tipo]}
           </div>
         }
+        {!readOnly&&lead.vendedor_id&&(
+          <div style={{marginBottom:14}}>
+            {agendado?(
+              <span className="badge badge-success" style={{display:"inline-flex"}}><i className="ti ti-check" style={{fontSize:12}}/>&nbsp;Lara vai iniciar o agendamento</span>
+            ):(
+              <button className="btn btn-ghost" style={{width:"100%"}} onClick={handleAgendar} disabled={agendando}>
+                {agendando?<span className="spinner"/>:<><i className="ti ti-calendar-plus"/> Agendar visita (Lara conduz pelo WhatsApp)</>}
+              </button>
+            )}
+          </div>
+        )}
         <div className="form-group">
           <label className="form-label">Estágio {readOnly?"":"— arraste o card no board pra mudar, ou selecione aqui"}</label>
           {readOnly?(

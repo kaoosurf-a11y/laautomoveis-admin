@@ -42,6 +42,7 @@ export async function getCRMKanban() {
 }
 export async function moverLead(id,est,motivo) { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est,motivo})}); }
 export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method:"POST",body:JSON.stringify(d)}); }
+export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }
 export async function getDashboard(p="mes"){ return req(`/api/dashboard?periodo=${p}`); }
 export async function getFollowups() {
   const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
@@ -56,6 +57,9 @@ export async function getAgenda(data) {
 }
 export async function criarAgendamento(d)             { return req("/api/agenda",{method:"POST",body:JSON.stringify(d)}); }
 export async function atualizarStatusAgendamento(id,s){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({status:s})}); }
+export async function getHorarios()        { return req("/api/agenda/horarios"); }
+export async function criarHorario(d)       { return req("/api/agenda/horarios",{method:"POST",body:JSON.stringify(d)}); }
+export async function removerHorario(id)    { return req(`/api/agenda/horarios/${id}`,{method:"DELETE"}); }
 
 const MOCK_VEICULOS=[
   {id:1,nome:"HB20 2022 1.0T Comfort",preco:52900,km:28000,cambio:"Automático",combustivel:"Flex",ano:2022,badge:"DESTAQUE",foto_url:null,publicado:true},
