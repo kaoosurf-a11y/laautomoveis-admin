@@ -1,64 +1,50 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, criarFollowup } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
 
-// Rótulos pro badge "Follow-up ativo" no card/modal (inclui match_estoque, disparado
-// pelo sistema, não por botão do vendedor).
+// Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
+// nao_achou_carro/parou_responder o rótulo é o mesmo da coluna do Kanban (o tipo
+// de follow-up É o estágio, ver redesenho 2026-07) — só pos_venda_satisfacao e
+// match_estoque não são estágio, por isso têm rótulo próprio aqui.
 const FOLLOWUP_LABEL={
+  sem_credito:"Sem crédito",
   vai_pensar:"Vai pensar",
+  nao_achou_carro:"Não achou o carro",
+  parou_responder:"Parou de responder",
   pos_venda_satisfacao:"Pós-venda",
-  perdido_preco:"Perdido — preço",
-  perdido_sem_credito:"Perdido — sem crédito",
-  perdido_nao_achou:"Perdido — não achou",
   match_estoque:"Veículo compatível chegou!",
 };
 
-// Submotivos de "Venda perdida" — cada um move pra fechado_perdido com o motivo
-// certo e, exceto "Comprou em outro lugar" (perda definitiva, sem follow-up),
-// dispara o follow-up de reengajamento correspondente.
-const SUBMOTIVOS_PERDA=[
-  {key:"perdido_preco",label:"Preço",motivo:"Preço"},
-  {key:"perdido_sem_credito",label:"Sem crédito",motivo:"Sem crédito"},
-  {key:"perdido_nao_achou",label:"Não achou o que procurava",motivo:"Não achou o que procurava"},
-  {key:"comprou_outro",label:"Comprou em outro lugar",motivo:"Comprou em outro lugar"},
-];
-
+// 9 colunas do Kanban. Redesenho 2026-07: "Em contato"+"Negociando" viraram uma
+// coluna só ("negociando"/"Em negociação" — eram só fases sequenciais sem gatilho).
+// sem_credito/vai_pensar/nao_achou_carro/parou_responder são os "motivos pós-
+// atendimento": arrastar o card pra uma delas JÁ dispara o follow-up automático
+// correspondente no backend (routes/crm.js) — não tem passo separado de marcar tag.
+// fechado_perdido continua existindo como catch-all pra motivos que não se encaixam
+// nas 4 específicas (preço, comprou em outro lugar, desistiu por outro motivo).
 const ESTAGIOS=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
-  {key:"em_contato",label:"Em contato",cor:"#C8A84B"},
-  {key:"negociando",label:"Negociando",cor:"#27AE60"},
+  {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
+  {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
+  {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
+  {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
+  {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
   {key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
   {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
 ];
-// Fechado (ganho)/(perdido) só se alcançam pelos botões "Resultado da negociação"
-// (marcam motivo estruturado + disparam follow-up) — não pelo dropdown genérico.
-const ESTAGIOS_DROPDOWN=ESTAGIOS.filter(e=>e.key!=="fechado_ganho"&&e.key!=="fechado_perdido");
 const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E44AD","WI":"#27AE60"};
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
 function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 
-function LeadModal({lead,onClose,onMover,onFollowup,readOnly}){
+function LeadModal({lead,onClose,onMover,readOnly}){
   const[est,setEst]=useState(lead.estagio||"novo_lead");
-  const[fuEnviado,setFuEnviado]=useState(null);
-  const[mostrarSubmotivos,setMostrarSubmotivos]=useState(false);
-  async function marcarVaiPensar(){
-    try{await onFollowup(lead.id,"vai_pensar");setFuEnviado("vai_pensar");}catch{}
-  }
-  function marcarVendaFeita(){
-    setEst("fechado_ganho");
-    onMover(lead.id,"fechado_ganho");
-    onFollowup(lead.id,"pos_venda_satisfacao").catch(()=>{});
-  }
-  function marcarVendaPerdida(sub){
-    setEst("fechado_perdido");
-    onMover(lead.id,"fechado_perdido",sub.motivo);
-    if(sub.key!=="comprou_outro") onFollowup(lead.id,sub.key,sub.motivo).catch(()=>{});
-  }
+  const[motivoPerdido,setMotivoPerdido]=useState("");
   function handleEstagio(novo){
     setEst(novo);
+    if(novo==="fechado_perdido")return; // espera o motivo opcional antes de confirmar
     onMover(lead.id,novo);
   }
   return(
@@ -90,44 +76,27 @@ function LeadModal({lead,onClose,onMover,onFollowup,readOnly}){
           {lead.financiamento&&<span className="badge badge-brand"><i className="ti ti-credit-card" style={{fontSize:12}}/>Financiamento</span>}
           {lead.origem&&<Orig o={lead.origem}/>}
         </div>
-        {(lead.followup_tipo||fuEnviado)&&
+        {lead.followup_tipo&&
           <div className="badge badge-warning" style={{marginBottom:14,display:"inline-flex"}}>
-            <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[fuEnviado||lead.followup_tipo]}
+            <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[lead.followup_tipo]}
           </div>
         }
         <div className="form-group">
-          <label className="form-label">Estágio atual</label>
-          <div style={{fontSize:14,fontWeight:600,color:ESTAGIOS.find(e=>e.key===est)?.cor||"var(--fg)"}}>{ESTAGIOS.find(e=>e.key===est)?.label}</div>
+          <label className="form-label">Estágio {readOnly?"":"— arraste o card no board pra mudar, ou selecione aqui"}</label>
+          {readOnly?(
+            <div style={{fontSize:14,fontWeight:600,color:ESTAGIOS.find(e=>e.key===est)?.cor||"var(--fg)"}}>{ESTAGIOS.find(e=>e.key===est)?.label}</div>
+          ):(<>
+            <select className="form-input" value={est} onChange={e=>handleEstagio(e.target.value)}>
+              {ESTAGIOS.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
+            </select>
+            {est==="fechado_perdido"&&(
+              <div style={{display:"flex",gap:6,marginTop:8}}>
+                <input className="form-input" style={{marginBottom:0,fontSize:12}} placeholder="Motivo (opcional)" value={motivoPerdido} onChange={e=>setMotivoPerdido(e.target.value)}/>
+                <button className="btn btn-primary" style={{padding:"6px 14px",fontSize:12,flexShrink:0}} onClick={()=>onMover(lead.id,"fechado_perdido",motivoPerdido||undefined)}>Confirmar</button>
+              </div>
+            )}
+          </>)}
         </div>
-        {!readOnly&&(<>
-        <div className="form-group">
-          <label className="form-label">Resultado da negociação</label>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            <button className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12}} onClick={marcarVaiPensar}>
-              <i className="ti ti-hourglass" style={{fontSize:13}}/> Vai pensar
-            </button>
-            <button className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12,color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={marcarVendaFeita}>
-              <i className="ti ti-check" style={{fontSize:13}}/> Venda feita
-            </button>
-            <button className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12,color:"var(--danger)",borderColor:"rgba(224,82,82,.3)"}} onClick={()=>setMostrarSubmotivos(s=>!s)}>
-              <i className="ti ti-x" style={{fontSize:13}}/> Venda perdida
-            </button>
-          </div>
-          {mostrarSubmotivos&&(
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8,padding:8,background:"var(--surface2)",borderRadius:8}}>
-              {SUBMOTIVOS_PERDA.map(sm=>(
-                <button key={sm.key} className="btn btn-ghost" style={{padding:"6px 10px",fontSize:12}} onClick={()=>marcarVendaPerdida(sm)}>{sm.label}</button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="form-group">
-          <label className="form-label">Mover pra outro estágio</label>
-          <select className="form-input" value={est} onChange={e=>handleEstagio(e.target.value)}>
-            {ESTAGIOS_DROPDOWN.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
-          </select>
-        </div>
-        </>)}
         <button className="btn btn-ghost" onClick={onClose} style={{width:"100%"}}>Fechar</button>
       </div>
     </div>
@@ -173,6 +142,7 @@ export default function CRM(){
   const[novoModal,setNovoModal]=useState(false);
   const[isMobile,setIsMobile]=useState(window.innerWidth<768);
   const[erro,setErro]=useState(null);
+  const[colunaSobre,setColunaSobre]=useState(null);
   const boardRef=useRef(null);
 
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
@@ -189,13 +159,37 @@ export default function CRM(){
   useEffect(()=>{load();},[load]);
 
   // silent=true nos refreshes pós-ação: evita desmontar a página (e fechar o modal
-  // aberto) toda vez que mover um card ou criar um follow-up — antes voltava pro
-  // spinner de tela cheia a cada clique.
+  // aberto) toda vez que mover um card — antes voltava pro spinner de tela cheia
+  // a cada clique. O follow-up automático (estágio-motivo) roda no backend, então
+  // um PATCH de estágio já basta pra tudo — arrastar ou usar o dropdown têm o
+  // mesmo efeito.
   async function handleMover(id,est,motivo){try{await moverLead(id,est,motivo);}catch{}load(true);}
-  async function handleFollowup(id,tipo,motivo){await criarFollowup(id,tipo,motivo);load(true);}
 
   const todos=ESTAGIOS.flatMap(e=>(kanban[e.key]||[]).map(l=>({...l,estagio:e.key})));
   const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
+
+  function onCardDragStart(e,lead){
+    e.dataTransfer.setData("text/plain",String(lead.id));
+    e.dataTransfer.effectAllowed="move";
+  }
+  function onColDragOver(e,estKey){
+    e.preventDefault();
+    if(colunaSobre!==estKey)setColunaSobre(estKey);
+  }
+  function onColDrop(e,estKey){
+    e.preventDefault();
+    setColunaSobre(null);
+    const leadId=e.dataTransfer.getData("text/plain");
+    if(!leadId)return;
+    if(estKey==="fechado_perdido"){
+      // catch-all com motivo opcional — abre o card em vez de mover direto,
+      // já com o estágio pré-selecionado, pra não perder o passo de motivo.
+      const lead=todos.find(l=>String(l.id)===leadId);
+      if(lead)setLeadSel({...lead,estagio:"fechado_perdido"});
+      return;
+    }
+    handleMover(leadId,estKey);
+  }
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
@@ -209,7 +203,7 @@ export default function CRM(){
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         <input className="form-input" style={{maxWidth:220,marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
       </div>
-      <div style={{fontSize:13,color:"var(--muted)",marginBottom:12}}>{todos.length} leads · {filtrados.length} exibidos</div>
+      <div style={{fontSize:13,color:"var(--muted)",marginBottom:12}}>{todos.length} leads · {filtrados.length} exibidos{!readOnly&&!isMobile&&" · arraste o card pra mudar o estágio"}</div>
 
       {isMobile?(
         <div className="crm-list">
@@ -239,10 +233,23 @@ export default function CRM(){
                   <span className="kanban-col-title">{est.label}</span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
-                <div className="kanban-cards">
+                <div
+                  className="kanban-cards"
+                  style={colunaSobre===est.key?{outline:`2px dashed ${est.cor}`,outlineOffset:-2}:undefined}
+                  onDragOver={readOnly?undefined:e=>onColDragOver(e,est.key)}
+                  onDragLeave={readOnly?undefined:()=>setColunaSobre(null)}
+                  onDrop={readOnly?undefined:e=>onColDrop(e,est.key)}
+                >
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
                   {leads.map(lead=>(
-                    <div key={lead.id} className="kanban-card" onClick={()=>setLeadSel({...lead,estagio:est.key})}>
+                    <div
+                      key={lead.id}
+                      className="kanban-card"
+                      draggable={!readOnly}
+                      onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
+                      onClick={()=>setLeadSel({...lead,estagio:est.key})}
+                      style={{cursor:readOnly?"pointer":"grab"}}
+                    >
                       <div className="kanban-card-nome">{lead.nome}</div>
                       <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
                       {lead.followup_tipo&&<div style={{fontSize:10,color:"var(--warning)",marginBottom:4}}><i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}</div>}
@@ -262,7 +269,7 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} onFollowup={handleFollowup} readOnly={readOnly}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} readOnly={readOnly}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );

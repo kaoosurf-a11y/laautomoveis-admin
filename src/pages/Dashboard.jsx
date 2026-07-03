@@ -101,9 +101,9 @@ function TabOportunidades({ data }) {
 function TabJornada({ data }) {
   const { jornada, agente_ia, followups_hoje } = data;
   const TIPO_LABEL = {
-    vai_pensar:"Vai pensar", pos_venda_satisfacao:"Pós-venda",
-    perdido_preco:"Perdido — preço", perdido_sem_credito:"Perdido — sem crédito",
-    perdido_nao_achou:"Perdido — não achou", match_estoque:"Veículo compatível chegou!",
+    sem_credito:"Sem crédito", vai_pensar:"Vai pensar",
+    nao_achou_carro:"Não achou o carro", parou_responder:"Parou de responder",
+    pos_venda_satisfacao:"Pós-venda", match_estoque:"Veículo compatível chegou!",
   };
   return (
     <>
