@@ -60,6 +60,7 @@ export async function atualizarStatusAgendamento(id,s){ return req(`/api/agenda/
 export async function getHorarios()        { return req("/api/agenda/horarios"); }
 export async function criarHorario(d)       { return req("/api/agenda/horarios",{method:"POST",body:JSON.stringify(d)}); }
 export async function removerHorario(id)    { return req(`/api/agenda/horarios/${id}`,{method:"DELETE"}); }
+export async function getContatosNaoProcessados() { return req("/api/contatos/nao-processados"); }
 
 const MOCK_VEICULOS=[
   {id:1,nome:"HB20 2022 1.0T Comfort",preco:52900,km:28000,cambio:"Automático",combustivel:"Flex",ano:2022,badge:"DESTAQUE",foto_url:null,publicado:true},

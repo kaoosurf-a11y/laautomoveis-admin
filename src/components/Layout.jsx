@@ -45,6 +45,7 @@ export default function Layout({ children }) {
     { to:"/agenda",    icon:"ti-calendar-event", label:"Agenda",       badge:agendaHoje||null, section:null },
     { to:"/veiculos",  icon:"ti-car",            label:"Veículos",     section:"ESTOQUE" },
     ...(isOwner() ? [{ to:"/equipe", icon:"ti-users", label:"Equipe", section:"ADMIN" }] : []),
+    ...(isManager() ? [{ to:"/contatos-perdidos", icon:"ti-alert-triangle", label:"Contatos perdidos", section:isOwner()?null:"ADMIN" }] : []),
   ];
 
   const sections = [];
