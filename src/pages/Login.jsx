@@ -103,7 +103,7 @@ export default function Login() {
         </button>
 
         {/* esqueci senha */}
-        <button onClick={()=>window.open("https://wa.me/5549988599357?text=Preciso+redefinir+minha+senha+do+painel","_blank")}
+        <button onClick={()=>window.open("https://wa.me/5549988589357?text=Preciso+redefinir+minha+senha+do+painel","_blank")}
           style={{display:"block",width:"100%",textAlign:"center",background:"none",border:"none",
             color:"var(--muted)",fontSize:13,cursor:"pointer",marginTop:14,padding:6}}>
           Esqueci minha senha
