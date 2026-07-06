@@ -27,6 +27,12 @@ export default function Veiculos() {
     setVeiculos(data);
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const editarId = new URLSearchParams(window.location.search).get("editar");
+    if (!editarId || !veiculos.length) return;
+    const v = veiculos.find(v => String(v.id) === editarId);
+    if (v) abrirEditar(v);
+  }, [veiculos]);
 
   function abrirCriar() { setForm(empty); setErro(""); setModal("criar"); }
   function abrirEditar(v) { setForm({...v}); setErro(""); setModal(v); }

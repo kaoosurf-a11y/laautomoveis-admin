@@ -1,6 +1,23 @@
 import { useState, useEffect } from "react";
 import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
+import { api as veiculosApi } from "../lib/api.js";
 import { isManager, getUser, getRole } from "../auth.js";
+
+const ESTAGIOS_NAO_COMPROU=[
+  {key:"sem_credito",label:"Sem crédito"},
+  {key:"vai_pensar",label:"Vai pensar"},
+  {key:"nao_achou_carro",label:"Não achou o carro"},
+  {key:"parou_responder",label:"Parou de responder"},
+];
+
+// Acha o veículo do estoque que bate com o texto livre do agendamento (ex: "Onix 2019"),
+// pra linkar direto na tela de edição dele no lembrete de "Venda feita". Best-effort —
+// se não achar, o lembrete ainda aparece, só sem o link direto.
+function acharVeiculo(veiculos,textoLivre){
+  if(!textoLivre)return null;
+  const alvo=textoLivre.toLowerCase();
+  return veiculos.find(v=>alvo.includes(v.modelo.toLowerCase()))||null;
+}
 
 const DIAS_SEMANA=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
@@ -188,17 +205,26 @@ function mesmoDia(a,b){return a.toDateString()===b.toDateString();}
 function minAte(iso){return Math.round((new Date(iso)-Date.now())/60000);}
 function getStatus(ag){const m=minAte(ag.data_hora);if(ag.status==="confirmado"&&m>0&&m<=30)return "em_breve";return ag.status;}
 
-function AgendaCard({ag,onStatus,onReagendar,readOnly}){
+function AgendaCard({ag,onStatus,onReagendar,onVendaFeita,readOnly}){
   const status=getStatus(ag);
   const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"📅",cor:"var(--muted)"};
   const min=minAte(ag.data_hora);
   const[reagendando,setReagendando]=useState(false);
+  const[escolhendoMotivo,setEscolhendoMotivo]=useState(false);
   const iso=new Date(ag.data_hora);
   const[novaData,setNovaData]=useState(iso.toISOString().split("T")[0]);
   const[novoHorario,setNovoHorario]=useState(`${String(iso.getHours()).padStart(2,"0")}:${String(iso.getMinutes()).padStart(2,"0")}`);
   function confirmarReagendar(){
     onReagendar(ag.id,`${novaData}T${novoHorario}:00`);
     setReagendando(false);
+  }
+  function confirmarNaoComprou(estagio){
+    onStatus(ag.id,"realizado_nao_comprou",estagio);
+    setEscolhendoMotivo(false);
+  }
+  function confirmarComprou(){
+    onStatus(ag.id,"realizado_comprou");
+    onVendaFeita(ag);
   }
   return(
     <div className={`agenda-card ${status}`} style={{borderLeftColor:SBORDA[status]}}>
@@ -225,13 +251,24 @@ function AgendaCard({ag,onStatus,onReagendar,readOnly}){
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>setReagendando(false)}>Cancelar</button>
         </div>
       )}
+      {escolhendoMotivo&&(
+        <div style={{marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6}}>
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:6}}>Qual o motivo real?</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {ESTAGIOS_NAO_COMPROU.map(e=>(
+              <button key={e.key} className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>confirmarNaoComprou(e.key)}>{e.label}</button>
+            ))}
+            <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>setEscolhendoMotivo(false)}>Cancelar</button>
+          </div>
+        </div>
+      )}
       {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
-        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&<>
+        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&<>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setReagendando(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"realizado_comprou")}><i className="ti ti-check"/> Veio e comprou</button>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>onStatus(ag.id,"realizado_nao_comprou")}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={confirmarComprou}><i className="ti ti-check"/> Veio e comprou</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>setEscolhendoMotivo(true)}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
           <button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-user-x"/> Não veio</button>
         </>}
       </div>}
@@ -276,6 +313,8 @@ export default function Agenda(){
   const[bloqueioModal,setBloqueioModal]=useState(false);
   const[horariosModal,setHorariosModal]=useState(false);
   const[erro,setErro]=useState(null);
+  const[veiculos,setVeiculos]=useState([]);
+  const[vendaFeitaAviso,setVendaFeitaAviso]=useState(null);
 
   function load(){
     setLoading(true);setErro(null);
@@ -284,6 +323,7 @@ export default function Agenda(){
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   }
   useEffect(()=>{load();},[diaSel]);
+  useEffect(()=>{veiculosApi.getVeiculos().then(setVeiculos).catch(()=>{});},[]);
 
   const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-3+i);return d;});
   const hoje=new Date();
@@ -291,8 +331,9 @@ export default function Agenda(){
   const manha=doDia.filter(ag=>new Date(ag.data_hora).getHours()<12);
   const tarde=doDia.filter(ag=>new Date(ag.data_hora).getHours()>=12);
 
-  async function handleStatus(id,status){try{await atualizarStatusAgendamento(id,status);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
+  async function handleStatus(id,status,estagio){try{await atualizarStatusAgendamento(id,status,estagio);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
   async function handleReagendar(id,data_hora){try{await reagendarAgendamento(id,data_hora);}catch{}load();}
+  function handleVendaFeita(ag){setVendaFeitaAviso({ag,veiculo:acharVeiculo(veiculos,ag.veiculo)});}
 
   return(
     <div>
@@ -311,11 +352,28 @@ export default function Agenda(){
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
       {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} readOnly={readOnly}/>)}</>}
-      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} readOnly={readOnly}/>)}</>}
+      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
+      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&horariosModal&&<HorariosModal onClose={()=>setHorariosModal(false)}/>}
+      {vendaFeitaAviso&&(
+        <div className="modal-overlay" onClick={()=>setVendaFeitaAviso(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+            <div className="modal-handle"/>
+            <div className="modal-header"><h2 className="modal-title"><i className="ti ti-check" style={{color:"var(--success)"}}/> Venda registrada!</h2></div>
+            <p style={{fontSize:14,color:"var(--fg)",marginBottom:16}}>
+              Não esqueça de remover o anúncio do <strong>{vendaFeitaAviso.veiculo?`${vendaFeitaAviso.veiculo.marca} ${vendaFeitaAviso.veiculo.modelo}`:vendaFeitaAviso.ag.veiculo}</strong> do site e dos portais.
+            </p>
+            <div style={{display:"flex",gap:8}}>
+              <button className="btn btn-ghost" onClick={()=>setVendaFeitaAviso(null)} style={{flex:1}}>Fechar</button>
+              <a className="btn btn-primary" style={{flex:1,textAlign:"center"}} href={vendaFeitaAviso.veiculo?`/veiculos?editar=${vendaFeitaAviso.veiculo.id}`:"/veiculos"}>
+                <i className="ti ti-car"/> Ir para Veículos
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
