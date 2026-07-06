@@ -361,13 +361,14 @@ export default function Dashboard() {
       )}
 
       {/* Tabs */}
-      <div style={{display:"flex",gap:0,marginBottom:16,borderBottom:"1px solid var(--border)"}}>
+      <div style={{display:"flex",gap:8,marginBottom:16,paddingBottom:12,borderBottom:"1px solid var(--border)"}}>
         {ABAS.map(a=>(
           <button key={a.id} onClick={()=>setAba(a.id)}
-            style={{padding:"8px 16px",fontSize:13,fontWeight:aba===a.id?700:400,
-              color:aba===a.id?"#C8A84B":"var(--muted)",
-              background:"none",border:"none",cursor:"pointer",
-              borderBottom:aba===a.id?"2px solid #C8A84B":"2px solid transparent",
+            style={{padding:"8px 18px",fontSize:13,fontWeight:aba===a.id?700:500,
+              color:aba===a.id?"#0c0c0a":"var(--muted)",
+              background:aba===a.id?"#C8A84B":"transparent",
+              border:"none",borderRadius:99,cursor:"pointer",
+              boxShadow:aba===a.id?"0 2px 10px rgba(200,168,75,.35)":"none",
               transition:"all .2s"}}>
             {a.label}
           </button>

@@ -267,13 +267,16 @@ export default function CRM(){
             const leads=leadsDaColuna(est,kanban).filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
             return(
               <div key={est.key} className="kanban-col">
-                <div className="kanban-col-header" style={{borderTop:`2px solid ${est.cor}`}}>
+                <div className="kanban-col-header" style={{border:`3px solid ${est.cor}`,borderBottom:"none"}}>
                   <span className="kanban-col-title">{est.label}</span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
                 <div
                   className="kanban-cards"
-                  style={colunaSobre===est.key?{outline:`2px dashed ${est.cor}`,outlineOffset:-2}:undefined}
+                  style={{
+                    border:`3px solid ${est.cor}`,borderTop:"none",
+                    ...(colunaSobre===est.key?{outline:`2px dashed ${est.cor}`,outlineOffset:-2}:{}),
+                  }}
                   onDragOver={readOnly?undefined:e=>onColDragOver(e,est.key)}
                   onDragLeave={readOnly?undefined:()=>setColunaSobre(null)}
                   onDrop={readOnly?undefined:e=>onColDrop(e,est.key)}
