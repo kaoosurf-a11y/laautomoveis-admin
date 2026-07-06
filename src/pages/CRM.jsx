@@ -19,8 +19,10 @@ const FOLLOWUP_LABEL={
 // só ("negociando"/"Em negociação" — eram só fases sequenciais sem gatilho). sem_credito/
 // vai_pensar/nao_achou_carro/parou_responder são os "motivos pós-atendimento": arrastar
 // o card pra uma delas JÁ dispara o follow-up automático correspondente no backend
-// (routes/crm.js) — não tem passo separado de marcar tag. fechado_perdido continua
-// existindo como catch-all pra motivos que não se encaixam nas 4 específicas.
+// (routes/crm.js) — não tem passo separado de marcar tag.
+// "fechado_perdido" removida (decisão do Felipe, 2026-07: não faz sentido pra jornada
+// do cliente da loja). "bau" adicionada como novo catch-all genérico — vazia por
+// padrão, o vendedor move pra lá manualmente quando fizer sentido.
 const ESTAGIOS_ADMIN=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
@@ -29,8 +31,8 @@ const ESTAGIOS_ADMIN=[
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
   {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
   {key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
-  {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
+  {key:"bau",label:"Baú",cor:"#6b6b66"},
 ];
 // Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou — ele não
 // precisa das 2 colunas iniciais separadas, só decidir o desfecho. "Novo lead" e
@@ -44,8 +46,8 @@ const ESTAGIOS_VENDEDOR=[
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
   {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
   {key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
-  {key:"fechado_perdido",label:"Fechado (perdido)",cor:"#e05252"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
+  {key:"bau",label:"Baú",cor:"#6b6b66"},
 ];
 function leadsDaColuna(est,kanban){
   return est.estagiosDb ? est.estagiosDb.flatMap(k=>kanban[k]||[]) : (kanban[est.key]||[]);
@@ -61,7 +63,6 @@ function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],
 
 function LeadModal({lead,onClose,onMover,readOnly,estagios}){
   const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
-  const[motivoPerdido,setMotivoPerdido]=useState("");
   const[agendando,setAgendando]=useState(false);
   const[agendado,setAgendado]=useState(false);
   const colAtual=colunaVisual(estagios,est);
@@ -77,7 +78,6 @@ function LeadModal({lead,onClose,onMover,readOnly,estagios}){
     // (negociando) — o vendedor já deve ter conversado se está movendo de volta.
     const real=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : novoKey;
     setEst(real);
-    if(real==="fechado_perdido")return; // espera o motivo opcional antes de confirmar
     onMover(lead.id,real);
   }
   return(
@@ -133,12 +133,6 @@ function LeadModal({lead,onClose,onMover,readOnly,estagios}){
             <select className="form-input" value={colAtual?.key||est} onChange={e=>handleEstagio(e.target.value)}>
               {estagios.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
             </select>
-            {est==="fechado_perdido"&&(
-              <div style={{display:"flex",gap:6,marginTop:8}}>
-                <input className="form-input" style={{marginBottom:0,fontSize:12}} placeholder="Motivo (opcional)" value={motivoPerdido} onChange={e=>setMotivoPerdido(e.target.value)}/>
-                <button className="btn btn-primary" style={{padding:"6px 14px",fontSize:12,flexShrink:0}} onClick={()=>onMover(lead.id,"fechado_perdido",motivoPerdido||undefined)}>Confirmar</button>
-              </div>
-            )}
           </>)}
         </div>
         <button className="btn btn-ghost" onClick={onClose} style={{width:"100%"}}>Fechar</button>
@@ -228,13 +222,6 @@ export default function CRM(){
     setColunaSobre(null);
     const leadId=e.dataTransfer.getData("text/plain");
     if(!leadId)return;
-    if(estKey==="fechado_perdido"){
-      // catch-all com motivo opcional — abre o card em vez de mover direto,
-      // já com o estágio pré-selecionado, pra não perder o passo de motivo.
-      const lead=todos.find(l=>String(l.id)===leadId);
-      if(lead)setLeadSel({...lead,estagio:"fechado_perdido"});
-      return;
-    }
     // Coluna virtual ("Para atender", vendedor) não é um estagio real — arrastar de
     // volta pra ela manda pro último estagio do grupo (negociando).
     const alvo=estagios.find(e=>e.key===estKey);
