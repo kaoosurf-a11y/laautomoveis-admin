@@ -22,7 +22,7 @@ export async function login(usuario, senha, persist = false) {
       body: JSON.stringify({ usuario: u, senha }),
     });
     const data = await res.json();
-    if (!res.ok) return { ok:false, erro: data.error || "Usuário ou senha incorretos" };
+    if (!res.ok) return { ok:false, erro: data.error || "E-mail ou senha incorretos" };
     saveSession(data.token, data.user, persist);
     return { ok:true, user:data.user };
   } catch(_) {

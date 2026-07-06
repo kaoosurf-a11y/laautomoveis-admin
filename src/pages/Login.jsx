@@ -13,11 +13,11 @@ export default function Login() {
 
   async function handleLogin(e) {
     e?.preventDefault();
-    if (!usuario.trim() || !senha.trim()) { setErro("Preencha usuário e senha"); return; }
+    if (!usuario.trim() || !senha.trim()) { setErro("Preencha e-mail e senha"); return; }
     setErro(""); setLoading(true);
     const r = await login(usuario, senha, manter);
     setLoading(false);
-    if (!r.ok) { setErro(r.erro || "Usuário ou senha incorretos"); return; }
+    if (!r.ok) { setErro(r.erro || "E-mail ou senha incorretos"); return; }
     navigate(r.user.role === "agent" ? "/crm" : "/dashboard", { replace:true });
   }
 
@@ -52,10 +52,10 @@ export default function Login() {
           </div>
         )}
 
-        {/* usuário */}
+        {/* e-mail */}
         <div className="form-group">
-          <label className="form-label">Usuário</label>
-          <input className="form-input" type="text" placeholder="seu usuário" value={usuario}
+          <label className="form-label">E-mail</label>
+          <input className="form-input" type="email" placeholder="seu e-mail" value={usuario}
             onChange={e=>setUsuario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()}
             autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username"/>
         </div>
