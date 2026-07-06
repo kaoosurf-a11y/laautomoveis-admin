@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
+import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, pedirReagendamentoLara, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { isManager, getUser, getRole } from "../auth.js";
 
@@ -196,7 +196,7 @@ function BloqueioModal({onClose,onCriado}){
 }
 
 const TIPOS={test_drive:{label:"Test drive",icon:"🚗",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"🏢",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"📋",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"🤝",cor:"#8E44AD"}};
-const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)"};
+const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)",aguardando_reagendamento_lara:"var(--brand)"};
 
 function fmtH(iso){const d=new Date(iso);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
 function fmtHF(iso,dur){const d=new Date(iso);d.setMinutes(d.getMinutes()+dur);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
@@ -205,18 +205,25 @@ function mesmoDia(a,b){return a.toDateString()===b.toDateString();}
 function minAte(iso){return Math.round((new Date(iso)-Date.now())/60000);}
 function getStatus(ag){const m=minAte(ag.data_hora);if(ag.status==="confirmado"&&m>0&&m<=30)return "em_breve";return ag.status;}
 
-function AgendaCard({ag,onStatus,onReagendar,onVendaFeita,readOnly}){
+function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOnly}){
   const status=getStatus(ag);
   const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"📅",cor:"var(--muted)"};
   const min=minAte(ag.data_hora);
+  const[escolhendoReagendar,setEscolhendoReagendar]=useState(false);
   const[reagendando,setReagendando]=useState(false);
   const[escolhendoMotivo,setEscolhendoMotivo]=useState(false);
+  const[pedidoLaraEnviado,setPedidoLaraEnviado]=useState(false);
   const iso=new Date(ag.data_hora);
   const[novaData,setNovaData]=useState(iso.toISOString().split("T")[0]);
   const[novoHorario,setNovoHorario]=useState(`${String(iso.getHours()).padStart(2,"0")}:${String(iso.getMinutes()).padStart(2,"0")}`);
   function confirmarReagendar(){
     onReagendar(ag.id,`${novaData}T${novoHorario}:00`);
     setReagendando(false);
+  }
+  function pedirLara(){
+    onReagendarLara(ag.id);
+    setEscolhendoReagendar(false);
+    setPedidoLaraEnviado(true);
   }
   function confirmarNaoComprou(estagio){
     onStatus(ag.id,"realizado_nao_comprou",estagio);
@@ -243,6 +250,18 @@ function AgendaCard({ag,onStatus,onReagendar,onVendaFeita,readOnly}){
         <a href={`https://wa.me/55${ag.cliente_tel}`} target="_blank" rel="noopener noreferrer" className="btn-wa" style={{padding:"4px 10px"}}><i className="ti ti-brand-whatsapp" style={{fontSize:14}}/> WA</a>
       </div>
       {ag.observacoes&&<div style={{fontSize:12,color:"var(--muted)",fontStyle:"italic",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>{ag.observacoes}</div>}
+      {status==="aguardando_reagendamento_lara"&&!pedidoLaraEnviado&&<div style={{fontSize:12,color:"var(--brand)",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>🤖 Aguardando a Lara remarcar com o cliente pelo WhatsApp...</div>}
+      {pedidoLaraEnviado&&<div style={{fontSize:12,color:"var(--brand)",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>🤖 Pedido enviado! A Lara vai negociar um novo horário com o cliente.</div>}
+      {escolhendoReagendar&&(
+        <div style={{marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6}}>
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:6}}>Como reagendar?</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>{setReagendando(true);setEscolhendoReagendar(false);}}><i className="ti ti-calendar-time"/> Escolher novo horário agora</button>
+            <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={pedirLara}><i className="ti ti-robot"/> Pedir pra Lara reagendar com o cliente</button>
+            <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>setEscolhendoReagendar(false)}>Cancelar</button>
+          </div>
+        </div>
+      )}
       {reagendando&&(
         <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6,flexWrap:"wrap"}}>
           <input className="form-input" type="date" style={{marginBottom:0,fontSize:12,flex:1,minWidth:120}} value={novaData} onChange={e=>setNovaData(e.target.value)}/>
@@ -265,8 +284,8 @@ function AgendaCard({ag,onStatus,onReagendar,onVendaFeita,readOnly}){
       {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
-        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&<>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setReagendando(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
+        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&!escolhendoReagendar&&<>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setEscolhendoReagendar(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={confirmarComprou}><i className="ti ti-check"/> Veio e comprou</button>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>setEscolhendoMotivo(true)}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
           <button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-user-x"/> Não veio</button>
@@ -333,6 +352,7 @@ export default function Agenda(){
 
   async function handleStatus(id,status,estagio){try{await atualizarStatusAgendamento(id,status,estagio);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
   async function handleReagendar(id,data_hora){try{await reagendarAgendamento(id,data_hora);}catch{}load();}
+  async function handleReagendarLara(id){try{await pedirReagendamentoLara(id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status:"aguardando_reagendamento_lara"}:ag));}
   function handleVendaFeita(ag){setVendaFeitaAviso({ag,veiculo:acharVeiculo(veiculos,ag.veiculo)});}
 
   return(
@@ -352,8 +372,8 @@ export default function Agenda(){
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
       {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
-      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
+      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
+      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&horariosModal&&<HorariosModal onClose={()=>setHorariosModal(false)}/>}
