@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getContatosNaoProcessados } from "../api.js";
+import { getContatosNaoProcessados, resolverContato } from "../api.js";
 
 function fmtDataHora(iso){
   const d = new Date(iso);
@@ -24,6 +24,11 @@ export default function ContatosPerdidos(){
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   }
   useEffect(()=>{load();},[]);
+
+  async function resolver(id){
+    try{await resolverContato(id);}catch{return;}
+    setLista(l=>l.filter(c=>c.id!==id));
+  }
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
@@ -52,8 +57,9 @@ export default function ContatosPerdidos(){
                 Recebido em {fmtDataHora(c.timestamp_recebimento)} · {haQuanto(c.timestamp_recebimento)}
               </div>
             </div>
-            <div className="fu-actions">
+            <div className="fu-actions" style={{display:"flex",gap:6,alignItems:"center"}}>
               {c.telefone&&<a href={`https://wa.me/55${c.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/> Responder</a>}
+              <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>resolver(c.id)} title="Já tratei esse caso, parar de alertar"><i className="ti ti-check" style={{fontSize:14}}/> Marcar resolvido</button>
             </div>
           </div>
         ))}
