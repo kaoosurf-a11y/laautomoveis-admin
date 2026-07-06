@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, pedirReagendamentoLara, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
+import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, pedirReagendamentoLara, getResumoMes, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { isManager, getUser, getRole } from "../auth.js";
 
@@ -323,6 +323,57 @@ function NovoModal({onClose,onCriado}){
   );
 }
 
+const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DIAS_SEMANA_CURTO=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
+  const ano=mesAtual.getFullYear(), mes=mesAtual.getMonth();
+  const primeiroDia=new Date(ano,mes,1);
+  const totalDias=new Date(ano,mes+1,0).getDate();
+  const offsetInicial=primeiroDia.getDay();
+  const hoje=new Date();
+  const contagem={};
+  resumo.forEach(r=>{contagem[r.data]=r.total;});
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+  const celulas=[];
+  for(let i=0;i<offsetInicial;i++) celulas.push(null);
+  for(let dia=1;dia<=totalDias;dia++) celulas.push(new Date(ano,mes,dia));
+
+  return(
+    <div style={{marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <button className="btn btn-ghost" style={{padding:"6px 10px"}} onClick={()=>onMudarMes(-1)}><i className="ti ti-chevron-left"/></button>
+        <span style={{fontSize:15,fontWeight:700,color:"var(--fg)"}}>{MESES[mes]} {ano}</span>
+        <button className="btn btn-ghost" style={{padding:"6px 10px"}} onClick={()=>onMudarMes(1)}><i className="ti ti-chevron-right"/></button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:4}}>
+        {DIAS_SEMANA_CURTO.map(n=><div key={n} style={{textAlign:"center",fontSize:11,color:"var(--muted)",fontWeight:600,padding:"4px 0"}}>{n}</div>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+        {celulas.map((d,i)=>{
+          if(!d) return <div key={i}/>;
+          const total=contagem[iso(d)]||0;
+          const isHoje=mesmoDia(d,hoje);
+          const isSel=mesmoDia(d,diaSel);
+          return(
+            <button key={i} onClick={()=>onSelecionarDia(d)} style={{
+              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+              minHeight:52,borderRadius:8,cursor:"pointer",
+              border:isSel?"2px solid var(--brand)":isHoje?"1px solid var(--brand)":"1px solid var(--border)",
+              background:isSel?"rgba(200,168,75,.12)":"var(--surface2)",
+              color:"var(--fg)",padding:4,
+            }}>
+              <span style={{fontSize:13,fontWeight:isHoje?700:500}}>{d.getDate()}</span>
+              {total>0&&<span style={{fontSize:10,padding:"1px 7px",borderRadius:99,background:"var(--brand)",color:"#1a1a1a",fontWeight:700}}>{total}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Agenda(){
   const readOnly=getRole()==="manager";
   const[ags,setAgs]=useState([]);
@@ -334,6 +385,9 @@ export default function Agenda(){
   const[erro,setErro]=useState(null);
   const[veiculos,setVeiculos]=useState([]);
   const[vendaFeitaAviso,setVendaFeitaAviso]=useState(null);
+  const[visao,setVisao]=useState("semana");
+  const[mesAtual,setMesAtual]=useState(()=>{const d=new Date();d.setDate(1);return d;});
+  const[resumoMes,setResumoMes]=useState([]);
 
   function load(){
     setLoading(true);setErro(null);
@@ -343,6 +397,14 @@ export default function Agenda(){
   }
   useEffect(()=>{load();},[diaSel]);
   useEffect(()=>{veiculosApi.getVeiculos().then(setVeiculos).catch(()=>{});},[]);
+  useEffect(()=>{
+    if(visao!=="mes")return;
+    getResumoMes(mesAtual.getFullYear(),mesAtual.getMonth()+1).then(setResumoMes).catch(()=>setResumoMes([]));
+  },[visao,mesAtual]);
+
+  function mudarMes(delta){
+    setMesAtual(m=>{const n=new Date(m);n.setMonth(n.getMonth()+delta);return n;});
+  }
 
   const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-3+i);return d;});
   const hoje=new Date();
@@ -365,9 +427,17 @@ export default function Agenda(){
           <button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> Agendar</button>
         </div>}
       </div>
-      <div className="dias-nav">
-        {dias.map((d,i)=>{const isHoje=mesmoDia(d,hoje);const isSel=mesmoDia(d,diaSel);const ns=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return(<button key={i} className={`dia-btn ${isHoje?"hoje":""} ${isSel?"selected":""}`} onClick={()=>setDiaSel(d)}><span className="dia-num">{d.getDate()}</span><span className="dia-nome">{ns[d.getDay()]}</span></button>);})}
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <button className={`btn ${visao==="semana"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("semana")}><i className="ti ti-calendar-week"/> Semana</button>
+        <button className={`btn ${visao==="mes"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("mes")}><i className="ti ti-calendar"/> Mês</button>
       </div>
+      {visao==="semana"?(
+        <div className="dias-nav">
+          {dias.map((d,i)=>{const isHoje=mesmoDia(d,hoje);const isSel=mesmoDia(d,diaSel);const ns=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return(<button key={i} className={`dia-btn ${isHoje?"hoje":""} ${isSel?"selected":""}`} onClick={()=>setDiaSel(d)}><span className="dia-num">{d.getDate()}</span><span className="dia-nome">{ns[d.getDay()]}</span></button>);})}
+        </div>
+      ):(
+        <CalendarioMes mesAtual={mesAtual} onMudarMes={mudarMes} resumo={resumoMes} diaSel={diaSel} onSelecionarDia={setDiaSel}/>
+      )}
       <div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>{fmtDia(diaSel)} · {doDia.filter(a=>a.status!=="cancelado").length} agendamentos</div>
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
