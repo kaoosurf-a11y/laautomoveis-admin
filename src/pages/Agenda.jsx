@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAgenda, criarAgendamento, atualizarStatusAgendamento, getHorarios, criarHorario, removerHorario } from "../api.js";
+import { getAgenda, criarAgendamento, atualizarStatusAgendamento, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
 import { isManager, getUser, getRole } from "../auth.js";
 
 const DIAS_SEMANA=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
@@ -60,6 +60,7 @@ function OcupadoCard({ag}){
     <div className="agenda-card" style={{borderLeftColor:"var(--muted)",opacity:.6}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontSize:14,fontWeight:600,color:"var(--muted)"}}>
+          {ag.recorrente&&<i className="ti ti-repeat" style={{fontSize:12,marginRight:4}}/>}
           {fmtH(ag.data_hora)} — {fmtHF(ag.data_hora,ag.duracao_min)} · Ocupado
         </span>
         <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{ag.vendedor_iniciais}</div>
@@ -68,23 +69,107 @@ function OcupadoCard({ag}){
   );
 }
 
+function BloqueioCard({ag}){
+  return(
+    <div className="agenda-card" style={{borderLeftColor:"var(--danger)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:14,fontWeight:600,color:"var(--fg)"}}>
+          {fmtH(ag.data_hora)} — {fmtHF(ag.data_hora,ag.duracao_min)}
+        </span>
+        <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{ag.vendedor_iniciais}</div>
+      </div>
+      <span className="badge badge-warning" style={{fontSize:11,marginTop:6,display:"inline-flex",alignItems:"center",gap:4}}>
+        <i className={`ti ${ag.recorrente?"ti-repeat":"ti-lock"}`} style={{fontSize:12}}/>
+        {ag.recorrente?"Recorrente":"Bloqueado"} {ag.observacoes?`· ${ag.observacoes}`:""}
+      </span>
+    </div>
+  );
+}
+
+const DIAS_CURTO=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const DIAS_UTEIS=[1,2,3,4,5];
+
+function somaMin(horario,min){
+  const[h,m]=horario.split(":").map(Number);
+  const total=h*60+m+min;
+  const hh=Math.floor((total/60)%24), mm=total%60;
+  return `${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
+}
+
 function BloqueioModal({onClose,onCriado}){
   const[form,setForm]=useState({data:new Date().toISOString().split("T")[0],horario:"12:00",duracao_min:60,observacoes:"Almoço"});
+  const[recorrente,setRecorrente]=useState(false);
+  const[diasSemana,setDiasSemana]=useState(DIAS_UTEIS);
+  const[existentes,setExistentes]=useState([]);
+  const[loadingExistentes,setLoadingExistentes]=useState(true);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  function loadExistentes(){
+    getBloqueiosRecorrentes().then(r=>{setExistentes(r);setLoadingExistentes(false);}).catch(()=>setLoadingExistentes(false));
+  }
+  useEffect(()=>{loadExistentes();},[]);
+
+  function toggleDia(d){
+    setDiasSemana(ds=>ds.includes(d)?ds.filter(x=>x!==d):[...ds,d].sort());
+  }
   async function submit(){
-    const data_hora=`${form.data}T${form.horario}:00`;
-    try{await criarAgendamento({tipo:"bloqueio",data_hora,duracao_min:form.duracao_min,observacoes:form.observacoes});}catch{}
+    if(recorrente){
+      if(!diasSemana.length)return;
+      const hora_fim=somaMin(form.horario,form.duracao_min);
+      try{await criarBloqueioRecorrente({dias_semana:diasSemana,hora_inicio:form.horario,hora_fim,motivo:form.observacoes});}catch{}
+    }else{
+      const data_hora=`${form.data}T${form.horario}:00`;
+      try{await criarAgendamento({tipo:"bloqueio",data_hora,duracao_min:form.duracao_min,observacoes:form.observacoes});}catch{}
+    }
     onCriado();onClose();
+  }
+  async function removerExistente(id){
+    try{await removerBloqueioRecorrente(id);}catch{}
+    loadExistentes();onCriado();
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-handle"/>
         <div className="modal-header"><h2 className="modal-title">Bloquear horário</h2><button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button></div>
-        <div className="form-grid">
+
+        {!loadingExistentes&&existentes.length>0&&(
+          <div style={{marginBottom:14}}>
+            <div className="form-label" style={{marginBottom:6}}>Bloqueios recorrentes ativos</div>
+            {existentes.map(b=>(
+              <div key={b.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+                <span className="badge badge-warning" style={{fontSize:11,display:"inline-flex",alignItems:"center",gap:4}}>
+                  <i className="ti ti-repeat" style={{fontSize:11}}/> {b.hora_inicio.slice(0,5)}–{b.hora_fim.slice(0,5)}
+                </span>
+                <span style={{fontSize:12,color:"var(--muted)",flex:1}}>
+                  {b.dias_semana.map(d=>DIAS_CURTO[d]).join(", ")} · {b.motivo}
+                </span>
+                <i className="ti ti-x" style={{fontSize:14,cursor:"pointer",color:"var(--muted)"}} onClick={()=>removerExistente(b.id)}/>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,cursor:"pointer",fontSize:13}}>
+          <input type="checkbox" checked={recorrente} onChange={e=>setRecorrente(e.target.checked)}/>
+          Repetir toda semana (ex: horário de almoço)
+        </label>
+
+        {recorrente?(
+          <div className="form-group">
+            <label className="form-label">Dias da semana</label>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {DIAS_CURTO.map((n,i)=>(
+                <span key={i} className={`badge ${diasSemana.includes(i)?"badge-brand":""}`} style={{cursor:"pointer",padding:"6px 10px",border:diasSemana.includes(i)?"none":"1px solid var(--border)"}} onClick={()=>toggleDia(i)}>{n}</span>
+              ))}
+            </div>
+          </div>
+        ):(
           <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>set("data",e.target.value)} min={new Date().toISOString().split("T")[0]}/></div>
-          <div className="form-group"><label className="form-label">Horário</label><input className="form-input" type="time" value={form.horario} onChange={e=>set("horario",e.target.value)}/></div>
-          <div className="form-group"><label className="form-label">Duração</label><select className="form-input" value={form.duracao_min} onChange={e=>set("duracao_min",+e.target.value)}><option value={30}>30 min</option><option value={60}>1 hora</option><option value={120}>2 horas</option><option value={240}>4 horas</option></select></div>
+        )}
+        <div className="form-grid">
+          <div className="form-group"><label className="form-label">Horário {recorrente?"de início":""}</label><input className="form-input" type="time" value={form.horario} onChange={e=>set("horario",e.target.value)}/></div>
+          <div className="form-group"><label className="form-label">Duração</label><select className="form-input" value={form.duracao_min} onChange={e=>set("duracao_min",+e.target.value)}><option value={30}>30 min</option><option value={60}>1 hora</option><option value={90}>1h30</option><option value={120}>2 horas</option><option value={240}>4 horas</option></select></div>
         </div>
         <div className="form-group"><label className="form-label">Motivo</label><input className="form-input" value={form.observacoes} onChange={e=>set("observacoes",e.target.value)} placeholder="Ex: Almoço, compromisso pessoal"/></div>
         <div style={{display:"flex",gap:8}}><button className="btn btn-ghost" onClick={onClose} style={{flex:1}}>Cancelar</button><button className="btn btn-primary" onClick={submit} style={{flex:1}}><i className="ti ti-lock"/> Bloquear</button></div>
@@ -207,8 +292,8 @@ export default function Agenda(){
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
       {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
-      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
+      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
+      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&horariosModal&&<HorariosModal onClose={()=>setHorariosModal(false)}/>}

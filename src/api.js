@@ -60,6 +60,9 @@ export async function atualizarStatusAgendamento(id,s){ return req(`/api/agenda/
 export async function getHorarios()        { return req("/api/agenda/horarios"); }
 export async function criarHorario(d)       { return req("/api/agenda/horarios",{method:"POST",body:JSON.stringify(d)}); }
 export async function removerHorario(id)    { return req(`/api/agenda/horarios/${id}`,{method:"DELETE"}); }
+export async function getBloqueiosRecorrentes()      { return req("/api/agenda/bloqueios-recorrentes"); }
+export async function criarBloqueioRecorrente(d)     { return req("/api/agenda/bloqueios-recorrentes",{method:"POST",body:JSON.stringify(d)}); }
+export async function removerBloqueioRecorrente(id)  { return req(`/api/agenda/bloqueios-recorrentes/${id}`,{method:"DELETE"}); }
 export async function getContatosNaoProcessados() { return req("/api/contatos/nao-processados"); }
 
 const MOCK_VEICULOS=[
