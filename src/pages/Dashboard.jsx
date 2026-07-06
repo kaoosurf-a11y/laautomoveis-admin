@@ -117,7 +117,7 @@ function TabJornada({ data }) {
                 <div style={{background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 16px",textAlign:"center",minWidth:90}}>
                   <div style={{fontSize:22,marginBottom:4}}>{e.icone}</div>
                   <div style={{fontSize:12,color:"var(--fg)",fontWeight:500}}>{e.nome}</div>
-                  <div style={{fontSize:13,color:"#C8A84B",fontWeight:700,marginTop:2}}>{e.tempo}</div>
+                  <div style={{fontSize:13,color:e.tempo?"#C8A84B":"var(--muted)",fontWeight:e.tempo?700:400,marginTop:2}}>{e.tempo||"sem dados"}</div>
                 </div>
                 {i < jornada.etapas.length-1 && (
                   <div style={{color:"var(--muted)",fontSize:16,padding:"0 4px"}}>→</div>
@@ -127,12 +127,14 @@ function TabJornada({ data }) {
           </div>
         </div>
         <div style={{marginTop:14,fontSize:13,color:"var(--muted)"}}>
-          Ciclo médio total: <strong style={{color:"#C8A84B"}}>{jornada.ciclo_medio_dias} dias</strong>
+          Ciclo médio total: {jornada.ciclo_medio_dias!=null?<strong style={{color:"#C8A84B"}}>{jornada.ciclo_medio_dias} dias</strong>:"sem dados ainda (nenhuma venda fechada completa no período)"}
         </div>
         {/* barra de progresso do ciclo */}
-        <div style={{marginTop:6,height:4,background:"var(--border)",borderRadius:4}}>
-          <div style={{height:"100%",width:`${Math.min(jornada.ciclo_medio_dias/10*100,100)}%`,background:"#C8A84B",borderRadius:4}}/>
-        </div>
+        {jornada.ciclo_medio_dias!=null&&(
+          <div style={{marginTop:6,height:4,background:"var(--border)",borderRadius:4}}>
+            <div style={{height:"100%",width:`${Math.min(jornada.ciclo_medio_dias/10*100,100)}%`,background:"#C8A84B",borderRadius:4}}/>
+          </div>
+        )}
       </div>
 
       {/* Agente IA */}
@@ -140,13 +142,11 @@ function TabJornada({ data }) {
       <div className="metrics-grid" style={{marginBottom:12}}>
         {[
           { label:"LEADS QUALIF.",  value:agente_ia.leads_qualif,  sub:`quentes: ${agente_ia.leads_quentes}` },
-          { label:"TEMPO QUALIF.",  value:`${agente_ia.tempo_qualif_min}min`, sub:"1 eficiente" },
           { label:"SCORE QUENTE",   value:agente_ia.score_quente,   sub:"≥60 pts" },
           { label:"MORNOS REAT.",   value:agente_ia.mornos_reat,    sub:"nutrição" },
           { label:"TAXA RESPOSTA",  value:`${agente_ia.taxa_resposta}%`, sub:"responderam" },
           { label:"HANDOFFS",       value:agente_ia.handoffs,       sub:"para vendedor" },
           { label:"FOLLOW-UPS",     value:agente_ia.followups,      sub:"enviados" },
-          { label:"NPS MÉDIO",      value:agente_ia.nps_medio,      sub:"promotores" },
         ].map((m,i)=>(
           <div key={i} className="metric-card">
             <div className="metric-label" style={{fontSize:10}}>{m.label}</div>
@@ -232,41 +232,19 @@ function TabEstoque({ data }) {
           <div className="metric-delta" style={{color:"var(--muted)"}}>meta: {estoque.meta_dias}d</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-eye"/> Views Hoje</div>
-          <div className="metric-value">{estoque.views_hoje}</div>
-          <div className="metric-delta up">+{estoque.views_delta}</div>
-        </div>
-        <div className="metric-card">
           <div className="metric-label"><i className="ti ti-alert-triangle"/> Parados +30d</div>
           <div className="metric-value" style={{color:"#e07b7b"}}>{estoque.parados_30d} ⚠</div>
           <div className="metric-delta down">atenção!</div>
         </div>
       </div>
 
-      {/* Mais visualizados */}
-      <div className="card" style={{marginBottom:12}}>
-        <div className="card-title"><i className="ti ti-star"/> Mais visualizados</div>
-        {estoque.mais_visualizados.map((v,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
-            <span style={{fontSize:12,color:"var(--muted)",minWidth:18}}>{i+1}.</span>
-            <span style={{flex:1,fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
-            <span style={{fontSize:12,color:"var(--muted)"}}>{v.views} views</span>
-            <span style={{
-              fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,
-              background: v.dias<=10?"#4caf7d22":v.dias<=20?"#C8A84B22":"#e07b7b22",
-              color:       v.dias<=10?"#4caf7d"  :v.dias<=20?"#C8A84B"  :"#e07b7b",
-            }}>{v.dias}d</span>
-          </div>
-        ))}
-      </div>
-
       {/* Parados — atenção */}
       <div className="card" style={{marginBottom:12,border:"1px solid #e07b7b44"}}>
         <div className="card-title" style={{color:"#e07b7b"}}><i className="ti ti-alert-circle"/> Parados — atenção</div>
+        {estoque.parados_lista.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Nenhum veículo parado há mais de 30 dias.</p>}
         {estoque.parados_lista.map((v,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
             <span style={{flex:1,fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
-            <span style={{fontSize:12,color:"var(--muted)"}}>{v.views} views</span>
             <span style={{fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,background:"#e07b7b22",color:"#e07b7b"}}>{v.dias}d</span>
           </div>
         ))}
