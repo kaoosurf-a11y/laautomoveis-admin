@@ -30,7 +30,7 @@ const ESTAGIOS_ADMIN=[
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
   {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
-  {key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
+  {key:"fechado_ganho",label:"Venda feita",cor:"#4caf7d"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
   {key:"bau",label:"Baú",cor:"#6b6b66"},
 ];
@@ -45,7 +45,7 @@ const ESTAGIOS_VENDEDOR=[
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
   {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
-  {key:"fechado_ganho",label:"Fechado (ganho)",cor:"#4caf7d"},
+  {key:"fechado_ganho",label:"Venda feita",cor:"#4caf7d"},
   {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
   {key:"bau",label:"Baú",cor:"#6b6b66"},
 ];
