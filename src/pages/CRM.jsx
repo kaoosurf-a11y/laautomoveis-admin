@@ -103,7 +103,7 @@ function LeadModal({lead,onClose,onMover,readOnly,estagios}){
             <div style={{fontSize:13,fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:4}}><Temp t={lead.temperatura}/>{lead.temperatura}</div>
           </div>
         </div>
-        {lead.telefone&&<div style={{marginBottom:14}}><a href={`https://wa.me/55${lead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp"/>{lead.telefone}</a></div>}
+        {lead.telefone&&<div style={{marginBottom:14}}><a href={lead.chatwoot_conv_id?`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${lead.chatwoot_conv_id}`:`https://wa.me/55${lead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp"/>{lead.telefone}</a></div>}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
           {lead.troca&&<span className="badge badge-warning"><i className="ti ti-arrows-exchange" style={{fontSize:12}}/>Tem troca</span>}
           {lead.financiamento&&<span className="badge badge-brand"><i className="ti ti-credit-card" style={{fontSize:12}}/>Financiamento</span>}
