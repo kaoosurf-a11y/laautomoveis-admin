@@ -65,6 +65,7 @@ export async function criarBloqueioRecorrente(d)     { return req("/api/agenda/b
 export async function removerBloqueioRecorrente(id)  { return req(`/api/agenda/bloqueios-recorrentes/${id}`,{method:"DELETE"}); }
 export async function getContatosNaoProcessados() { return req("/api/contatos/nao-processados"); }
 export async function resolverContato(id) { return req(`/api/contatos/${id}/resolver`,{method:"PATCH"}); }
+export async function getContatoChatwoot(id) { return req(`/api/contatos/${id}/chatwoot`); }
 
 const MOCK_VEICULOS=[
   {id:1,nome:"HB20 2022 1.0T Comfort",preco:52900,km:28000,cambio:"Automático",combustivel:"Flex",ano:2022,badge:"DESTAQUE",foto_url:null,publicado:true},

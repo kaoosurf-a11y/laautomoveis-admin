@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getContatosNaoProcessados, resolverContato } from "../api.js";
+import { getContatosNaoProcessados, resolverContato, getContatoChatwoot } from "../api.js";
 
 function fmtDataHora(iso){
   const d = new Date(iso);
@@ -17,6 +17,8 @@ export default function ContatosPerdidos(){
   const[lista,setLista]=useState([]);
   const[loading,setLoading]=useState(true);
   const[erro,setErro]=useState(null);
+  const[abrindo,setAbrindo]=useState(null);
+  const[fallbackAviso,setFallbackAviso]=useState(null);
 
   function load(){
     setLoading(true);setErro(null);
@@ -28,6 +30,18 @@ export default function ContatosPerdidos(){
   async function resolver(id){
     try{await resolverContato(id);}catch{return;}
     setLista(l=>l.filter(c=>c.id!==id));
+  }
+
+  async function responder(c){
+    setAbrindo(c.id);setFallbackAviso(null);
+    try{
+      const {conversation_id}=await getContatoChatwoot(c.id);
+      window.open(`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${conversation_id}`,"_blank","noopener,noreferrer");
+    }catch{
+      setFallbackAviso(c.id);
+      if(c.telefone)window.open(`https://wa.me/55${c.telefone.replace(/\D/g,"")}`,"_blank","noopener,noreferrer");
+    }
+    setAbrindo(null);
   }
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
@@ -57,9 +71,18 @@ export default function ContatosPerdidos(){
                 Recebido em {fmtDataHora(c.timestamp_recebimento)} · {haQuanto(c.timestamp_recebimento)}
               </div>
             </div>
-            <div className="fu-actions" style={{display:"flex",gap:6,alignItems:"center"}}>
-              {c.telefone&&<a href={`https://wa.me/55${c.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/> Responder</a>}
-              <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>resolver(c.id)} title="Já tratei esse caso, parar de alertar"><i className="ti ti-check" style={{fontSize:14}}/> Marcar resolvido</button>
+            <div>
+              <div className="fu-actions" style={{display:"flex",gap:6,alignItems:"center"}}>
+                <button className="btn-wa" style={{border:"none",cursor:"pointer"}} onClick={()=>responder(c)} disabled={abrindo===c.id}>
+                  {abrindo===c.id?<span className="spinner"/>:<i className="ti ti-brand-whatsapp" style={{fontSize:16}}/>} Responder
+                </button>
+                <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>resolver(c.id)} title="Já tratei esse caso, parar de alertar"><i className="ti ti-check" style={{fontSize:14}}/> Marcar resolvido</button>
+              </div>
+              {fallbackAviso===c.id&&(
+                <div style={{fontSize:11,color:"var(--warning)",marginTop:6,display:"flex",alignItems:"center",gap:4}}>
+                  <i className="ti ti-alert-triangle" style={{fontSize:12}}/> Não foi possível abrir o Chatwoot agora — abrindo o WhatsApp direto como alternativa.
+                </div>
+              )}
             </div>
           </div>
         ))}
