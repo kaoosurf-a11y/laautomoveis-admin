@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAgenda, criarAgendamento, atualizarStatusAgendamento, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
+import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
 import { isManager, getUser, getRole } from "../auth.js";
 
 const DIAS_SEMANA=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
@@ -188,10 +188,18 @@ function mesmoDia(a,b){return a.toDateString()===b.toDateString();}
 function minAte(iso){return Math.round((new Date(iso)-Date.now())/60000);}
 function getStatus(ag){const m=minAte(ag.data_hora);if(ag.status==="confirmado"&&m>0&&m<=30)return "em_breve";return ag.status;}
 
-function AgendaCard({ag,onStatus,readOnly}){
+function AgendaCard({ag,onStatus,onReagendar,readOnly}){
   const status=getStatus(ag);
   const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"📅",cor:"var(--muted)"};
   const min=minAte(ag.data_hora);
+  const[reagendando,setReagendando]=useState(false);
+  const iso=new Date(ag.data_hora);
+  const[novaData,setNovaData]=useState(iso.toISOString().split("T")[0]);
+  const[novoHorario,setNovoHorario]=useState(`${String(iso.getHours()).padStart(2,"0")}:${String(iso.getMinutes()).padStart(2,"0")}`);
+  function confirmarReagendar(){
+    onReagendar(ag.id,`${novaData}T${novoHorario}:00`);
+    setReagendando(false);
+  }
   return(
     <div className={`agenda-card ${status}`} style={{borderLeftColor:SBORDA[status]}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -209,11 +217,21 @@ function AgendaCard({ag,onStatus,readOnly}){
         <a href={`https://wa.me/55${ag.cliente_tel}`} target="_blank" rel="noopener noreferrer" className="btn-wa" style={{padding:"4px 10px"}}><i className="ti ti-brand-whatsapp" style={{fontSize:14}}/> WA</a>
       </div>
       {ag.observacoes&&<div style={{fontSize:12,color:"var(--muted)",fontStyle:"italic",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>{ag.observacoes}</div>}
+      {reagendando&&(
+        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6,flexWrap:"wrap"}}>
+          <input className="form-input" type="date" style={{marginBottom:0,fontSize:12,flex:1,minWidth:120}} value={novaData} onChange={e=>setNovaData(e.target.value)}/>
+          <input className="form-input" type="time" style={{marginBottom:0,fontSize:12,flex:1,minWidth:90}} value={novoHorario} onChange={e=>setNovoHorario(e.target.value)}/>
+          <button className="btn btn-primary" style={{fontSize:12,padding:"6px 10px"}} onClick={confirmarReagendar}>Confirmar</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>setReagendando(false)}>Cancelar</button>
+        </div>
+      )}
       {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
-        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&<>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"realizado")}><i className="ti ti-check"/> Realizado</button>
+        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&<>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setReagendando(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"realizado_comprou")}><i className="ti ti-check"/> Veio e comprou</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>onStatus(ag.id,"realizado_nao_comprou")}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
           <button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-user-x"/> Não veio</button>
         </>}
       </div>}
@@ -274,6 +292,7 @@ export default function Agenda(){
   const tarde=doDia.filter(ag=>new Date(ag.data_hora).getHours()>=12);
 
   async function handleStatus(id,status){try{await atualizarStatusAgendamento(id,status);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
+  async function handleReagendar(id,data_hora){try{await reagendarAgendamento(id,data_hora);}catch{}load();}
 
   return(
     <div>
@@ -292,8 +311,8 @@ export default function Agenda(){
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
       {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
-      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} readOnly={readOnly}/>)}</>}
+      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} readOnly={readOnly}/>)}</>}
+      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} readOnly={readOnly}/>)}</>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&horariosModal&&<HorariosModal onClose={()=>setHorariosModal(false)}/>}

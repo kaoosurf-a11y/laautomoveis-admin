@@ -57,6 +57,7 @@ export async function getAgenda(data) {
 }
 export async function criarAgendamento(d)             { return req("/api/agenda",{method:"POST",body:JSON.stringify(d)}); }
 export async function atualizarStatusAgendamento(id,s){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({status:s})}); }
+export async function reagendarAgendamento(id,data_hora){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({data_hora})}); }
 export async function getHorarios()        { return req("/api/agenda/horarios"); }
 export async function criarHorario(d)       { return req("/api/agenda/horarios",{method:"POST",body:JSON.stringify(d)}); }
 export async function removerHorario(id)    { return req(`/api/agenda/horarios/${id}`,{method:"DELETE"}); }

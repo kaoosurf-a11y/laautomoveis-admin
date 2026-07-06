@@ -15,7 +15,8 @@ export default function Layout({ children }) {
   useEffect(() => {
     const data = new Date().toISOString().split("T")[0];
     getAgenda(data).then(ags => {
-      const ativos = ags.filter(a => a.status !== "cancelado" && a.status !== "realizado");
+      const CONCLUIDOS = ["cancelado","realizado","realizado_comprou","realizado_nao_comprou"];
+      const ativos = ags.filter(a => !CONCLUIDOS.includes(a.status));
       setAgendaHoje(ativos.length);
     }).catch(() => {});
 
