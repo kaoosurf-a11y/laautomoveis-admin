@@ -341,31 +341,28 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
   for(let dia=1;dia<=totalDias;dia++) celulas.push(new Date(ano,mes,dia));
 
   return(
-    <div style={{marginBottom:16}}>
+    <div className="cal-mes-wrap">
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
         <button className="btn btn-ghost" style={{padding:"6px 10px"}} onClick={()=>onMudarMes(-1)}><i className="ti ti-chevron-left"/></button>
         <span style={{fontSize:15,fontWeight:700,color:"var(--fg)"}}>{MESES[mes]} {ano}</span>
         <button className="btn btn-ghost" style={{padding:"6px 10px"}} onClick={()=>onMudarMes(1)}><i className="ti ti-chevron-right"/></button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:4}}>
-        {DIAS_SEMANA_CURTO.map(n=><div key={n} style={{textAlign:"center",fontSize:11,color:"var(--muted)",fontWeight:600,padding:"4px 0"}}>{n}</div>)}
+      <div className="cal-grid" style={{marginBottom:4}}>
+        {DIAS_SEMANA_CURTO.map(n=><div key={n} className="cal-dow"><span className="xs-inline">{n[0]}</span><span className="sm-inline">{n}</span></div>)}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+      <div className="cal-grid">
         {celulas.map((d,i)=>{
           if(!d) return <div key={i}/>;
           const total=contagem[iso(d)]||0;
           const isHoje=mesmoDia(d,hoje);
           const isSel=mesmoDia(d,diaSel);
           return(
-            <button key={i} onClick={()=>onSelecionarDia(d)} style={{
-              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-              minHeight:52,borderRadius:8,cursor:"pointer",
+            <button key={i} className="cal-cel" onClick={()=>onSelecionarDia(d)} style={{
               border:isSel?"2px solid var(--brand)":isHoje?"1px solid var(--brand)":"1px solid var(--border)",
               background:isSel?"rgba(200,168,75,.12)":"var(--surface2)",
-              color:"var(--fg)",padding:4,
             }}>
-              <span style={{fontSize:13,fontWeight:isHoje?700:500}}>{d.getDate()}</span>
-              {total>0&&<span style={{fontSize:10,padding:"1px 7px",borderRadius:99,background:"var(--brand)",color:"#1a1a1a",fontWeight:700}}>{total}</span>}
+              <span className="cal-cel-num" style={{fontWeight:isHoje?700:500}}>{d.getDate()}</span>
+              {total>0&&<span className="cal-cel-badge">{total}</span>}
             </button>
           );
         })}
@@ -421,15 +418,15 @@ export default function Agenda(){
     <div>
       <div className="page-header">
         <h1 className="page-title"><i className="ti ti-calendar-event"/> Agenda</h1>
-        {!readOnly&&<div style={{display:"flex",gap:8}}>
-          <button className="btn btn-ghost" onClick={()=>setHorariosModal(true)}><i className="ti ti-clock"/> Meus horários</button>
-          <button className="btn btn-ghost" onClick={()=>setBloqueioModal(true)}><i className="ti ti-lock"/> Bloquear horário</button>
-          <button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> Agendar</button>
+        {!readOnly&&<div className="agenda-hdr-actions">
+          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setHorariosModal(true)}><i className="ti ti-clock"/> <span className="sm-inline">Meus horários</span></button>
+          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setBloqueioModal(true)}><i className="ti ti-lock"/> <span className="sm-inline">Bloquear horário</span></button>
+          <button className="btn btn-primary agenda-hdr-btn" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> <span className="sm-inline">Agendar</span></button>
         </div>}
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:12}}>
-        <button className={`btn ${visao==="semana"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("semana")}><i className="ti ti-calendar-week"/> Semana</button>
-        <button className={`btn ${visao==="mes"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("mes")}><i className="ti ti-calendar"/> Mês</button>
+      <div className="agenda-visao-toggle">
+        <button className={`btn agenda-visao-btn ${visao==="semana"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("semana")}><i className="ti ti-calendar-week"/> Semana</button>
+        <button className={`btn agenda-visao-btn ${visao==="mes"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("mes")}><i className="ti ti-calendar"/> Mês</button>
       </div>
       {visao==="semana"?(
         <div className="dias-nav">

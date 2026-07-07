@@ -290,6 +290,34 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .dia-num{font-size:20px;font-weight:700;line-height:1}
 .dia-nome{font-size:10px;opacity:.8}
 
+/* ── Agenda — responsivo mobile (breakpoint 640px) ── */
+.sm-inline{display:none}
+@media(min-width:640px){.sm-inline{display:inline}}
+.xs-inline{display:inline}
+@media(min-width:640px){.xs-inline{display:none}}
+
+.agenda-hdr-actions{display:flex;gap:8px;width:100%}
+.agenda-hdr-btn{flex:1}
+@media(min-width:640px){.agenda-hdr-actions{width:auto}.agenda-hdr-btn{flex:none}}
+
+.agenda-visao-toggle{display:flex;gap:8px;margin-bottom:12px}
+.agenda-visao-btn{flex:1}
+@media(min-width:640px){.agenda-visao-btn{flex:none}}
+
+.cal-mes-wrap{margin-bottom:16px}
+@media(max-width:639px){.cal-mes-wrap{margin-left:-6px;margin-right:-6px;padding:0 6px}}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:100%}
+@media(max-width:639px){.cal-grid{gap:3px}}
+
+.cal-dow{text-align:center;color:var(--muted);font-weight:600;padding:4px 0;font-size:11px}
+@media(max-width:639px){.cal-dow{font-size:10px}}
+
+.cal-cel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;aspect-ratio:1/1;width:100%;border-radius:8px;cursor:pointer;color:var(--fg);padding:2px}
+.cal-cel-num{font-size:13px}
+.cal-cel-badge{font-size:10px;padding:1px 7px;border-radius:99px;background:var(--brand);color:#1a1a1a;font-weight:700}
+@media(max-width:639px){.cal-cel-num{font-size:11px}.cal-cel-badge{font-size:9px;padding:0 5px}}
+
 /* ── Responsive utils ── */
 .d-mobile{display:flex;flex-direction:column}
 .d-desktop{display:none}
