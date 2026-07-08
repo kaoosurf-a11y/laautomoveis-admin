@@ -7,8 +7,8 @@ const BADGES = ["", "Destaque", "Seminovo", "Oportunidade", "Novo"];
 const TIPOS = ["Hatch", "Sedan", "SUV", "Picape", "Perua"];
 
 const empty = {
-  marca:"", modelo:"", tipo:"", ano:new Date().getFullYear(), preco:"",
-  km:"", cambio:"Automático", combustivel:"Flex", cor:"",
+  marca:"", modelo:"", versao:"", tipo:"", ano:new Date().getFullYear(), preco:"",
+  km:"", cambio:"Automático", combustivel:"Flex", motorizacao:"", cor:"",
   portas:4, fotos:[], opcionais:[], badge:"", detalhe:"", ativo:true,
 };
 
@@ -110,8 +110,8 @@ export default function Veiculos() {
                         : <div style={{width:60,height:46,background:"var(--surface2)",borderRadius:8}}/>}
                     </td>
                     <td>
-                      <div style={{fontWeight:600,color:"var(--fg)"}}>{v.marca} {v.modelo}</div>
-                      <div style={{color:"var(--muted)",fontSize:12}}>{v.cambio} · {v.combustivel} · {v.cor}</div>
+                      <div style={{fontWeight:600,color:"var(--fg)"}}>{v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}</div>
+                      <div style={{color:"var(--muted)",fontSize:12}}>{v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel} · {v.cor}</div>
                     </td>
                     <td style={{color:"var(--muted)"}}>{v.ano}</td>
                     <td style={{fontWeight:700,color:"var(--brand)"}}>{brl(v.preco)}</td>
@@ -147,8 +147,8 @@ export default function Veiculos() {
             <div style={{padding:"14px 14px 16px"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:8}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:17,fontWeight:700,color:"var(--fg)",lineHeight:1.2}}>{v.marca} {v.modelo}</div>
-                  <div style={{fontSize:13,color:"var(--muted)",marginTop:4}}>{v.ano} · {v.cambio} · {v.combustivel}</div>
+                  <div style={{fontSize:17,fontWeight:700,color:"var(--fg)",lineHeight:1.2}}>{v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}</div>
+                  <div style={{fontSize:13,color:"var(--muted)",marginTop:4}}>{v.ano} · {v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel}</div>
                   {v.cor && <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>Cor: {v.cor}</div>}
                 </div>
               </div>
@@ -183,6 +183,7 @@ export default function Veiculos() {
 
             <div className="form-group"><label className="form-label">Marca *</label><input className="form-input" value={form.marca} onChange={e=>set("marca",e.target.value)} placeholder="Ex: Volkswagen"/></div>
             <div className="form-group"><label className="form-label">Modelo *</label><input className="form-input" value={form.modelo} onChange={e=>set("modelo",e.target.value)} placeholder="Ex: Nivus Highline"/></div>
+            <div className="form-group"><label className="form-label">Versão</label><input className="form-input" value={form.versao} onChange={e=>set("versao",e.target.value)} placeholder="Ex: LT, Highline, Titanium"/></div>
             <div className="form-group">
               <label className="form-label">Categoria *</label>
               <select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>
@@ -197,6 +198,7 @@ export default function Veiculos() {
               <div className="form-group"><label className="form-label">KM *</label><input className="form-input" type="number" value={form.km} onChange={e=>set("km",e.target.value)} placeholder="18500"/></div>
               <div className="form-group"><label className="form-label">Câmbio</label><select className="form-input" value={form.cambio} onChange={e=>set("cambio",e.target.value)}>{CAMBIOS.map(c=><option key={c}>{c}</option>)}</select></div>
               <div className="form-group"><label className="form-label">Combustível</label><select className="form-input" value={form.combustivel} onChange={e=>set("combustivel",e.target.value)}>{COMBUSTIVEIS.map(c=><option key={c}>{c}</option>)}</select></div>
+              <div className="form-group"><label className="form-label">Motorização</label><input className="form-input" value={form.motorizacao} onChange={e=>set("motorizacao",e.target.value)} placeholder="Ex: 1.0, 1.6, 2.0 Turbo"/></div>
               <div className="form-group"><label className="form-label">Cor</label><input className="form-input" value={form.cor} onChange={e=>set("cor",e.target.value)} placeholder="Ex: Prata"/></div>
               <div className="form-group"><label className="form-label">Badge</label><select className="form-input" value={form.badge} onChange={e=>set("badge",e.target.value)}>{BADGES.map(b=><option key={b} value={b}>{b||"Sem badge"}</option>)}</select></div>
               <div className="form-group"><label className="form-label">Detalhe</label><input className="form-input" value={form.detalhe} onChange={e=>set("detalhe",e.target.value)} placeholder="Ex: Único dono"/></div>
