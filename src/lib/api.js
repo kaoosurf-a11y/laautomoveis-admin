@@ -34,8 +34,8 @@ export const api = {
 
   me: () => req("GET", "/api/admin/me"),
 
-  // Veículos
-  getVeiculos: () => req("GET", "/api/veiculos"),
+  // Veículos — rota de admin traz TODOS (inclusive ativo=false), a pública só traz ativos
+  getVeiculos: () => req("GET", "/api/veiculos/admin/todos"),
   getVeiculo: (id) => req("GET", `/api/veiculos/${id}`),
   criarVeiculo: (data) => req("POST", "/api/veiculos", data),
   editarVeiculo: (id, data) => req("PUT", `/api/veiculos/${id}`, data),

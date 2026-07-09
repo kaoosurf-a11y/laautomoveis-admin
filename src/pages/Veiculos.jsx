@@ -110,7 +110,10 @@ export default function Veiculos() {
                         : <div style={{width:60,height:46,background:"var(--surface2)",borderRadius:8}}/>}
                     </td>
                     <td>
-                      <div style={{fontWeight:600,color:"var(--fg)"}}>{v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}</div>
+                      <div style={{fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:8}}>
+                        {v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}
+                        {!v.ativo && <span className="badge badge-muted" style={{fontSize:10}}>Oculto</span>}
+                      </div>
                       <div style={{color:"var(--muted)",fontSize:12}}>{v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel} · {v.cor}</div>
                     </td>
                     <td style={{color:"var(--muted)"}}>{v.ano}</td>
