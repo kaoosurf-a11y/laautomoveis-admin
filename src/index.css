@@ -174,7 +174,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none}
 .kanban-col-title{font-size:12px;font-weight:600;color:var(--fg)}
 .kanban-col-count{font-size:11px;color:var(--muted);background:var(--surface2);padding:1px 8px;border-radius:99px}
-.kanban-cards{background:var(--surface2);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:8px;min-height:80px;display:flex;flex-direction:column;gap:8px}
+/* Altura fixa ≈ 5 cards visíveis; a partir do 6º, scroll interno na coluna —
+   o cabeçalho (nome + contador) fica fora dessa área, sempre visível. */
+.kanban-cards{background:var(--surface2);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:8px;min-height:80px;max-height:520px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.kanban-cards::-webkit-scrollbar{width:8px}
+.kanban-cards::-webkit-scrollbar-track{background:transparent}
+.kanban-cards::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
+.kanban-cards::-webkit-scrollbar-thumb:hover{background:#dbb95a}
 .kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px;cursor:pointer;transition:border-color .15s}
 .kanban-card:active{border-color:rgba(200,168,75,.4);background:rgba(200,168,75,.04)}
 .kanban-card-nome{font-size:13px;font-weight:600;color:var(--fg);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

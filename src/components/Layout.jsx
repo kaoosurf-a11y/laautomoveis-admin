@@ -27,7 +27,7 @@ export default function Layout({ children }) {
         const em30 = agora + 30*60*1000;
         const prox = ags.filter(ag => {
           const t = new Date(ag.data_hora).getTime();
-          return t > agora && t <= em30 && ag.status === "confirmado";
+          return t > agora && t <= em30 && ag.status === "confirmado" && TIPOS_NOTIF[ag.tipo];
         });
         if (prox.length > 0) setNotif(prox[0]);
       }).catch(() => {});
@@ -66,6 +66,15 @@ export default function Layout({ children }) {
 
   const fmtH = iso => { const d=new Date(iso); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
   const minAte = iso => Math.round((new Date(iso)-Date.now())/60000);
+
+  // Só agendamentos reais de cliente disparam a notificação — "bloqueio" é horário
+  // pessoal do vendedor (almoço, indisponibilidade) e nunca deve aparecer aqui.
+  const TIPOS_NOTIF = {
+    test_drive:        { label: "Test drive",         icon: "🚗" },
+    visita_patio:       { label: "Visita ao pátio",     icon: "🏢" },
+    apresentacao:       { label: "Apresentação",        icon: "📋" },
+    reuniao_fechamento: { label: "Reunião de fechamento", icon: "🤝" },
+  };
 
   return (
     <div className="app-layout">
@@ -127,7 +136,7 @@ export default function Layout({ children }) {
         <div className="notif-banner">
           <div className="notif-icon"><i className="ti ti-calendar-event"/></div>
           <div className="notif-body">
-            <div className="notif-title">⚠️ Test drive em {minAte(notif.data_hora)} min!</div>
+            <div className="notif-title">{TIPOS_NOTIF[notif.tipo]?.icon || "⚠️"} {TIPOS_NOTIF[notif.tipo]?.label || "Agendamento"} em {minAte(notif.data_hora)} min!</div>
             <div className="notif-sub">{notif.cliente_nome} · {notif.veiculo}</div>
           </div>
           <div className="notif-hora">{fmtH(notif.data_hora)}</div>

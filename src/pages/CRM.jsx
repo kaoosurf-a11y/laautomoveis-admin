@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
@@ -61,11 +61,34 @@ function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
 function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 
-function LeadModal({lead,onClose,onMover,readOnly,estagios}){
+function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
   const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
   const[agendando,setAgendando]=useState(false);
   const[agendado,setAgendado]=useState(false);
   const colAtual=colunaVisual(estagios,est);
+  // Veículo associado ao lead — editável (ex: caso Santos, veio pelo anúncio do Gol
+  // mas fechou em outro carro). Corrige o campo real (crm_leads.veiculo_interesse),
+  // então reflete em todo lugar que lê esse campo (card do Kanban, relatório do
+  // Dashboard, agendamento de visita) — não é só um ajuste de exibição.
+  const[veiculoAtual,setVeiculoAtual]=useState(lead.veiculo_interesse||"");
+  const[editandoVeiculo,setEditandoVeiculo]=useState(false);
+  const[veiculoInput,setVeiculoInput]=useState(veiculoAtual);
+  const[salvandoVeiculo,setSalvandoVeiculo]=useState(false);
+  async function salvarVeiculo(){
+    const v=veiculoInput.trim();
+    if(!v){setVeiculoInput(veiculoAtual);setEditandoVeiculo(false);return;}
+    if(v===veiculoAtual){setEditandoVeiculo(false);return;}
+    setSalvandoVeiculo(true);
+    try{
+      await atualizarLeadCRM(lead.id,{veiculo_interesse:v});
+      setVeiculoAtual(v);
+      setEditandoVeiculo(false);
+      onAtualizado?.();
+    }catch{
+      alert("Erro ao atualizar o veículo. Tente novamente.");
+    }
+    setSalvandoVeiculo(false);
+  }
   async function handleAgendar(){
     if(!confirm(`A Lara vai iniciar uma conversa no WhatsApp com ${lead.nome} pra marcar a visita. Confirma?`))return;
     setAgendando(true);
@@ -89,8 +112,32 @@ function LeadModal({lead,onClose,onMover,readOnly,estagios}){
           <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button>
         </div>
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:13,color:"var(--muted)",marginBottom:4}}>Veículo de interesse</div>
-          <div style={{fontSize:15,fontWeight:600,color:"var(--fg)"}}>{lead.veiculo_interesse}</div>
+          <div style={{fontSize:13,color:"var(--muted)",marginBottom:4}}>Veículo</div>
+          {editandoVeiculo?(
+            <div style={{display:"flex",gap:6}}>
+              <input
+                className="form-input" style={{marginBottom:0}} autoFocus
+                value={veiculoInput} onChange={e=>setVeiculoInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")salvarVeiculo();if(e.key==="Escape"){setVeiculoInput(veiculoAtual);setEditandoVeiculo(false);}}}
+              />
+              <button className="btn btn-primary" style={{padding:"6px 12px"}} onClick={salvarVeiculo} disabled={salvandoVeiculo}>
+                {salvandoVeiculo?<span className="spinner"/>:<i className="ti ti-check"/>}
+              </button>
+              <button className="btn btn-ghost" style={{padding:"6px 12px"}} onClick={()=>{setVeiculoInput(veiculoAtual);setEditandoVeiculo(false);}}>
+                <i className="ti ti-x"/>
+              </button>
+            </div>
+          ):(
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:15,fontWeight:600,color:"var(--fg)"}}>{veiculoAtual}</div>
+              {!readOnly&&
+                <button onClick={()=>{setVeiculoInput(veiculoAtual);setEditandoVeiculo(true);}} title="Trocar veículo"
+                  style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:14,display:"flex"}}>
+                  <i className="ti ti-pencil"/>
+                </button>
+              }
+            </div>
+          )}
           {lead.valor&&<div style={{fontSize:14,color:"var(--brand)",fontWeight:700}}>R$ {Number(lead.valor).toLocaleString("pt-BR")}</div>}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
@@ -310,7 +357,7 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} readOnly={readOnly} estagios={estagios}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );

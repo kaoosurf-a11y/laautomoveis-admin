@@ -42,6 +42,7 @@ export async function getCRMKanban() {
 }
 export async function moverLead(id,est,motivo) { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est,motivo})}); }
 export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method:"POST",body:JSON.stringify(d)}); }
+export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`,{method:"PATCH",body:JSON.stringify(d)}); }
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }
 export async function getDashboard(p="mes"){ return req(`/api/dashboard?periodo=${p}`); }
 export async function getFollowups() {
