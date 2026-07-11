@@ -59,7 +59,7 @@ const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E4
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
-function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
+function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"],presencial:["#C8A84B","Loja"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 // Badge de responsável (IA/Humano/Pausado) — grava só em crm_leads.responsavel_atual,
 // pra fins de indicador visual. Não controla de fato quem responde no WhatsApp (isso
 // é la_leads.human_takeover_at, lido só pelo n8n) — ver aviso no seletor do modal.
@@ -76,6 +76,10 @@ function tempoDesde(iso){
   return `${Math.round(h/24)}d`;
 }
 function followupAtrasado(lead){return lead.followup_tipo&&lead.followup_horario&&new Date(lead.followup_horario)<new Date();}
+// Lead presencial sem WhatsApp: o follow-up é criado normalmente (routes/crm.js não
+// depende de telefone), mas ninguém consegue contatar automaticamente — sinaliza pro
+// vendedor que esse acompanhamento precisa ser manual/presencial, não vai sair sozinho.
+function followupSemContato(lead){return lead.followup_tipo&&!lead.telefone;}
 
 function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
   const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
@@ -209,8 +213,15 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
           {lead.origem&&<Orig o={lead.origem}/>}
         </div>
         {lead.followup_tipo&&
-          <div className="badge badge-warning" style={{marginBottom:14,display:"inline-flex"}}>
-            <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[lead.followup_tipo]}
+          <div style={{marginBottom:14,display:"flex",gap:6,flexWrap:"wrap"}}>
+            <div className="badge badge-warning" style={{display:"inline-flex"}}>
+              <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[lead.followup_tipo]}
+            </div>
+            {followupSemContato(lead)&&
+              <div className="badge" style={{display:"inline-flex",background:"var(--danger)22",color:"var(--danger)"}} title="Sem telefone cadastrado — esse follow-up não sai automático, precisa ser feito manualmente">
+                <i className="ti ti-phone-off" style={{fontSize:12}}/>&nbsp;Sem contato
+              </div>
+            }
           </div>
         }
         {!readOnly&&lead.vendedor_id&&(
@@ -241,10 +252,19 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
 }
 
 function NovoModal({onClose,onCriado}){
-  const[form,setForm]=useState({nome:"",telefone:"",veiculo_interesse:"",origem:"organico"});
+  // Default "presencial": o botão "Novo lead" existe justamente pro vendedor cadastrar
+  // quem chega na loja — o telefone pode não existir ainda, sem WhatsApp coletado.
+  const[form,setForm]=useState({nome:"",telefone:"",veiculo_interesse:"",origem:"presencial"});
   const[loading,setLoading]=useState(false);
+  const[erro,setErro]=useState(null);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
-  async function submit(){if(!form.nome||!form.veiculo_interesse)return;setLoading(true);try{await criarLeadCRM(form);onCriado();}catch{}setLoading(false);onClose();}
+  async function submit(){
+    if(!form.nome||!form.veiculo_interesse)return;
+    setLoading(true);setErro(null);
+    try{await criarLeadCRM(form);onCriado();onClose();}
+    catch{setErro("Erro ao criar lead. Tente novamente.");}
+    setLoading(false);
+  }
   return(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -254,13 +274,15 @@ function NovoModal({onClose,onCriado}){
           <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button>
         </div>
         <div className="form-group"><label className="form-label">Nome *</label><input className="form-input" value={form.nome} onChange={e=>set("nome",e.target.value)} placeholder="Nome do cliente"/></div>
-        <div className="form-group"><label className="form-label">Telefone</label><input className="form-input" value={form.telefone} onChange={e=>set("telefone",e.target.value)} placeholder="(49) 9 9999-9999"/></div>
+        <div className="form-group"><label className="form-label">Telefone (opcional)</label><input className="form-input" value={form.telefone} onChange={e=>set("telefone",e.target.value)} placeholder="(49) 9 9999-9999 — deixe em branco se não tiver ainda"/></div>
         <div className="form-group"><label className="form-label">Veículo *</label><input className="form-input" value={form.veiculo_interesse} onChange={e=>set("veiculo_interesse",e.target.value)} placeholder="Ex: HB20 2022"/></div>
         <div className="form-group"><label className="form-label">Origem</label>
           <select className="form-input" value={form.origem} onChange={e=>set("origem",e.target.value)}>
+            <option value="presencial">Presencial (loja)</option>
             <option value="organico">Orgânico</option><option value="site">Site</option><option value="anuncio">Anúncio</option>
           </select>
         </div>
+        {erro&&<div style={{color:"var(--danger)",fontSize:13,marginBottom:10}}>{erro}</div>}
         <div style={{display:"flex",gap:8}}>
           <button className="btn btn-ghost" onClick={onClose} style={{flex:1}}>Cancelar</button>
           <button className="btn btn-primary" onClick={submit} disabled={loading} style={{flex:1}}>{loading?<span className="spinner"/>:"Adicionar"}</button>
@@ -357,6 +379,7 @@ export default function CRM(){
                     <div style={{fontSize:10,color:followupAtrasado(lead)?"var(--danger)":"var(--warning)",marginTop:4,display:"flex",alignItems:"center",gap:3}}>
                       <i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}
                       {followupAtrasado(lead)&&<span style={{width:6,height:6,borderRadius:"50%",background:"var(--danger)",display:"inline-block"}}/>}
+                      {followupSemContato(lead)&&<i className="ti ti-phone-off" style={{fontSize:11,color:"var(--danger)"}} title="Sem telefone — follow-up manual"/>}
                     </div>
                   }
                 </div>
@@ -401,6 +424,7 @@ export default function CRM(){
                         <div style={{fontSize:10,color:followupAtrasado(lead)?"var(--danger)":"var(--warning)",marginBottom:4,display:"flex",alignItems:"center",gap:3}}>
                           <i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}
                           {followupAtrasado(lead)&&<span style={{width:6,height:6,borderRadius:"50%",background:"var(--danger)",display:"inline-block"}} title="Follow-up atrasado"/>}
+                          {followupSemContato(lead)&&<i className="ti ti-phone-off" style={{fontSize:11,color:"var(--danger)"}} title="Sem telefone — follow-up manual"/>}
                         </div>
                       }
                       <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:4}}>
