@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup } from "../api.js";
+import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado } from "../api.js";
 import { getRole } from "../auth.js";
 
 const MSG_STATUS_INFO = {
@@ -107,6 +107,13 @@ export default function FollowUps(){
 
   async function marcarEnviado(id){try{await marcarFollowupEnviado(id);}catch{}upd(id,{enviado:true});}
   async function marcarRespondeu(id){try{await marcarFollowupRespondeu(id);}catch{}upd(id,{respondeu:true});}
+  const[concluindo,setConcluindo]=useState(null);
+  async function concluirAgendado(id){
+    setConcluindo(id);
+    try{await concluirFollowupAgendado(id);setData(d=>({...d,agendados:d.agendados.filter(a=>a.id!==id)}));}
+    catch{alert("Erro ao concluir. Tente de novo.");}
+    setConcluindo(null);
+  }
 
   const lista=aba==="hoje"?data.hoje:aba==="vencidos"?data.vencidos:null;
   const resumo={hoje:data.hoje?.length||0,pendentes:data.hoje?.filter(f=>!f.enviado)?.length||0,responderam:data.hoje?.filter(f=>f.respondeu)?.length||0};
@@ -142,6 +149,7 @@ export default function FollowUps(){
         <button className={`tab-btn ${aba==="vencidos"?"active":""}`} onClick={()=>setAba("vencidos")} style={{color:data.vencidos?.length>0?"var(--danger)":undefined}}>
           Vencidos {data.vencidos?.length>0&&<span style={{background:"var(--danger)",color:"white",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,marginLeft:4}}>{data.vencidos.length}</span>}
         </button>
+        <button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Agendados pela Lara ({data.agendados?.length||0})</button>
       </div>
 
       {aba==="estagio"&&(
@@ -169,6 +177,28 @@ export default function FollowUps(){
               ))}
             </div>
           ))
+      )}
+
+      {aba==="agendados"&&(
+        <div className="card">
+          {(!data.agendados||data.agendados.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum follow-up agendado pela Lara no momento</p></div>}
+          {data.agendados?.map(a=>(
+            <div key={a.id} className="fu-item">
+              <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{a.vendedor_iniciais}</div>
+              <div className="fu-info">
+                <div className="fu-nome">{a.cliente_nome||a.phone}</div>
+                <div className="fu-sub">{a.cenario} · {fmtData(a.agendado_para)}</div>
+                <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{a.mensagem}</div>
+                {a.status==="pendente_revisao"&&<span className="badge badge-warning" style={{fontSize:10,marginTop:4,display:"inline-flex"}}><i className="ti ti-alert-triangle" style={{fontSize:11}}/> Revisão manual</span>}
+              </div>
+              <div className="fu-actions">
+                {a.phone&&<a href={`https://wa.me/55${a.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}
+                {a.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${a.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}}><i className="ti ti-message-circle" style={{fontSize:14}}/> Chatwoot</a>}
+                {!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>concluirAgendado(a.id)} disabled={concluindo===a.id}>{concluindo===a.id?<span className="spinner"/>:<><i className="ti ti-check" style={{fontSize:14}}/> Concluir</>}</button>}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {lista!==null&&(

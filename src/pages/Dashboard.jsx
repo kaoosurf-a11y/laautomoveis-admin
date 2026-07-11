@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getDashboard } from "../api.js";
+import { getDashboard, getMetricasDashboard } from "../api.js";
 import { getUser } from "../auth.js";
 
 /* ─── helpers ─── */
@@ -280,6 +280,111 @@ function TabEstoque({ data }) {
   );
 }
 
+const TEMP_CORES = { quente:"#e07b7b", morno:"#C8A84B", frio:"#7ba7e0" };
+
+// Consome GET /api/metrics/dashboard (Fase 4) — só owner/manager (o backend já bloqueia
+// agent com 403). Carregado à parte do resto do Dashboard porque é uma rota separada
+// e mais pesada (8 sub-queries) — só busca quando essa aba é aberta.
+function TabMetricas({ metricas, loading, erro }) {
+  if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
+  if (loading || !metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
+
+  const { funil, porVendedor, porOrigem, iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups } = metricas;
+  const maxFunil = Math.max(...funil.map(f=>Number(f.total)), 1);
+  const totalTemp = temperatura.reduce((s,t)=>s+Number(t.total),0) || 1;
+
+  return (
+    <>
+      <div className="metrics-grid" style={{marginBottom:12}}>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-robot"/> Só IA resolveu</div>
+          <div className="metric-value">{iaVsHumano.soIaPct}%</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>{iaVsHumano.soIa} de {iaVsHumano.soIa+iaVsHumano.precisouHumano}</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-user"/> Precisou humano</div>
+          <div className="metric-value">{iaVsHumano.precisouHumanoPct}%</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>{iaVsHumano.precisouHumano} leads</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-clock-check"/> Follow-ups cumpridos</div>
+          <div className="metric-value">{followups.pct}%</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>{followups.cumpridos} de {followups.total}</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-alert-triangle"/> Sem resposta {semResposta.horasParametro}h+</div>
+          <div className="metric-value" style={{color:semResposta.leads.length>0?"#e07b7b":undefined}}>{semResposta.leads.length}</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>leads parados</div>
+        </div>
+      </div>
+
+      <div className="card" style={{marginBottom:12}}>
+        <div className="card-title"><i className="ti ti-filter"/> Funil completo (estagio_funil)</div>
+        {funil.map((f,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <div style={{minWidth:110,fontSize:13,color:"var(--fg)"}}>{f.estagio}</div>
+            <div className="funnel-track" style={{flex:1}}><div className="funnel-bar" style={{width:`${Math.round(f.total/maxFunil*100)}%`}}/></div>
+            <div style={{fontSize:12,color:"var(--muted)",minWidth:24,textAlign:"right"}}>{f.total}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{marginBottom:12}}>
+        <div className="card-title"><i className="ti ti-alert-octagon"/> Gargalo — tempo parado no estágio atual</div>
+        {tempoPorEstagio.gargaloAtual?.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Sem dados suficientes.</p>}
+        {tempoPorEstagio.gargaloAtual?.map((g,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <div style={{minWidth:110,fontSize:13,color:"var(--fg)"}}>{g.estagio}</div>
+            <div style={{fontSize:12,color:"var(--muted)"}}>{g.total} leads</div>
+            <div style={{flex:1}}/>
+            <div style={{fontSize:13,fontWeight:600,color:Number(g.media_horas_parado)>72?"#e07b7b":"var(--fg)"}}>{Math.round(g.media_horas_parado)}h em média</div>
+          </div>
+        ))}
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>Até negociação: {tempoPorEstagio.ate_negociacao_horas??"—"}h · Negociação até fechar: {tempoPorEstagio.negociacao_ate_fechar_horas??"—"}h</div>
+      </div>
+
+      <div className="card" style={{marginBottom:12}}>
+        <div className="card-title"><i className="ti ti-trophy"/> Ranking por vendedor</div>
+        {porVendedor.map((v,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div className="av" style={{background:`${AV_CORES[i%AV_CORES.length]}22`,color:AV_CORES[i%AV_CORES.length]}}>{v.iniciais}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                <span style={{fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
+                <span style={{fontSize:12,color:"var(--muted)"}}>{v.vendas} vendas · {v.taxa_conversao}%</span>
+              </div>
+              <div className="funnel-track"><div className="funnel-bar" style={{width:`${v.taxa_conversao}%`,background:AV_CORES[i%AV_CORES.length]}}/></div>
+            </div>
+            <div style={{fontSize:12,color:"var(--muted)",minWidth:24}}>{v.total_leads}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div className="card">
+          <div className="card-title"><i className="ti ti-chart-pie"/> Por origem</div>
+          {porOrigem.map((o,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <div style={{flex:1,fontSize:13,color:"var(--fg)"}}>{o.origem}</div>
+              <div style={{fontSize:12,color:"var(--muted)"}}>{o.total_leads} · {o.taxa_conversao}%</div>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title"><i className="ti ti-temperature"/> Temperatura</div>
+          {temperatura.map((t,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:TEMP_CORES[t.temperatura]||"var(--muted)",flexShrink:0}}/>
+              <div style={{flex:1,fontSize:13,color:"var(--fg)",textTransform:"capitalize"}}>{t.temperatura}</div>
+              <div style={{fontSize:12,color:"var(--muted)"}}>{t.total} ({Math.round(t.total/totalTemp*100)}%)</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 /* ─── componente principal ─── */
 export default function Dashboard() {
   const [data, setData]     = useState(null);
@@ -288,6 +393,9 @@ export default function Dashboard() {
   const [aba, setAba]       = useState("oportunidades");
   const [notif, setNotif]   = useState(null);
   const [erro, setErro]     = useState(null);
+  const [metricas, setMetricas] = useState(null);
+  const [loadingMetricas, setLoadingMetricas] = useState(false);
+  const [erroMetricas, setErroMetricas] = useState(null);
   const user = getUser();
 
   useEffect(() => {
@@ -308,6 +416,15 @@ export default function Dashboard() {
   }, [periodo]);
 
   const roleLabel = { owner:"Administrador", manager:"Gerente", agent:"Vendedor" }[user?.role] || "";
+  const podeVerMetricas = user?.role==="owner"||user?.role==="manager";
+
+  function abrirMetricas(){
+    setAba("metricas");
+    if(metricas||loadingMetricas)return;
+    setLoadingMetricas(true);setErroMetricas(null);
+    getMetricasDashboard().then(d=>{setMetricas(d);setLoadingMetricas(false);})
+      .catch(()=>{setErroMetricas("Erro ao carregar métricas. Tente novamente.");setLoadingMetricas(false);});
+  }
 
   if (erro) return (
     <div className="empty-state">
@@ -327,6 +444,7 @@ export default function Dashboard() {
     { id:"oportunidades", label:"🎯 Oportunidades" },
     { id:"jornada",       label:"🗺️ Jornada" },
     { id:"estoque",       label:"🚗 Estoque" },
+    ...(podeVerMetricas?[{ id:"metricas", label:"📊 Métricas" }]:[]),
   ];
 
   return (
@@ -363,7 +481,7 @@ export default function Dashboard() {
       {/* Tabs */}
       <div style={{display:"flex",gap:8,marginBottom:16,paddingBottom:12,borderBottom:"1px solid var(--border)"}}>
         {ABAS.map(a=>(
-          <button key={a.id} onClick={()=>setAba(a.id)}
+          <button key={a.id} onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}
             style={{padding:"8px 18px",fontSize:13,fontWeight:aba===a.id?700:500,
               color:aba===a.id?"#0c0c0a":"var(--muted)",
               background:aba===a.id?"#C8A84B":"transparent",
@@ -378,6 +496,7 @@ export default function Dashboard() {
       {aba==="oportunidades" && <TabOportunidades data={data}/>}
       {aba==="jornada"       && <TabJornada data={data}/>}
       {aba==="estoque"       && <TabEstoque data={data}/>}
+      {aba==="metricas"      && <TabMetricas metricas={metricas} loading={loadingMetricas} erro={erroMetricas}/>}
     </div>
   );
 }
