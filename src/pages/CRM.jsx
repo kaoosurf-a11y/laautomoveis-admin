@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento } from "../api.js";
 import { getRole } from "../auth.js";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
@@ -80,6 +80,19 @@ function followupAtrasado(lead){return lead.followup_tipo&&lead.followup_horario
 // depende de telefone), mas ninguém consegue contatar automaticamente — sinaliza pro
 // vendedor que esse acompanhamento precisa ser manual/presencial, não vai sair sozinho.
 function followupSemContato(lead){return lead.followup_tipo&&!lead.telefone;}
+// Status do agendamento assistido pela Lara (agendamento_ia_status, espelhado de
+// la_leads). "solicitado"/"em_andamento" = ela ainda tá tentando; os outros 3 são
+// desfechos finais (ver n8n "LA - Agente Agendamento Restrito").
+const AGENDAMENTO_IA_LABEL={
+  solicitado:"Lara tentando agendar...", em_andamento:"Lara conversando sobre horário...",
+  confirmado:"Agendamento confirmado pela Lara", sem_resposta:"Lara não teve resposta",
+  desviou_assunto:"Cliente mudou de assunto — Lara parou",
+};
+const AGENDAMENTO_IA_INFO={
+  solicitado:{background:"#7ba7e022",color:"#7ba7e0"}, em_andamento:{background:"#7ba7e022",color:"#7ba7e0"},
+  confirmado:{background:"#25D36622",color:"#25D366"}, sem_resposta:{background:"#e0525222",color:"#e05252"},
+  desviou_assunto:{background:"#e0525222",color:"#e05252"},
+};
 
 function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
   const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
@@ -128,10 +141,23 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
     setSalvandoResp(false);
   }
   async function handleAgendar(){
-    if(!confirm(`A Lara vai iniciar uma conversa no WhatsApp com ${lead.nome} pra marcar a visita. Confirma?`))return;
+    if(!confirm(`A Lara vai tentar marcar um horário com ${lead.nome} pelo WhatsApp (só pra agendar — não é uma retomada geral do atendimento). Confirma?`))return;
     setAgendando(true);
     try{await agendarVisita(lead.id);setAgendado(true);}catch{alert("Erro ao iniciar agendamento. Tente de novo.");}
     setAgendando(false);
+  }
+  const[manualAberto,setManualAberto]=useState(false);
+  const[dataManual,setDataManual]=useState("");
+  const[salvandoManual,setSalvandoManual]=useState(false);
+  async function handleAgendarManual(){
+    if(!dataManual)return;
+    setSalvandoManual(true);
+    try{
+      await criarAgendamento({lead_id:lead.id,veiculo:veiculoAtual,tipo:"visita_patio",data_hora:`${dataManual}:00`});
+      setManualAberto(false);
+      onAtualizado?.();
+    }catch{alert("Erro ao marcar agendamento. Tente de novo.");}
+    setSalvandoManual(false);
   }
   function handleEstagio(novoKey){
     const alvo=estagios.find(e=>e.key===novoKey);
@@ -224,14 +250,32 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
             }
           </div>
         }
+        {lead.agendamento_ia_status&&
+          <div style={{marginBottom:10}}>
+            <span className="badge" style={{display:"inline-flex",...(AGENDAMENTO_IA_INFO[lead.agendamento_ia_status]||AGENDAMENTO_IA_INFO.solicitado)}}>
+              <i className="ti ti-robot" style={{fontSize:12}}/>&nbsp;{AGENDAMENTO_IA_LABEL[lead.agendamento_ia_status]||lead.agendamento_ia_status}
+            </span>
+          </div>
+        }
         {!readOnly&&lead.vendedor_id&&(
           <div style={{marginBottom:14}}>
             {agendado?(
               <span className="badge badge-success" style={{display:"inline-flex"}}><i className="ti ti-check" style={{fontSize:12}}/>&nbsp;Lara vai iniciar o agendamento</span>
+            ):manualAberto?(
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <input type="datetime-local" className="form-input" style={{marginBottom:0,flex:1}} value={dataManual} onChange={e=>setDataManual(e.target.value)}/>
+                <button className="btn btn-primary" style={{padding:"6px 12px"}} onClick={handleAgendarManual} disabled={!dataManual||salvandoManual}>{salvandoManual?<span className="spinner"/>:<i className="ti ti-check"/>}</button>
+                <button className="btn btn-ghost" style={{padding:"6px 12px"}} onClick={()=>setManualAberto(false)}><i className="ti ti-x"/></button>
+              </div>
             ):(
-              <button className="btn btn-ghost" style={{width:"100%"}} onClick={handleAgendar} disabled={agendando}>
-                {agendando?<span className="spinner"/>:<><i className="ti ti-calendar-plus"/> Agendar visita (Lara conduz pelo WhatsApp)</>}
-              </button>
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn btn-ghost" style={{flex:1}} onClick={handleAgendar} disabled={agendando||!lead.telefone} title={!lead.telefone?"Lead sem telefone":""}>
+                  {agendando?<span className="spinner"/>:<><i className="ti ti-calendar-plus"/> Lara tenta agendar</>}
+                </button>
+                <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setManualAberto(true)}>
+                  <i className="ti ti-calendar-event"/> Marcar manualmente
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -430,6 +474,8 @@ export default function CRM(){
                       <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:4}}>
                         <Resp r={lead.responsavel_atual}/>
                         <span style={{fontSize:9,color:"var(--muted)"}}><i className="ti ti-clock" style={{fontSize:10}}/> {tempoDesde(lead.atualizado_em)}</span>
+                        {lead.agendamento_ia_status&&(lead.agendamento_ia_status==="solicitado"||lead.agendamento_ia_status==="em_andamento")&&
+                          <i className="ti ti-calendar-time" style={{fontSize:11,color:"#7ba7e0"}} title="Lara tentando agendar"/>}
                       </div>
                       <div className="kanban-card-footer">
                         <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}</div>

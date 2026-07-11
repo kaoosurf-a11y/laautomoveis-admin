@@ -1,6 +1,80 @@
 import { useState, useEffect } from "react";
-import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu } from "../api.js";
+import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup } from "../api.js";
 import { getRole } from "../auth.js";
+
+const MSG_STATUS_INFO = {
+  agendada: ["#7ba7e0", "Agendada"], enviada: ["#25D366", "Enviada"],
+  pausada: ["#C8A84B", "Pausada"], cancelada: ["#e05252", "Cancelada"], falhou: ["#e05252", "Falhou"],
+};
+
+// Sequência de mensagens do fluxo automático do estágio — pausar/cancelar/editar
+// antes do envio (o sender em n8n roda a cada 15min e só manda o que ainda tá
+// "agendada" e com o fluxo em "ativo").
+function FluxoMensagens({ followup, readOnly, onAtualizado }) {
+  const [editandoId, setEditandoId] = useState(null);
+  const [textoEdit, setTextoEdit] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvarTexto(msgId) {
+    setSalvando(true);
+    try { await atualizarMensagemFollowup(msgId, { conteudo: textoEdit }); onAtualizado(); }
+    catch { alert("Erro ao salvar. Tente de novo."); }
+    setSalvando(false); setEditandoId(null);
+  }
+  async function mudarStatusMsg(msgId, status) {
+    try { await atualizarMensagemFollowup(msgId, { status }); onAtualizado(); }
+    catch { alert("Erro ao atualizar mensagem."); }
+  }
+  async function mudarFluxo(status_fluxo) {
+    try { await atualizarFluxoFollowup(followup.id, status_fluxo); onAtualizado(); }
+    catch { alert("Erro ao atualizar fluxo."); }
+  }
+
+  return (
+    <div style={{ background: "var(--surface2)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase" }}>Fluxo de mensagens</span>
+        {!readOnly && (
+          <div style={{ display: "flex", gap: 4 }}>
+            {followup.status_fluxo === "ativo"
+              ? <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => mudarFluxo("pausado")}><i className="ti ti-player-pause" style={{ fontSize: 12 }} /> Pausar</button>
+              : followup.status_fluxo === "pausado"
+              ? <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => mudarFluxo("ativo")}><i className="ti ti-player-play" style={{ fontSize: 12 }} /> Retomar</button>
+              : <span className="badge" style={{ fontSize: 10, background: "var(--danger)22", color: "var(--danger)" }}>Cancelado</span>}
+            {followup.status_fluxo !== "cancelado" && <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11, color: "var(--danger)" }} onClick={() => { if (confirm("Cancelar todo o fluxo de mensagens desse follow-up?")) mudarFluxo("cancelado"); }}><i className="ti ti-x" style={{ fontSize: 12 }} /></button>}
+          </div>
+        )}
+      </div>
+      {followup.mensagens.map(m => {
+        const [cor, label] = MSG_STATUS_INFO[m.status] || ["var(--muted)", m.status];
+        const editavel = !readOnly && m.status !== "enviada";
+        return (
+          <div key={m.id} style={{ display: "flex", gap: 6, alignItems: "flex-start", padding: "4px 0", borderTop: "1px solid var(--border)" }}>
+            <span className="badge" style={{ fontSize: 9, background: `${cor}22`, color: cor, flexShrink: 0, marginTop: 2 }}>{label}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: "var(--muted)" }}>{fmtData(m.agendado_para)}</div>
+              {editandoId === m.id ? (
+                <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
+                  <textarea className="form-input" style={{ marginBottom: 0, fontSize: 12, minHeight: 50 }} value={textoEdit} onChange={e => setTextoEdit(e.target.value)} />
+                  <button className="btn btn-primary" style={{ padding: "4px 8px" }} onClick={() => salvarTexto(m.id)} disabled={salvando}>{salvando ? <span className="spinner" /> : <i className="ti ti-check" />}</button>
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: "var(--fg)", cursor: editavel ? "pointer" : "default" }}
+                  onClick={() => { if (editavel) { setEditandoId(m.id); setTextoEdit(m.conteudo); } }}
+                  title={editavel ? "Clique pra editar" : ""}>
+                  {m.conteudo} {editavel && <i className="ti ti-pencil" style={{ fontSize: 11, color: "var(--muted)" }} />}
+                </div>
+              )}
+            </div>
+            {editavel && m.status === "agendada" && <button className="btn btn-ghost" style={{ padding: "2px 6px", fontSize: 10 }} onClick={() => mudarStatusMsg(m.id, "pausada")} title="Pausar essa mensagem"><i className="ti ti-player-pause" style={{ fontSize: 11 }} /></button>}
+            {editavel && m.status === "pausada" && <button className="btn btn-ghost" style={{ padding: "2px 6px", fontSize: 10 }} onClick={() => mudarStatusMsg(m.id, "agendada")} title="Retomar essa mensagem"><i className="ti ti-player-play" style={{ fontSize: 11 }} /></button>}
+            {editavel && <button className="btn btn-ghost" style={{ padding: "2px 6px", fontSize: 10, color: "var(--danger)" }} onClick={() => mudarStatusMsg(m.id, "cancelada")} title="Cancelar essa mensagem"><i className="ti ti-x" style={{ fontSize: 11 }} /></button>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const TIPO_LABEL={
   sem_credito:"Sem crédito",vai_pensar:"Vai pensar",
@@ -21,10 +95,9 @@ export default function FollowUps(){
   const[loading,setLoading]=useState(true);
   const[erro,setErro]=useState(null);
 
-  useEffect(()=>{
-    getFollowups().then(d=>{setData(d);setLoading(false);})
-      .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
-  },[]);
+  const load=()=>getFollowups().then(d=>{setData(d);setLoading(false);})
+    .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
+  useEffect(()=>{load();},[]);
 
   const upd=(id,changes)=>setData(d=>({
     hoje:d.hoje.map(f=>f.id===id?{...f,...changes}:f),
@@ -78,17 +151,20 @@ export default function FollowUps(){
             <div key={tipo} className="card" style={{marginBottom:16}}>
               <div style={{fontWeight:600,color:"var(--brand)",marginBottom:8,fontSize:14}}>{TIPO_LABEL[tipo]||tipo} ({data.porTipo[tipo].length})</div>
               {data.porTipo[tipo].map(f=>(
-                <div key={f.id} className="fu-item">
-                  <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
-                  <div className="fu-info">
-                    <div className="fu-nome">{f.cliente_nome}</div>
-                    <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
-                    <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
-                      Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
+                <div key={f.id} style={{marginBottom:8}}>
+                  <div className="fu-item">
+                    <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
+                    <div className="fu-info">
+                      <div className="fu-nome">{f.cliente_nome}</div>
+                      <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
+                      <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
+                        Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
+                      </div>
+                      {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
                     </div>
-                    {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
+                    {AcoesLead(f)}
                   </div>
-                  {AcoesLead(f)}
+                  {f.mensagens&&f.mensagens.length>0&&<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={load}/>}
                 </div>
               ))}
             </div>
