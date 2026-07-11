@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel } from "../api.js";
 import { getRole } from "../auth.js";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
@@ -60,6 +60,22 @@ const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E4
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
 function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
+// Badge de responsável (IA/Humano/Pausado) — grava só em crm_leads.responsavel_atual,
+// pra fins de indicador visual. Não controla de fato quem responde no WhatsApp (isso
+// é la_leads.human_takeover_at, lido só pelo n8n) — ver aviso no seletor do modal.
+const RESP_INFO={ia:["#25D366","IA"],humano:["#7ba7e0","Humano"],pausado:["#e05252","Pausado"]};
+function Resp({r}){const[c,l]=RESP_INFO[r]||RESP_INFO.ia;return <span className="badge" style={{background:`${c}22`,color:c,fontSize:9}}>{l}</span>;}
+// Tempo desde a última mudança no lead — proxy pro "tempo no estágio atual" (não existe
+// histórico granular de transição por estágio ainda, ver achado da Fase 1).
+function tempoDesde(iso){
+  if(!iso)return "";
+  const ms=Date.now()-new Date(iso).getTime();
+  const h=ms/3600000;
+  if(h<1)return `${Math.max(1,Math.round(ms/60000))}min`;
+  if(h<24)return `${Math.round(h)}h`;
+  return `${Math.round(h/24)}d`;
+}
+function followupAtrasado(lead){return lead.followup_tipo&&lead.followup_horario&&new Date(lead.followup_horario)<new Date();}
 
 function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
   const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
@@ -88,6 +104,24 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
       alert("Erro ao atualizar o veículo. Tente novamente.");
     }
     setSalvandoVeiculo(false);
+  }
+  const[temperaturaAtual,setTemperaturaAtual]=useState(lead.temperatura||"frio");
+  const[salvandoTemp,setSalvandoTemp]=useState(false);
+  async function mudarTemperatura(v){
+    if(v===temperaturaAtual)return;
+    setSalvandoTemp(true);
+    try{await atualizarTemperatura(lead.id,v);setTemperaturaAtual(v);onAtualizado?.();}
+    catch{alert("Erro ao atualizar temperatura. Tente novamente.");}
+    setSalvandoTemp(false);
+  }
+  const[responsavelAtual,setResponsavelAtual]=useState(lead.responsavel_atual||"ia");
+  const[salvandoResp,setSalvandoResp]=useState(false);
+  async function mudarResponsavel(v){
+    if(v===responsavelAtual)return;
+    setSalvandoResp(true);
+    try{await atualizarResponsavel(lead.id,v);setResponsavelAtual(v);onAtualizado?.();}
+    catch{alert("Erro ao atualizar responsável. Tente novamente.");}
+    setSalvandoResp(false);
   }
   async function handleAgendar(){
     if(!confirm(`A Lara vai iniciar uma conversa no WhatsApp com ${lead.nome} pra marcar a visita. Confirma?`))return;
@@ -147,9 +181,27 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
           </div>
           <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
             <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>TEMPERATURA</div>
-            <div style={{fontSize:13,fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:4}}><Temp t={lead.temperatura}/>{lead.temperatura}</div>
+            {readOnly?(
+              <div style={{fontSize:13,fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:4}}><Temp t={temperaturaAtual}/>{temperaturaAtual}</div>
+            ):(
+              <select className="form-input" style={{marginBottom:0,fontSize:13,padding:"4px 8px"}} value={temperaturaAtual} disabled={salvandoTemp} onChange={e=>mudarTemperatura(e.target.value)}>
+                <option value="quente">Quente</option><option value="morno">Morno</option><option value="frio">Frio</option>
+              </select>
+            )}
           </div>
         </div>
+        {!readOnly&&
+          <div className="form-group">
+            <label className="form-label">
+              Responsável atual
+              <i className="ti ti-info-circle" style={{fontSize:12,marginLeft:4,color:"var(--muted)"}}
+                 title="Isso só atualiza o indicador no CRM. Não pausa a IA de verdade no WhatsApp — quem controla isso é a transferência real pro atendimento humano."/>
+            </label>
+            <select className="form-input" value={responsavelAtual} disabled={salvandoResp} onChange={e=>mudarResponsavel(e.target.value)}>
+              <option value="ia">IA</option><option value="humano">Humano</option><option value="pausado">Pausado</option>
+            </select>
+          </div>
+        }
         {lead.telefone&&<div style={{marginBottom:14}}><a href={lead.chatwoot_conv_id?`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${lead.chatwoot_conv_id}`:`https://wa.me/55${lead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp"/>{lead.telefone}</a></div>}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
           {lead.troca&&<span className="badge badge-warning"><i className="ti ti-arrows-exchange" style={{fontSize:12}}/>Tem troca</span>}
@@ -300,8 +352,13 @@ export default function CRM(){
                 <div style={{flex:1,minWidth:0}}>
                   <div className="crm-list-nome">{lead.nome}</div>
                   <div className="crm-list-sub">{lead.veiculo_interesse} · {est?.label}</div>
-                  <div style={{display:"flex",gap:6,marginTop:4,alignItems:"center"}}><Temp t={lead.temperatura}/><Score s={lead.score}/>{lead.origem&&<Orig o={lead.origem}/>}</div>
-                  {lead.followup_tipo&&<div style={{fontSize:10,color:"var(--warning)",marginTop:4}}><i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}</div>}
+                  <div style={{display:"flex",gap:6,marginTop:4,alignItems:"center"}}><Temp t={lead.temperatura}/><Score s={lead.score}/>{lead.origem&&<Orig o={lead.origem}/>}<Resp r={lead.responsavel_atual}/></div>
+                  {lead.followup_tipo&&
+                    <div style={{fontSize:10,color:followupAtrasado(lead)?"var(--danger)":"var(--warning)",marginTop:4,display:"flex",alignItems:"center",gap:3}}>
+                      <i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}
+                      {followupAtrasado(lead)&&<span style={{width:6,height:6,borderRadius:"50%",background:"var(--danger)",display:"inline-block"}}/>}
+                    </div>
+                  }
                 </div>
                 <div className="av" style={{background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B",fontSize:10}}>{lead.vendedor_iniciais}</div>
               </div>
@@ -340,7 +397,16 @@ export default function CRM(){
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
                       <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
-                      {lead.followup_tipo&&<div style={{fontSize:10,color:"var(--warning)",marginBottom:4}}><i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}</div>}
+                      {lead.followup_tipo&&
+                        <div style={{fontSize:10,color:followupAtrasado(lead)?"var(--danger)":"var(--warning)",marginBottom:4,display:"flex",alignItems:"center",gap:3}}>
+                          <i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}
+                          {followupAtrasado(lead)&&<span style={{width:6,height:6,borderRadius:"50%",background:"var(--danger)",display:"inline-block"}} title="Follow-up atrasado"/>}
+                        </div>
+                      }
+                      <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:4}}>
+                        <Resp r={lead.responsavel_atual}/>
+                        <span style={{fontSize:9,color:"var(--muted)"}}><i className="ti ti-clock" style={{fontSize:10}}/> {tempoDesde(lead.atualizado_em)}</span>
+                      </div>
                       <div className="kanban-card-footer">
                         <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}</div>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
