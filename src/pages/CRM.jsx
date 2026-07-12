@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento } from "../api.js";
+import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
@@ -159,13 +160,32 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
     }catch{alert("Erro ao marcar agendamento. Tente de novo.");}
     setSalvandoManual(false);
   }
+  // Fechado ganho pede o veículo específico do estoque (não só o texto livre de
+  // veiculo_interesse) — pra saber exatamente qual carro saiu e pra qual cliente,
+  // mesmo depois do veículo sair do painel (Veiculos.jsx marca ativo=false).
+  const[pedindoVeiculoVenda,setPedindoVeiculoVenda]=useState(false);
+  const[veiculosEstoque,setVeiculosEstoque]=useState(null);
+  const[veiculoVendaId,setVeiculoVendaId]=useState("");
+  const[confirmandoVenda,setConfirmandoVenda]=useState(false);
   function handleEstagio(novoKey){
     const alvo=estagios.find(e=>e.key===novoKey);
     // Coluna virtual ("Para atender"): manda pro último estagio real do grupo
     // (negociando) — o vendedor já deve ter conversado se está movendo de volta.
     const real=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : novoKey;
+    if(real==="fechado_ganho"){
+      setPedindoVeiculoVenda(true);
+      if(!veiculosEstoque)veiculosApi.getVeiculos().then(setVeiculosEstoque).catch(()=>setVeiculosEstoque([]));
+      return;
+    }
     setEst(real);
     onMover(lead.id,real);
+  }
+  function confirmarVenda(){
+    setConfirmandoVenda(true);
+    setEst("fechado_ganho");
+    onMover(lead.id,"fechado_ganho",null,veiculoVendaId||null);
+    setPedindoVeiculoVenda(false);
+    setConfirmandoVenda(false);
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
@@ -203,6 +223,11 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
             </div>
           )}
           {lead.valor&&<div style={{fontSize:14,color:"var(--brand)",fontWeight:700}}>R$ {Number(lead.valor).toLocaleString("pt-BR")}</div>}
+          {lead.veiculo_vendido_id&&
+            <div style={{fontSize:12,color:"var(--success)",marginTop:4,display:"flex",alignItems:"center",gap:4}}>
+              <i className="ti ti-check" style={{fontSize:13}}/> Vendido: {lead.veiculo_vendido_marca} {lead.veiculo_vendido_modelo} {lead.veiculo_vendido_ano}
+            </div>
+          }
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
           <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
@@ -283,6 +308,24 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
           <label className="form-label">Estágio {readOnly?"":"— arraste o card no board pra mudar, ou selecione aqui"}</label>
           {readOnly?(
             <div style={{fontSize:14,fontWeight:600,color:colAtual?.cor||"var(--fg)"}}>{colAtual?.label}</div>
+          ):pedindoVeiculoVenda?(
+            <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
+              <div style={{fontSize:13,color:"var(--muted)",marginBottom:8}}>Qual veículo do estoque foi vendido? (opcional, mas ajuda a fechar o histórico certo)</div>
+              {veiculosEstoque===null?(
+                <div style={{fontSize:13,color:"var(--muted)"}}><span className="spinner" style={{marginRight:6}}/>Carregando estoque...</div>
+              ):(
+                <select className="form-input" value={veiculoVendaId} onChange={e=>setVeiculoVendaId(e.target.value)}>
+                  <option value="">— não vincular a um veículo específico —</option>
+                  {veiculosEstoque.map(v=><option key={v.id} value={v.id}>{v.marca} {v.modelo} {v.ano}</option>)}
+                </select>
+              )}
+              <div style={{display:"flex",gap:8,marginTop:8}}>
+                <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setPedindoVeiculoVenda(false);setVeiculoVendaId("");}}>Cancelar</button>
+                <button className="btn btn-primary" style={{flex:1}} onClick={confirmarVenda} disabled={confirmandoVenda}>
+                  {confirmandoVenda?<span className="spinner"/>:"Confirmar venda"}
+                </button>
+              </div>
+            </div>
           ):(<>
             <select className="form-input" value={colAtual?.key||est} onChange={e=>handleEstagio(e.target.value)}>
               {estagios.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
@@ -369,7 +412,7 @@ export default function CRM(){
   // a cada clique. O follow-up automático (estágio-motivo) roda no backend, então
   // um PATCH de estágio já basta pra tudo — arrastar ou usar o dropdown têm o
   // mesmo efeito.
-  async function handleMover(id,est,motivo){try{await moverLead(id,est,motivo);}catch{}load(true);}
+  async function handleMover(id,est,motivo,veiculo_vendido_id){try{await moverLead(id,est,motivo,veiculo_vendido_id);}catch{}load(true);}
 
   const todos=estagios.flatMap(e=>leadsDaColuna(e,kanban));
   const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
@@ -493,7 +536,7 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo)=>{handleMover(id,est,motivo);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );

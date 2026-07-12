@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado } from "../api.js";
+import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento } from "../api.js";
 import { getRole } from "../auth.js";
 
 const MSG_STATUS_INFO = {
@@ -76,6 +76,66 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
   );
 }
 
+// Lembrete de agendamento (visita/test-drive) — mesmo estilo visual de card das
+// outras colunas, mas ação mais simples (1 mensagem só, dispara 15-25min antes do
+// horário marcado): editar o texto (ou deixar em branco pro padrão automático) e
+// pausar/retomar o lembrete inteiro. Sem "fluxo de N mensagens" porque hoje só
+// existe 1 disparo por agendamento — decisão explícita 2026-07-12 pra não
+// reestruturar o mecanismo de envio (que já funciona ao vivo) só pra caber no
+// mesmo formato de sequência editável por mensagem.
+function AgendamentoItem({ag, readOnly, onAtualizado}){
+  const[editando,setEditando]=useState(false);
+  const[texto,setTexto]=useState(ag.lembrete_texto_cliente||"");
+  const[salvando,setSalvando]=useState(false);
+  async function salvarTexto(){
+    setSalvando(true);
+    try{await atualizarLembreteAgendamento(ag.id,{lembrete_texto_cliente:texto.trim()||null});onAtualizado();}
+    catch{alert("Erro ao salvar. Tente de novo.");}
+    setSalvando(false);setEditando(false);
+  }
+  async function alternarPausa(){
+    try{await atualizarLembreteAgendamento(ag.id,{lembrete_pausado:!ag.lembrete_pausado});onAtualizado();}
+    catch{alert("Erro ao atualizar o lembrete.");}
+  }
+  return(
+    <div className="fu-item" style={{flexDirection:"column",alignItems:"stretch"}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:10,width:"100%"}}>
+        <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{ag.vendedor_iniciais}</div>
+        <div className="fu-info">
+          <div className="fu-nome">{ag.cliente_nome}</div>
+          <div className="fu-sub">{ag.veiculo||"—"} · {ag.vendedor_nome||"sem vendedor"} · {ag.tipo}</div>
+          <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>Agendado pra {fmtData(ag.data_hora)}</div>
+          {ag.lembrete_pausado&&<span className="badge" style={{fontSize:10,marginTop:4,background:"var(--warning)22",color:"var(--warning)",display:"inline-flex"}}><i className="ti ti-player-pause" style={{fontSize:11}}/> Lembrete pausado</span>}
+        </div>
+        {ag.telefone&&<a href={`https://wa.me/55${ag.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}
+        {ag.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${ag.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}}><i className="ti ti-message-circle" style={{fontSize:14}}/></a>}
+      </div>
+      <div style={{background:"var(--surface2)",borderRadius:8,padding:"8px 10px",marginTop:8}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <span style={{fontSize:10,color:"var(--muted)",textTransform:"uppercase"}}>Mensagem do lembrete</span>
+          {!readOnly&&<div style={{display:"flex",gap:4}}>
+            <button className="btn btn-ghost" style={{padding:"2px 8px",fontSize:11}} onClick={alternarPausa}>
+              {ag.lembrete_pausado?<><i className="ti ti-player-play" style={{fontSize:12}}/> Retomar</>:<><i className="ti ti-player-pause" style={{fontSize:12}}/> Pausar</>}
+            </button>
+          </div>}
+        </div>
+        {editando?(
+          <div style={{display:"flex",gap:4}}>
+            <textarea className="form-input" style={{marginBottom:0,fontSize:12,minHeight:50}} value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Deixe em branco pro texto padrão automático"/>
+            <button className="btn btn-primary" style={{padding:"4px 8px"}} onClick={salvarTexto} disabled={salvando}>{salvando?<span className="spinner"/>:<i className="ti ti-check"/>}</button>
+          </div>
+        ):(
+          <div style={{fontSize:12,color:ag.lembrete_texto_cliente?"var(--fg)":"var(--muted)",cursor:readOnly?"default":"pointer",fontStyle:ag.lembrete_texto_cliente?"normal":"italic"}}
+            onClick={()=>{if(readOnly)return;setTexto(ag.lembrete_texto_cliente||"");setEditando(true);}}
+            title={readOnly?"":"Clique pra editar"}>
+            {ag.lembrete_texto_cliente||"Texto padrão automático (clique pra personalizar)"} {!readOnly&&<i className="ti ti-pencil" style={{fontSize:11,color:"var(--muted)"}}/>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const TIPO_LABEL={
   sem_credito:"Sem crédito",vai_pensar:"Vai pensar",
   nao_achou_carro:"Não achou o carro",parou_responder:"Parou de responder",
@@ -86,6 +146,21 @@ const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder"
 function fmtData(iso){
   if(!iso) return "—";
   return new Date(iso).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+
+// Classificação do estágio: manual (vendedor arrastou o card) vs automática (Observador
+// pós-handoff classificou por IA, com nível de confiança) — usa estagio_definido_por
+// (fonte confiável) e extrai a confiança do texto de motivo quando disponível.
+function ClassificacaoBadge({f}){
+  if(f.estagio_definido_por==="humano"){
+    return <span className="badge" style={{fontSize:10,background:"var(--brand)22",color:"var(--brand)",display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-user" style={{fontSize:11}}/>Definido manualmente</span>;
+  }
+  if(f.estagio_definido_por==="ia_observador"){
+    const m=/confianca[:\s]*([0-9.]+)/i.exec(f.motivo||"");
+    const conf=m?Math.round(parseFloat(m[1])*100):null;
+    return <span className="badge" style={{fontSize:10,background:"#7ba7e022",color:"#7ba7e0",display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-robot" style={{fontSize:11}}/>IA{conf!==null?` · ${conf}% confiança`:""}</span>;
+  }
+  return null;
 }
 
 export default function FollowUps(){
@@ -150,6 +225,7 @@ export default function FollowUps(){
           Vencidos {data.vencidos?.length>0&&<span style={{background:"var(--danger)",color:"white",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,marginLeft:4}}>{data.vencidos.length}</span>}
         </button>
         <button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Agendados pela Lara ({data.agendados?.length||0})</button>
+        <button className={`tab-btn ${aba==="agendamentos"?"active":""}`} onClick={()=>setAba("agendamentos")}>Agendamentos ({data.agendamentos?.length||0})</button>
       </div>
 
       {aba==="estagio"&&(
@@ -168,6 +244,7 @@ export default function FollowUps(){
                       <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
                         Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
                       </div>
+                      <div style={{marginTop:4}}><ClassificacaoBadge f={f}/></div>
                       {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
                     </div>
                     {AcoesLead(f)}
@@ -196,6 +273,17 @@ export default function FollowUps(){
                 {a.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${a.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}}><i className="ti ti-message-circle" style={{fontSize:14}}/> Chatwoot</a>}
                 {!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>concluirAgendado(a.id)} disabled={concluindo===a.id}>{concluindo===a.id?<span className="spinner"/>:<><i className="ti ti-check" style={{fontSize:14}}/> Concluir</>}</button>}
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {aba==="agendamentos"&&(
+        <div className="card">
+          {(!data.agendamentos||data.agendamentos.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum agendamento com lembrete pendente</p></div>}
+          {data.agendamentos?.map(ag=>(
+            <div key={ag.id} style={{marginBottom:8}}>
+              <AgendamentoItem ag={ag} readOnly={readOnly} onAtualizado={load}/>
             </div>
           ))}
         </div>
