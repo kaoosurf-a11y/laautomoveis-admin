@@ -165,13 +165,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
 
 /* ── Kanban ── */
-.kanban-board{display:flex;gap:12px;overflow-x:auto;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2)}
+/* overflow-x:scroll (não "auto") reserva o espaço da barra sempre, mesmo antes do
+   conteúdo terminar de medir/renderizar — evita o "só aparece depois de interagir"
+   que overflow:auto pode causar em alguns navegadores no primeiro paint. */
+.kanban-board{display:flex;gap:12px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2);cursor:grab}
+.kanban-board.grabbing{cursor:grabbing;user-select:none;scroll-snap-type:none}
 .kanban-board::-webkit-scrollbar{height:14px}
 .kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
 .kanban-board::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px;border:3px solid var(--surface2)}
 .kanban-board::-webkit-scrollbar-thumb:hover{background:#dbb95a}
 .kanban-col{flex-shrink:0;width:230px;scroll-snap-align:start}
-.kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none}
+.kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none;cursor:grab}
+.kanban-col-header:active{cursor:grabbing}
 .kanban-col-title{font-size:12px;font-weight:600;color:var(--fg)}
 .kanban-col-count{font-size:11px;color:var(--muted);background:var(--surface2);padding:1px 8px;border-radius:99px}
 /* Altura fixa ≈ 5 cards visíveis; a partir do 6º, scroll interno na coluna —

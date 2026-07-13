@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
@@ -24,16 +24,20 @@ const FOLLOWUP_LABEL={
 // "fechado_perdido" removida (decisão do Felipe, 2026-07: não faz sentido pra jornada
 // do cliente da loja). "bau" adicionada como novo catch-all genérico — vazia por
 // padrão, o vendedor move pra lá manualmente quando fizer sentido.
+// Paleta 2026-07: cada coluna tem uma cor própria e distinta (antes parou_responder/
+// pos_venda/bau dividiam tons de cinza quase idênticos, difícil de diferenciar num
+// piscar de olhos). Harmonizada com o tema escuro do admin — mesmo nível de saturação
+// e brilho das cores já existentes (novo_lead/negociando/sem_credito/vai_pensar).
 const ESTAGIOS_ADMIN=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
-  {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
+  {key:"parou_responder",label:"Parou de responder",cor:"#16a085"},
   {key:"fechado_ganho",label:"Venda feita",cor:"#4caf7d"},
-  {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
-  {key:"bau",label:"Baú",cor:"#6b6b66"},
+  {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
+  {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
 // Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou — ele não
 // precisa das 2 colunas iniciais separadas, só decidir o desfecho. "Novo lead" e
@@ -45,16 +49,36 @@ const ESTAGIOS_VENDEDOR=[
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
-  {key:"parou_responder",label:"Parou de responder",cor:"#7f8c8d"},
+  {key:"parou_responder",label:"Parou de responder",cor:"#16a085"},
   {key:"fechado_ganho",label:"Venda feita",cor:"#4caf7d"},
-  {key:"pos_venda",label:"Pós-venda",cor:"#6b6b66"},
-  {key:"bau",label:"Baú",cor:"#6b6b66"},
+  {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
+  {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
 function leadsDaColuna(est,kanban){
   return est.estagiosDb ? est.estagiosDb.flatMap(k=>kanban[k]||[]) : (kanban[est.key]||[]);
 }
 function colunaVisual(estagios,estagioReal){
   return estagios.find(e=>e.key===estagioReal || e.estagiosDb?.includes(estagioReal));
+}
+// Ordem das colunas do board — só preferência visual, não é dado de negócio (por isso
+// localStorage por navegador/role já basta, sem precisar de coluna nova no banco nem
+// endpoint). Chave separada admin/vendedor porque os dois conjuntos de colunas são
+// diferentes (ver ESTAGIOS_ADMIN/ESTAGIOS_VENDEDOR acima).
+const ORDER_KEY=role=>`la_crm_col_order_${role==="agent"?"vendedor":"admin"}`;
+function carregarOrdemColunas(role){
+  try{const raw=localStorage.getItem(ORDER_KEY(role));return raw?JSON.parse(raw):null;}catch{return null;}
+}
+function salvarOrdemColunas(role,keys){
+  try{localStorage.setItem(ORDER_KEY(role),JSON.stringify(keys));}catch{}
+}
+// Aplica a ordem salva sobre a lista base — colunas novas que não estavam salvas
+// (ex: adicionadas depois) entram no final, na ordem original, em vez de sumir.
+function ordenarColunas(base,savedKeys){
+  if(!savedKeys||!savedKeys.length)return base;
+  const porKey=Object.fromEntries(base.map(e=>[e.key,e]));
+  const ordenadas=savedKeys.map(k=>porKey[k]).filter(Boolean);
+  const faltantes=base.filter(e=>!savedKeys.includes(e.key));
+  return[...ordenadas,...faltantes];
 }
 const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E44AD","WI":"#27AE60"};
 
@@ -383,7 +407,58 @@ export default function CRM(){
   const role=getRole();
   const readOnly=role==="manager";
   // Vendedor vê "Para atender" fundido; owner/manager continuam com o funil completo.
-  const estagios=role==="agent"?ESTAGIOS_VENDEDOR:ESTAGIOS_ADMIN;
+  const estagiosBase=role==="agent"?ESTAGIOS_VENDEDOR:ESTAGIOS_ADMIN;
+  const[colOrder,setColOrder]=useState(()=>carregarOrdemColunas(role));
+  // Reordenar coluna é preferência visual, não mutação de dado — liberado pra todo
+  // mundo (inclusive manager/readOnly), diferente do drag de card entre estágios.
+  const estagios=useMemo(()=>ordenarColunas(estagiosBase,colOrder),[estagiosBase,colOrder]);
+  const[colArrastando,setColArrastando]=useState(null);
+  function onColHeaderDragStart(e,key){
+    e.dataTransfer.setData("application/x-kanban-col",key);
+    e.dataTransfer.effectAllowed="move";
+    setColArrastando(key);
+  }
+  function onColHeaderDragOver(e){
+    if(e.dataTransfer.types.includes("application/x-kanban-col")){e.preventDefault();e.stopPropagation();}
+  }
+  function onColHeaderDrop(e,targetKey){
+    if(!e.dataTransfer.types.includes("application/x-kanban-col"))return;
+    e.preventDefault();e.stopPropagation();
+    const srcKey=e.dataTransfer.getData("application/x-kanban-col");
+    setColArrastando(null);
+    if(!srcKey||srcKey===targetKey)return;
+    const keys=estagios.map(e=>e.key);
+    const from=keys.indexOf(srcKey),to=keys.indexOf(targetKey);
+    if(from<0||to<0)return;
+    keys.splice(from,1);keys.splice(to,0,srcKey);
+    setColOrder(keys);
+    salvarOrdemColunas(role,keys);
+  }
+  function onColHeaderDragEnd(){setColArrastando(null);}
+  // "Grab to scroll": clicar e arrastar numa área vazia do board (não num card) rola
+  // o board horizontalmente, tipo Miro/Trello mobile. Usa refs (não state) pro
+  // mousemove não re-renderizar a cada pixel — só troca a classe CSS via DOM direto.
+  const arrastandoBoard=useRef({ativo:false,startX:0,startScroll:0});
+  function onBoardMouseDown(e){
+    // Não inicia se o clique começou num card, no cabeçalho da coluna (que tem o
+    // próprio drag de reordenar) ou não foi botão esquerdo do mouse.
+    if(e.button!==0)return;
+    if(e.target.closest(".kanban-card")||e.target.closest(".kanban-col-header"))return;
+    const board=boardRef.current;
+    if(!board)return;
+    arrastandoBoard.current={ativo:true,startX:e.pageX,startScroll:board.scrollLeft};
+    board.classList.add("grabbing");
+  }
+  function onBoardMouseMove(e){
+    if(!arrastandoBoard.current.ativo)return;
+    const board=boardRef.current;
+    if(!board)return;
+    board.scrollLeft=arrastandoBoard.current.startScroll-(e.pageX-arrastandoBoard.current.startX);
+  }
+  function onBoardMouseUpOrLeave(){
+    arrastandoBoard.current.ativo=false;
+    boardRef.current?.classList.remove("grabbing");
+  }
   const[kanban,setKanban]=useState({});
   const[loading,setLoading]=useState(true);
   const[busca,setBusca]=useState("");
@@ -476,13 +551,29 @@ export default function CRM(){
           })}
         </div>
       ):(
-        <div className="kanban-board" ref={boardRef}>
+        <div
+          className="kanban-board" ref={boardRef}
+          onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
+          onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}
+        >
           {estagios.map(est=>{
             const leads=leadsDaColuna(est,kanban).filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
             return(
               <div key={est.key} className="kanban-col">
-                <div className="kanban-col-header" style={{border:`3px solid ${est.cor}`,borderBottom:"none"}}>
-                  <span className="kanban-col-title">{est.label}</span>
+                <div
+                  className="kanban-col-header"
+                  style={{border:`3px solid ${est.cor}`,borderBottom:"none",opacity:colArrastando===est.key?.4:1}}
+                  draggable
+                  onDragStart={e=>onColHeaderDragStart(e,est.key)}
+                  onDragOver={onColHeaderDragOver}
+                  onDrop={e=>onColHeaderDrop(e,est.key)}
+                  onDragEnd={onColHeaderDragEnd}
+                  title="Arraste pra reordenar as colunas"
+                >
+                  <span style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
+                    <i className="ti ti-grip-vertical" style={{fontSize:13,color:"var(--muted)",flexShrink:0}}/>
+                    <span className="kanban-col-title" style={{color:est.cor}}>{est.label}</span>
+                  </span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
                 <div
