@@ -124,6 +124,16 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 .page-title{font-size:20px;font-weight:700;color:var(--fg);display:flex;align-items:center;gap:8px}
 .page-title i{font-size:22px;color:var(--brand)}
 
+/* ── Scroll fade (grupos de botões que podem não caber numa tela estreita: filtro
+   de período do Dashboard, abas de categoria) ── */
+.scroll-fade-wrap{position:relative;min-width:0;max-width:100%}
+.scroll-fade-track{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-behavior:smooth}
+.scroll-fade-track::-webkit-scrollbar{display:none}
+.scroll-fade-track>*{flex-shrink:0}
+.scroll-fade{position:absolute;top:0;bottom:0;width:28px;pointer-events:none}
+.scroll-fade-left{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.scroll-fade-right{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;min-height:40px;white-space:nowrap;text-decoration:none;-webkit-tap-highlight-color:transparent}
 .btn:active{transform:scale(.97);opacity:.9}

@@ -1,10 +1,43 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getDashboard, getMetricasDashboard } from "../api.js";
 import { getUser } from "../auth.js";
 
 /* ─── helpers ─── */
 const fmtR = v => `R$ ${Number(v).toLocaleString("pt-BR")}`;
 const AV_CORES = ["#C8A84B","#7ba7e0","#4caf7d","#e07b7b","#a07be0"];
+
+// Grupo de botões (filtro de período, abas) que em telas estreitas pode não caber
+// numa linha só. Em vez de cortar/espremer os botões, rola horizontal nativo (touch
+// suave) com um degradê nas bordas indicando que há mais conteúdo pra descobrir —
+// o degradê só aparece no lado que realmente tem mais itens escondidos (recalcula em
+// scroll/resize), some sozinho quando tudo já cabe na tela ou quando chega na ponta.
+function ScrollFade({ children, gap = 8 }) {
+  const trackRef = useRef(null);
+  const [fade, setFade] = useState({ left: false, right: false });
+  const check = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    setFade({
+      left: el.scrollLeft > 4,
+      right: el.scrollLeft < el.scrollWidth - el.clientWidth - 4,
+    });
+  }, []);
+  useEffect(() => {
+    check();
+    const el = trackRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => { el.removeEventListener("scroll", check); window.removeEventListener("resize", check); };
+  }, [check]);
+  return (
+    <div className="scroll-fade-wrap">
+      <div ref={trackRef} className="scroll-fade-track" style={{ gap }}>{children}</div>
+      {fade.left && <div className="scroll-fade scroll-fade-left" />}
+      {fade.right && <div className="scroll-fade scroll-fade-right" />}
+    </div>
+  );
+}
 
 /* ─── sub‑componentes ─── */
 
@@ -454,14 +487,14 @@ export default function Dashboard() {
           <h1 className="page-title"><i className="ti ti-layout-dashboard"/> Dashboard</h1>
           {roleLabel && <span style={{fontSize:12,color:"var(--muted)",marginLeft:2}}>· {roleLabel}</span>}
         </div>
-        <div style={{display:"flex",gap:6}}>
+        <ScrollFade gap={6}>
           {[{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"trimestre",l:"Trimestre"}].map(p=>(
             <button key={p.k} className={`btn ${periodo===p.k?"btn-primary":"btn-ghost"}`}
               style={{padding:"6px 12px",fontSize:12}} onClick={()=>setPeriodo(p.k)}>
               {p.l}
             </button>
           ))}
-        </div>
+        </ScrollFade>
       </div>
 
       {/* Notificação lead quente */}
@@ -479,18 +512,20 @@ export default function Dashboard() {
       )}
 
       {/* Tabs */}
-      <div style={{display:"flex",gap:8,marginBottom:16,paddingBottom:12,borderBottom:"1px solid var(--border)"}}>
-        {ABAS.map(a=>(
-          <button key={a.id} onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}
-            style={{padding:"8px 18px",fontSize:13,fontWeight:aba===a.id?700:500,
-              color:aba===a.id?"#0c0c0a":"var(--muted)",
-              background:aba===a.id?"#C8A84B":"transparent",
-              border:"none",borderRadius:99,cursor:"pointer",
-              boxShadow:aba===a.id?"0 2px 10px rgba(200,168,75,.35)":"none",
-              transition:"all .2s"}}>
-            {a.label}
-          </button>
-        ))}
+      <div style={{marginBottom:16,paddingBottom:12,borderBottom:"1px solid var(--border)"}}>
+        <ScrollFade>
+          {ABAS.map(a=>(
+            <button key={a.id} onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}
+              style={{padding:"8px 18px",fontSize:13,fontWeight:aba===a.id?700:500,
+                color:aba===a.id?"#0c0c0a":"var(--muted)",
+                background:aba===a.id?"#C8A84B":"transparent",
+                border:"none",borderRadius:99,cursor:"pointer",
+                boxShadow:aba===a.id?"0 2px 10px rgba(200,168,75,.35)":"none",
+                transition:"all .2s"}}>
+              {a.label}
+            </button>
+          ))}
+        </ScrollFade>
       </div>
 
       {aba==="oportunidades" && <TabOportunidades data={data}/>}
