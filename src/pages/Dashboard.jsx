@@ -441,10 +441,10 @@ export default function Dashboard() {
   if (!data) return null;
 
   const ABAS = [
-    { id:"oportunidades", label:"🎯 Oportunidades" },
-    { id:"jornada",       label:"🗺️ Jornada" },
-    { id:"estoque",       label:"🚗 Estoque" },
-    ...(podeVerMetricas?[{ id:"metricas", label:"📊 Métricas" }]:[]),
+    { id:"oportunidades", label:"Oportunidades" },
+    { id:"jornada",       label:"Jornada" },
+    { id:"estoque",       label:"Estoque" },
+    ...(podeVerMetricas?[{ id:"metricas", label:"Métricas" }]:[]),
   ];
 
   return (
@@ -489,7 +489,7 @@ export default function Dashboard() {
         <div style={{display:"flex",gap:4,flexWrap:"nowrap"}}>
           {ABAS.map(a=>(
             <button key={a.id} onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}
-              style={{padding:"6px 8px",fontSize:11,fontWeight:aba===a.id?700:500,
+              style={{padding:"6px 8px",fontSize:10,fontWeight:aba===a.id?700:500,
                 color:aba===a.id?"#0c0c0a":"var(--muted)",
                 background:aba===a.id?"#C8A84B":"transparent",
                 border:"none",borderRadius:99,cursor:"pointer",
