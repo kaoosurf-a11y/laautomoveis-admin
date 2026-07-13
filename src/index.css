@@ -124,16 +124,6 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 .page-title{font-size:20px;font-weight:700;color:var(--fg);display:flex;align-items:center;gap:8px}
 .page-title i{font-size:22px;color:var(--brand)}
 
-/* ── Scroll fade (grupos de botões que podem não caber numa tela estreita: filtro
-   de período do Dashboard, abas de categoria) ── */
-.scroll-fade-wrap{position:relative;min-width:0;max-width:100%}
-.scroll-fade-track{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-behavior:smooth}
-.scroll-fade-track::-webkit-scrollbar{display:none}
-.scroll-fade-track>*{flex-shrink:0}
-.scroll-fade{position:absolute;top:0;bottom:0;width:28px;pointer-events:none}
-.scroll-fade-left{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
-.scroll-fade-right{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
-
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;min-height:40px;white-space:nowrap;text-decoration:none;-webkit-tap-highlight-color:transparent}
 .btn:active{transform:scale(.97);opacity:.9}
@@ -177,21 +167,30 @@ tr:hover td{background:rgba(255,255,255,.02)}
 /* ── Kanban ── */
 /* overflow-x:scroll (não "auto") reserva o espaço da barra sempre, mesmo antes do
    conteúdo terminar de medir/renderizar — evita o "só aparece depois de interagir"
-   que overflow:auto pode causar em alguns navegadores no primeiro paint. */
-.kanban-board{display:flex;gap:12px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2);cursor:grab}
+   que overflow:auto pode causar em alguns navegadores no primeiro paint.
+   2026-07-13: achado real — a barra JÁ renderizava corretamente, mas o board (com
+   max-height:520px nas colunas) ficava mais alto que a viewport em telas comuns,
+   empurrando a própria barra (que fica na borda inferior do board) pra baixo da
+   dobra — só aparecia depois de rolar a página verticalmente. Fix: altura do board
+   presa a calc(100vh - topo), garantindo que a borda inferior (e a barra) sempre
+   cabe na tela no primeiro carregamento, sem depender de scroll vertical prévio.
+   230px de desconto ≈ padding do main-content + cabeçalho da página + busca/contador
+   acima do board (medido ao vivo, com folga). */
+.kanban-board{display:flex;gap:12px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2);cursor:grab;height:calc(100vh - 230px);min-height:320px}
 .kanban-board.grabbing{cursor:grabbing;user-select:none;scroll-snap-type:none}
 .kanban-board::-webkit-scrollbar{height:14px}
 .kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
 .kanban-board::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px;border:3px solid var(--surface2)}
 .kanban-board::-webkit-scrollbar-thumb:hover{background:#dbb95a}
-.kanban-col{flex-shrink:0;width:230px;scroll-snap-align:start}
-.kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none;cursor:grab}
+.kanban-col{flex-shrink:0;width:230px;scroll-snap-align:start;display:flex;flex-direction:column;min-height:0}
+.kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none;cursor:grab;flex-shrink:0}
 .kanban-col-header:active{cursor:grabbing}
 .kanban-col-title{font-size:12px;font-weight:600;color:var(--fg)}
 .kanban-col-count{font-size:11px;color:var(--muted);background:var(--surface2);padding:1px 8px;border-radius:99px}
-/* Altura fixa ≈ 5 cards visíveis; a partir do 6º, scroll interno na coluna —
-   o cabeçalho (nome + contador) fica fora dessa área, sempre visível. */
-.kanban-cards{background:var(--surface2);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:8px;min-height:80px;max-height:520px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+/* Preenche o resto da altura da coluna (que agora vem do .kanban-board com altura
+   presa à viewport, ver acima) em vez de um max-height fixo em pixels — min-height:0
+   é necessário pra um filho flex conseguir encolher/rolar dentro do pai. */
+.kanban-cards{background:var(--surface2);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:8px;min-height:0;flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .kanban-cards::-webkit-scrollbar{width:8px}
 .kanban-cards::-webkit-scrollbar-track{background:transparent}
 .kanban-cards::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
