@@ -63,6 +63,20 @@ const ESTAGIOS_VENDEDOR=[
 function leadsDaColuna(est,kanban){
   return est.estagiosDb ? est.estagiosDb.flatMap(k=>kanban[k]||[]) : (kanban[est.key]||[]);
 }
+// 2026-07-15: leadBate quebrava a tela toda (crash React, sem error boundary) ao
+// digitar qualquer coisa na busca — `l.veiculo_interesse.toLowerCase()` estourava
+// TypeError pra qualquer lead sem veículo de interesse preenchido (15 de 58 leads
+// reais hoje têm esse campo NULL), e telefone nem era comparado apesar do
+// placeholder "Buscar..." sugerir que buscava por nome/telefone. `||""` cobre
+// nome/veiculo_interesse/telefone null; telefone comparado sem formatação (só
+// dígitos) já que o campo já vem só-dígitos do backend.
+function leadBate(l,busca){
+  if(!busca)return true;
+  const q=busca.toLowerCase();
+  return (l.nome||"").toLowerCase().includes(q)
+    || (l.veiculo_interesse||"").toLowerCase().includes(q)
+    || (l.telefone||"").includes(busca.replace(/\D/g,"")||busca);
+}
 function colunaVisual(estagios,estagioReal){
   return estagios.find(e=>e.key===estagioReal || e.estagiosDb?.includes(estagioReal));
 }
@@ -496,7 +510,7 @@ export default function CRM(){
   async function handleMover(id,est,motivo,veiculo_vendido_id){try{await moverLead(id,est,motivo,veiculo_vendido_id);}catch{}load(true);}
 
   const todos=estagios.flatMap(e=>leadsDaColuna(e,kanban));
-  const filtrados=todos.filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
+  const filtrados=todos.filter(l=>leadBate(l,busca));
 
   function onCardDragStart(e,lead){
     e.dataTransfer.setData("text/plain",String(lead.id));
@@ -563,7 +577,7 @@ export default function CRM(){
           onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}
         >
           {estagios.map(est=>{
-            const leads=leadsDaColuna(est,kanban).filter(l=>!busca||l.nome.toLowerCase().includes(busca.toLowerCase())||l.veiculo_interesse.toLowerCase().includes(busca.toLowerCase()));
+            const leads=leadsDaColuna(est,kanban).filter(l=>leadBate(l,busca));
             return(
               <div key={est.key} className="kanban-col">
                 <div
