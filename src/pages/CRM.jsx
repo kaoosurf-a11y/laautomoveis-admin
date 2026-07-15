@@ -541,13 +541,21 @@ export default function CRM(){
   // navegadores (o drag tem seu próprio loop de renderização, fora do rAF normal) — o
   // scroll nunca rolava de verdade. Trocado pra setInterval (timer de verdade, não preso
   // ao ciclo de paint), que é o jeito padrão de resolver auto-scroll durante drag nativo.
+  // 2026-07-16 (2º fix real): scroll-snap-type:x mandatory no .kanban-board (pras colunas
+  // "encaixarem" ao rolar) brigava com os incrementos programáticos de scrollLeft — o
+  // navegador puxava de volta pro encaixe mais próximo a cada tick, cancelando o auto-
+  // scroll na prática (por isso "não acontecia nada" mesmo com o timer rodando certo). A
+  // função de arrastar-pra-rolar com o mouse (mais acima) já tinha resolvido isso desativando
+  // o snap via a classe .grabbing enquanto arrasta — reaproveitada aqui pelo mesmo motivo.
   const autoScrollRef=useRef({dir:0,timer:null});
   function pararAutoScroll(){
     autoScrollRef.current.dir=0;
     if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;}
+    boardRef.current?.classList.remove("grabbing");
   }
   function iniciarAutoScroll(){
     if(autoScrollRef.current.timer)return;
+    boardRef.current?.classList.add("grabbing");
     autoScrollRef.current.timer=setInterval(()=>{
       const board=boardRef.current;
       if(!board||autoScrollRef.current.dir===0)return;
@@ -564,7 +572,7 @@ export default function CRM(){
     else if(e.clientX>rect.right-zona)dir=1;
     autoScrollRef.current.dir=dir;
     if(dir!==0)iniciarAutoScroll();
-    else if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;}
+    else if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;board.classList.remove("grabbing");}
   }
   // dragleave dispara toda vez que o cursor passa de um card/coluna filho pra outro
   // (bubbling do HTML5 DnD), não só quando sai do board de verdade — se parasse aqui sem
