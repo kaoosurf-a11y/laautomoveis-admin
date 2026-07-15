@@ -486,13 +486,28 @@ export default function Dashboard() {
   const roleLabel = { owner:"Administrador", manager:"Gerente", agent:"Vendedor" }[user?.role] || "";
   const podeVerMetricas = user?.role==="owner"||user?.role==="manager";
 
-  function abrirMetricas(){
-    setAba("metricas");
-    if(metricas||loadingMetricas)return;
+  // 2026-07-15: aba Métricas ganhou o filtro de período (7 dias/Este mês/Trimestre) — antes
+  // essa aba sempre mostrava "todo o histórico" e nem reagia ao clicar no seletor lá em
+  // cima, o que confundia (o filtro parecia não fazer nada). metricasPeriodo guarda de qual
+  // período veio o dado em cache, pra saber quando precisa buscar de novo.
+  const [metricasPeriodo, setMetricasPeriodo] = useState(null);
+  function carregarMetricas(p){
     setLoadingMetricas(true);setErroMetricas(null);
-    getMetricasDashboard().then(d=>{setMetricas(d);setLoadingMetricas(false);})
+    getMetricasDashboard(p).then(d=>{setMetricas(d);setMetricasPeriodo(p);setLoadingMetricas(false);})
       .catch(()=>{setErroMetricas("Erro ao carregar métricas. Tente novamente.");setLoadingMetricas(false);});
   }
+  function abrirMetricas(){
+    setAba("metricas");
+    if(loadingMetricas || (metricas && metricasPeriodo===periodo))return;
+    carregarMetricas(periodo);
+  }
+  // Se o período mudar enquanto a aba Métricas já está aberta, refaz a busca na hora (sem
+  // isso, trocar de "Este mês" pra "7 dias" com a aba já aberta não atualizava nada).
+  useEffect(() => {
+    if (aba === "metricas" && metricasPeriodo !== null && metricasPeriodo !== periodo) {
+      carregarMetricas(periodo);
+    }
+  }, [periodo, aba]);
 
   if (erro) return (
     <div className="empty-state">

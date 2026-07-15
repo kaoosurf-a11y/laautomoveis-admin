@@ -47,7 +47,7 @@ export async function atualizarTemperatura(id,temperatura) { return req(`/api/cr
 export async function atualizarResponsavel(id,responsavel_atual) { return req(`/api/crm/leads/${id}/responsavel`,{method:"PATCH",body:JSON.stringify({responsavel_atual})}); }
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }
 export async function getDashboard(p="mes"){ return req(`/api/dashboard?periodo=${p}`); }
-export async function getMetricasDashboard(horas=24){ return req(`/api/metrics/dashboard?horas=${horas}`); }
+export async function getMetricasDashboard(periodo="mes",horas=24){ return req(`/api/metrics/dashboard?periodo=${periodo}&horas=${horas}`); }
 export async function getMetricasVendedor(id){ return req(`/api/metrics/vendedor/${id}`); }
 export async function getFollowups() {
   const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
