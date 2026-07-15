@@ -196,7 +196,7 @@ function BloqueioModal({onClose,onCriado}){
 }
 
 const TIPOS={test_drive:{label:"Test drive",icon:"🚗",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"🏢",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"📋",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"🤝",cor:"#8E44AD"}};
-const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)",aguardando_reagendamento_lara:"var(--brand)"};
+const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)",nao_compareceu:"#e67e22",aguardando_reagendamento_lara:"var(--brand)"};
 
 function fmtH(iso){const d=new Date(iso);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
 function fmtHF(iso,dur){const d=new Date(iso);d.setMinutes(d.getMinutes()+dur);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
@@ -288,7 +288,12 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setEscolhendoReagendar(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={confirmarComprou}><i className="ti ti-check"/> Veio e comprou</button>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>setEscolhendoMotivo(true)}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
-          <button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-user-x"/> Não veio</button>
+          {/* 2026-07-15: "não veio" (no-show) tinha o MESMO status de "cancelado" (cancelamento
+              prévio) — impossível medir taxa de comparecimento porque os dois casos ficavam
+              indistinguíveis no banco. Status próprio agora (nao_compareceu), sem mover o
+              estágio do lead automaticamente (mesmo comportamento que cancelado já tinha —
+              o vendedor decide separado o que fazer com o lead). */}
+          <button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"nao_compareceu")}><i className="ti ti-user-x"/> Não veio</button>
         </>}
       </div>}
     </div>

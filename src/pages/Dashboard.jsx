@@ -289,9 +289,19 @@ function TabMetricas({ metricas, loading, erro }) {
   if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if (loading || !metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
 
-  const { funil, porVendedor, porOrigem, iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups } = metricas;
+  const { funil, porVendedor, porOrigem, iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups, funilReferencia, resumoFunil } = metricas;
   const maxFunil = Math.max(...funil.map(f=>Number(f.total)), 1);
   const totalTemp = temperatura.reduce((s,t)=>s+Number(t.total),0) || 1;
+  // Funil de referência (leads->contatados->agendaram->compareceram->fecharam), cada
+  // etapa desenhada como % do total de leads (barra decrescente), igual convenção do
+  // "Funil completo" logo abaixo.
+  const ETAPAS_FUNIL_REF = funilReferencia ? [
+    { label:"Leads gerados",    ...funilReferencia.leads },
+    { label:"Contatados",       ...funilReferencia.contatados },
+    { label:"Agendaram visita", ...funilReferencia.agendaram },
+    { label:"Compareceram",     ...funilReferencia.compareceram },
+    { label:"Fecharam venda",   ...funilReferencia.fecharam },
+  ] : [];
 
   return (
     <>
@@ -317,6 +327,77 @@ function TabMetricas({ metricas, loading, erro }) {
           <div className="metric-delta" style={{color:"var(--muted)"}}>leads parados</div>
         </div>
       </div>
+
+      {funilReferencia && <div className="metrics-grid" style={{marginBottom:12}}>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-bolt"/> Contatado em até 5min</div>
+          <div className="metric-value">{funilReferencia.contatados5min.pct}%</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>{funilReferencia.contatados5min.total} de {funilReferencia.contatados.total} contatados</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-calendar-check"/> Comparecimento</div>
+          <div className="metric-value">{funilReferencia.comparecimento.pct}%</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>{funilReferencia.comparecimento.compareceram} de {funilReferencia.comparecimento.resolvidos} visitas</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-repeat"/> Fechamento por follow-up</div>
+          <div className="metric-value">{funilReferencia.fechamentoPorFollowup.pct}%</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>{funilReferencia.fechamentoPorFollowup.comFollowup} de {funilReferencia.fechamentoPorFollowup.totalFechadas} vendas</div>
+        </div>
+      </div>}
+
+      {funilReferencia && <div className="card" style={{marginBottom:12}}>
+        <div className="card-title"><i className="ti ti-filter"/> Funil de referência (lead → venda)</div>
+        {ETAPAS_FUNIL_REF.map((e,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <div style={{minWidth:120,fontSize:13,color:"var(--fg)"}}>{e.label}</div>
+            <div className="funnel-track" style={{flex:1}}><div className="funnel-bar" style={{width:`${e.pct}%`}}/></div>
+            <div style={{fontSize:12,color:"var(--muted)",minWidth:70,textAlign:"right"}}>{e.total} · {e.pct}%</div>
+          </div>
+        ))}
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:4}}>% sobre o total de leads gerados no período · "Agendaram"/"Compareceram" usam compromissos reais da Agenda, não o card "Agendados" do Kanban.</div>
+      </div>}
+
+      {resumoFunil && <div className="card" style={{marginBottom:12,overflowX:"auto"}}>
+        <div className="card-title"><i className="ti ti-table"/> Resumo por etapa</div>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,marginBottom:12}}>
+          <thead>
+            <tr style={{borderBottom:"1px solid var(--border)"}}>
+              <th style={{textAlign:"left",padding:"6px 8px",color:"var(--muted)",fontWeight:600}}>Etapa</th>
+              <th style={{textAlign:"right",padding:"6px 8px",color:"var(--muted)",fontWeight:600}}>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resumoFunil.map((r,i)=>(
+              <tr key={i} style={{borderBottom:i<resumoFunil.length-1?"1px solid var(--border)":"none"}}>
+                <td style={{padding:"6px 8px",color:"var(--fg)"}}>{r.etapa}</td>
+                <td style={{padding:"6px 8px",textAlign:"right",color:"var(--fg)",fontWeight:600}}>{r.total}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {/* Taxas etapa-a-etapa (não % do total) — respondem "qual etapa específica está
+            vazando", diferente das barras acima que mostram a perda acumulada. */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
+          <div>
+            <div style={{fontSize:11,color:"var(--muted)"}}>% Agendou (de contatados)</div>
+            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.agendaram.pctEtapaAnterior}%</div>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:"var(--muted)"}}>% Compareceu (de agendou)</div>
+            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.compareceram.pctEtapaAnterior}%</div>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:"var(--muted)"}}>% Fechou (de compareceu)</div>
+            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.fecharam.pctEtapaAnterior}%</div>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:"var(--muted)"}}>Fechamento por follow-up</div>
+            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.fechamentoPorFollowup.pct}%</div>
+            <div style={{fontSize:11,color:"var(--muted)"}}>{funilReferencia.fechamentoPorFollowup.comFollowup} de {funilReferencia.fechamentoPorFollowup.totalFechadas} vendas</div>
+          </div>
+        </div>
+      </div>}
 
       <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-filter"/> Funil completo (estagio_funil)</div>
