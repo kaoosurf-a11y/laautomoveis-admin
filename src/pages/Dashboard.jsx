@@ -4,6 +4,17 @@ import { getUser } from "../auth.js";
 
 /* ─── helpers ─── */
 const fmtR = v => `R$ ${Number(v).toLocaleString("pt-BR")}`;
+// 2026-07-15: "Resp. média" passou a medir tempo até a 1ª resposta REAL do vendedor
+// (antes media a Lara, quase instantânea, e o valor virava minutos gigantes quando havia
+// gaps noturnos — sem sentido mostrar "904.9min", precisa escalar pra horas).
+const fmtMin = v => {
+  if (v === null || v === undefined) return "sem dados";
+  const n = Number(v);
+  if (n < 60) return `${Math.round(n * 10) / 10}min`;
+  const h = Math.floor(n / 60);
+  const m = Math.round(n % 60);
+  return m > 0 ? `${h}h ${m}min` : `${h}h`;
+};
 const AV_CORES = ["#C8A84B","#7ba7e0","#4caf7d","#e07b7b","#a07be0"];
 
 /* ─── sub‑componentes ─── */
@@ -15,7 +26,7 @@ function TabOportunidades({ data }) {
     { icon:"ti-check",         label:"Vendas",       value:resumo.vendas,                delta:`meta: ${resumo.meta_vendas}`,             up:resumo.vendas>=resumo.meta_vendas },
     { icon:"ti-percent",       label:"Conversão",    value:`${resumo.conversao}%`,       delta:`+${resumo.conversao_delta}% vs mês`,      up:true },
     { icon:"ti-x",             label:"Perdidas",     value:resumo.perdidas,              delta:"leads perdidos",                          up:false },
-    { icon:"ti-clock",         label:"Resp. média",  value:`${resumo.resp_media_min}min`,delta:"tempo de resposta",                       up:resumo.resp_media_min<=5 },
+    { icon:"ti-clock",         label:"Resp. média",  value:fmtMin(resumo.resp_media_min),delta:"até o vendedor responder",                up:resumo.resp_media_min!==null && resumo.resp_media_min<=10 },
     { icon:"ti-currency-real", label:"Ticket médio", value:fmtR(resumo.ticket_medio),    delta:`receita: ${fmtR(resumo.receita_total)}`,   up:true },
   ];
   return (
