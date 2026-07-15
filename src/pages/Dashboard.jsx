@@ -466,10 +466,20 @@ export default function Dashboard() {
   const user = getUser();
   const navigate = useNavigate();
 
+  // 2026-07-15: período "personalizado" — usuário escolhe dia/mês/ano exatos (dois campos
+  // de data) em vez de só os 3 presets fixos. customDesde/customAte só importam quando
+  // periodo==="personalizado"; chaveDesde/chaveAte formam uma "assinatura" do período atual
+  // (preset OU intervalo customizado) pra saber quando precisa refazer a busca.
+  const [customDesde, setCustomDesde] = useState("");
+  const [customAte, setCustomAte]     = useState("");
+  const [seletorAberto, setSeletorAberto] = useState(false);
+  const chavePeriodo = periodo==="personalizado" ? `personalizado:${customDesde}:${customAte}` : periodo;
+
   useEffect(() => {
+    if (periodo==="personalizado" && !customDesde) return; // aguarda o usuário aplicar
     setLoading(true);
     setErro(null);
-    getDashboard(periodo).then(d => {
+    getDashboard(periodo, customDesde, customAte).then(d => {
       setData(d);
       setLoading(false);
       // notificação de lead quente (mock: primeiro lead score>=80)
@@ -481,33 +491,43 @@ export default function Dashboard() {
       setErro("Erro ao carregar dados. Tente novamente.");
       setLoading(false);
     });
-  }, [periodo]);
+  }, [chavePeriodo]);
 
   const roleLabel = { owner:"Administrador", manager:"Gerente", agent:"Vendedor" }[user?.role] || "";
   const podeVerMetricas = user?.role==="owner"||user?.role==="manager";
 
-  // 2026-07-15: aba Métricas ganhou o filtro de período (7 dias/Este mês/Trimestre) — antes
-  // essa aba sempre mostrava "todo o histórico" e nem reagia ao clicar no seletor lá em
-  // cima, o que confundia (o filtro parecia não fazer nada). metricasPeriodo guarda de qual
-  // período veio o dado em cache, pra saber quando precisa buscar de novo.
+  // 2026-07-15: aba Métricas ganhou o filtro de período (7 dias/Este mês/Trimestre/
+  // Personalizado) — antes essa aba sempre mostrava "todo o histórico" e nem reagia ao
+  // clicar no seletor lá em cima, o que confundia (o filtro parecia não fazer nada).
+  // metricasPeriodo guarda a "assinatura" (chavePeriodo) de qual período veio o dado em
+  // cache, pra saber quando precisa buscar de novo.
   const [metricasPeriodo, setMetricasPeriodo] = useState(null);
-  function carregarMetricas(p){
+  function carregarMetricas(){
     setLoadingMetricas(true);setErroMetricas(null);
-    getMetricasDashboard(p).then(d=>{setMetricas(d);setMetricasPeriodo(p);setLoadingMetricas(false);})
+    getMetricasDashboard(periodo,24,customDesde,customAte).then(d=>{setMetricas(d);setMetricasPeriodo(chavePeriodo);setLoadingMetricas(false);})
       .catch(()=>{setErroMetricas("Erro ao carregar métricas. Tente novamente.");setLoadingMetricas(false);});
   }
   function abrirMetricas(){
     setAba("metricas");
-    if(loadingMetricas || (metricas && metricasPeriodo===periodo))return;
-    carregarMetricas(periodo);
+    if(loadingMetricas || (metricas && metricasPeriodo===chavePeriodo))return;
+    carregarMetricas();
   }
   // Se o período mudar enquanto a aba Métricas já está aberta, refaz a busca na hora (sem
   // isso, trocar de "Este mês" pra "7 dias" com a aba já aberta não atualizava nada).
   useEffect(() => {
-    if (aba === "metricas" && metricasPeriodo !== null && metricasPeriodo !== periodo) {
-      carregarMetricas(periodo);
+    if (aba === "metricas" && metricasPeriodo !== null && metricasPeriodo !== chavePeriodo) {
+      if (periodo==="personalizado" && !customDesde) return;
+      carregarMetricas();
     }
-  }, [periodo, aba]);
+  }, [chavePeriodo, aba]);
+
+  // Aplica o intervalo customizado — só dispara a busca quando o usuário confirma (não a
+  // cada tecla/clique nos campos de data), e fecha o seletor.
+  function aplicarPersonalizado(){
+    if(!customDesde) return;
+    setPeriodo("personalizado");
+    setSeletorAberto(false);
+  }
 
   if (erro) return (
     <div className="empty-state">
@@ -540,16 +560,47 @@ export default function Dashboard() {
         {/* Poucos botões, usados com frequência — maiores e mais confortáveis de tocar
             (2026-07-13: antes rolava horizontal; agora sempre cabem numa linha, ver
             .page-header{flex-wrap:wrap} — em telas estreitas esse grupo desce pra
-            baixo do título em vez de espremer, e mesmo na própria linha cabe folgado). */}
+            baixo do título em vez de espremer, e mesmo na própria linha cabe folgado).
+            2026-07-15: ganhou "Personalizado" — abre um seletor de intervalo (De/Até)
+            pra escolher dia/mês/ano exatos, cobre inclusive um ano inteiro (ex:
+            01/01/2026 até 31/12/2026), não só os 3 presets fixos. */}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {[{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"trimestre",l:"Trimestre"}].map(p=>(
             <button key={p.k} className={`btn ${periodo===p.k?"btn-primary":"btn-ghost"}`}
-              style={{padding:"10px 16px",fontSize:14,fontWeight:600}} onClick={()=>setPeriodo(p.k)}>
+              style={{padding:"10px 16px",fontSize:14,fontWeight:600}}
+              onClick={()=>{setPeriodo(p.k);setSeletorAberto(false);}}>
               {p.l}
             </button>
           ))}
+          <button className={`btn ${periodo==="personalizado"?"btn-primary":"btn-ghost"}`}
+            style={{padding:"10px 16px",fontSize:14,fontWeight:600}}
+            onClick={()=>setSeletorAberto(s=>!s)}>
+            <i className="ti ti-calendar"/> Personalizado
+          </button>
         </div>
       </div>
+
+      {seletorAberto && (
+        <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap",padding:"14px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:10,marginBottom:16}}>
+          <div style={{flex:"1 1 140px",minWidth:140}}>
+            <label style={{display:"block",fontSize:11,color:"var(--muted)",marginBottom:4}}>De</label>
+            <input type="date" className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
+              value={customDesde} onChange={e=>setCustomDesde(e.target.value)}
+              max={customAte||undefined}/>
+          </div>
+          <div style={{flex:"1 1 140px",minWidth:140}}>
+            <label style={{display:"block",fontSize:11,color:"var(--muted)",marginBottom:4}}>Até</label>
+            <input type="date" className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
+              value={customAte} onChange={e=>setCustomAte(e.target.value)}
+              min={customDesde||undefined} max={new Date().toISOString().slice(0,10)}/>
+          </div>
+          <button className="btn btn-primary" style={{minHeight:44}} disabled={!customDesde} onClick={aplicarPersonalizado}>
+            <i className="ti ti-check"/> Aplicar
+          </button>
+          <button className="btn btn-ghost" style={{minHeight:44}} onClick={()=>setSeletorAberto(false)}>Cancelar</button>
+          <div style={{flexBasis:"100%",fontSize:11,color:"var(--muted)"}}>Dica: pra ver um ano inteiro, escolha 01/01 até 31/12 do ano desejado.</div>
+        </div>
+      )}
 
       {/* Notificação lead quente — 2026-07-15 (auditoria mobile): banner e botões agora
           quebram linha em telas estreitas em vez de espremer texto+2 botões numa linha só;

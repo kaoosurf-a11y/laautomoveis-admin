@@ -46,8 +46,16 @@ export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`
 export async function atualizarTemperatura(id,temperatura) { return req(`/api/crm/leads/${id}/temperatura`,{method:"PATCH",body:JSON.stringify({temperatura})}); }
 export async function atualizarResponsavel(id,responsavel_atual) { return req(`/api/crm/leads/${id}/responsavel`,{method:"PATCH",body:JSON.stringify({responsavel_atual})}); }
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }
-export async function getDashboard(p="mes"){ return req(`/api/dashboard?periodo=${p}`); }
-export async function getMetricasDashboard(periodo="mes",horas=24){ return req(`/api/metrics/dashboard?periodo=${periodo}&horas=${horas}`); }
+// 2026-07-15: período "personalizado" (dia/mês/ano exatos escolhidos pelo usuário) manda
+// desde/ate também — ignorados pelo backend pros presets (semana/mes/trimestre).
+export async function getDashboard(p="mes",desde=null,ate=null){
+  const extra = p==="personalizado" && desde ? `&desde=${desde}&ate=${ate||""}` : "";
+  return req(`/api/dashboard?periodo=${p}${extra}`);
+}
+export async function getMetricasDashboard(periodo="mes",horas=24,desde=null,ate=null){
+  const extra = periodo==="personalizado" && desde ? `&desde=${desde}&ate=${ate||""}` : "";
+  return req(`/api/metrics/dashboard?periodo=${periodo}&horas=${horas}${extra}`);
+}
 export async function getMetricasVendedor(id){ return req(`/api/metrics/vendedor/${id}`); }
 export async function getFollowups() {
   const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
