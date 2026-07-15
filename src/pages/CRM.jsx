@@ -523,6 +523,7 @@ export default function CRM(){
   function onColDrop(e,estKey){
     e.preventDefault();
     setColunaSobre(null);
+    pararAutoScroll();
     const leadId=e.dataTransfer.getData("text/plain");
     if(!leadId)return;
     // Coluna virtual ("Para atender", vendedor) não é um estagio real — arrastar de
@@ -530,6 +531,49 @@ export default function CRM(){
     const alvo=estagios.find(e=>e.key===estKey);
     const realKey=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : estKey;
     handleMover(leadId,realKey);
+  }
+
+  // 2026-07-16: auto-scroll horizontal ao arrastar um card até perto da borda do board —
+  // antes precisava soltar o card, rolar manualmente e pegar de novo pra alcançar uma
+  // coluna fora da tela (ex: arrastar "Novo lead" até "Fechado" com 12 colunas). Loop via
+  // requestAnimationFrame (não por evento dragover direto — dragover dispara devagar/
+  // irregular entre navegadores, ficaria travado) que só roda enquanto o cursor estiver
+  // dentro da faixa de 70px nas bordas esquerda/direita do board.
+  const autoScrollRef=useRef({dir:0,raf:null});
+  function pararAutoScroll(){
+    autoScrollRef.current.dir=0;
+    if(autoScrollRef.current.raf){cancelAnimationFrame(autoScrollRef.current.raf);autoScrollRef.current.raf=null;}
+  }
+  function tickAutoScroll(){
+    const board=boardRef.current;
+    if(!board||autoScrollRef.current.dir===0){autoScrollRef.current.raf=null;return;}
+    board.scrollLeft+=autoScrollRef.current.dir*14;
+    autoScrollRef.current.raf=requestAnimationFrame(tickAutoScroll);
+  }
+  function onBoardDragOver(e){
+    const board=boardRef.current;
+    if(!board)return;
+    const rect=board.getBoundingClientRect();
+    const zona=70;
+    let dir=0;
+    if(e.clientX<rect.left+zona)dir=-1;
+    else if(e.clientX>rect.right-zona)dir=1;
+    if(dir!==autoScrollRef.current.dir){
+      autoScrollRef.current.dir=dir;
+      if(dir!==0&&!autoScrollRef.current.raf)autoScrollRef.current.raf=requestAnimationFrame(tickAutoScroll);
+    }
+  }
+  // dragleave dispara toda vez que o cursor passa de um card/coluna filho pra outro
+  // (bubbling do HTML5 DnD), não só quando sai do board de verdade — se parasse aqui sem
+  // checar, o auto-scroll ficaria ligando/desligando (soluçando) o tempo todo durante o
+  // arraste. Só para de fato quando o cursor está fora do retângulo do board.
+  function onBoardDragLeave(e){
+    const board=boardRef.current;
+    if(!board)return;
+    const rect=board.getBoundingClientRect();
+    if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom){
+      pararAutoScroll();
+    }
   }
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
@@ -575,6 +619,7 @@ export default function CRM(){
           className="kanban-board" ref={boardRef}
           onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
           onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}
+          onDragOver={onBoardDragOver} onDragLeave={onBoardDragLeave}
         >
           {estagios.map(est=>{
             const leads=leadsDaColuna(est,kanban).filter(l=>leadBate(l,busca));
@@ -613,6 +658,7 @@ export default function CRM(){
                       className="kanban-card"
                       draggable={!readOnly}
                       onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
+                      onDragEnd={readOnly?undefined:pararAutoScroll}
                       onClick={()=>setLeadSel(lead)}
                       style={{cursor:readOnly?"pointer":"grab"}}
                     >
