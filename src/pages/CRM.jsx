@@ -512,9 +512,60 @@ export default function CRM(){
   const todos=estagios.flatMap(e=>leadsDaColuna(e,kanban));
   const filtrados=todos.filter(l=>leadBate(l,busca));
 
+  // 2026-07-16: auto-scroll horizontal ao arrastar um card até perto da borda do board —
+  // antes precisava soltar o card, rolar manualmente e pegar de novo pra alcançar uma
+  // coluna fora da tela (ex: arrastar "Novo lead" até "Baú"/"Fechado" pulando o funil).
+  // Duas tentativas anteriores não funcionaram: (1) requestAnimationFrame fica suspenso
+  // durante um arraste HTML5 nativo na maioria dos navegadores — trocado pra setInterval,
+  // timer de verdade, não preso ao ciclo de paint; (2) scroll-snap-type:x mandatory no
+  // .kanban-board brigava com os incrementos de scrollLeft, o navegador puxava de volta
+  // pro encaixe mais próximo — resolvido desativando o snap (classe .grabbing) durante o
+  // auto-scroll, mesmo truque que a função de arrastar-pra-rolar com o mouse já usava.
+  // 3ª correção: o onDragOver preso ao JSX do board dependia do bubbling passar
+  // corretamente pelos cards/colunas filhos durante um drag nativo — troca por um
+  // listener nativo em `document` (fora do React), o padrão mais robusto pra isso,
+  // ligado só enquanto um card está sendo arrastado (dragstart→dragend).
+  const autoScrollRef=useRef({dir:0,timer:null,docListener:null});
+  function pararAutoScroll(){
+    autoScrollRef.current.dir=0;
+    if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;}
+    boardRef.current?.classList.remove("grabbing");
+    if(autoScrollRef.current.docListener){
+      document.removeEventListener("dragover",autoScrollRef.current.docListener);
+      autoScrollRef.current.docListener=null;
+    }
+  }
+  function iniciarAutoScrollListener(){
+    const handler=(e)=>{
+      const board=boardRef.current;
+      if(!board)return;
+      const rect=board.getBoundingClientRect();
+      const zona=80;
+      let dir=0;
+      if(e.clientX<rect.left+zona)dir=-1;
+      else if(e.clientX>rect.right-zona)dir=1;
+      autoScrollRef.current.dir=dir;
+      if(dir!==0&&!autoScrollRef.current.timer){
+        board.classList.add("grabbing");
+        autoScrollRef.current.timer=setInterval(()=>{
+          const b=boardRef.current;
+          if(!b||autoScrollRef.current.dir===0)return;
+          b.scrollLeft+=autoScrollRef.current.dir*18;
+        },16);
+      }else if(dir===0&&autoScrollRef.current.timer){
+        clearInterval(autoScrollRef.current.timer);
+        autoScrollRef.current.timer=null;
+        board.classList.remove("grabbing");
+      }
+    };
+    document.addEventListener("dragover",handler);
+    autoScrollRef.current.docListener=handler;
+  }
+
   function onCardDragStart(e,lead){
     e.dataTransfer.setData("text/plain",String(lead.id));
     e.dataTransfer.effectAllowed="move";
+    iniciarAutoScrollListener();
   }
   function onColDragOver(e,estKey){
     e.preventDefault();
@@ -531,60 +582,6 @@ export default function CRM(){
     const alvo=estagios.find(e=>e.key===estKey);
     const realKey=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : estKey;
     handleMover(leadId,realKey);
-  }
-
-  // 2026-07-16: auto-scroll horizontal ao arrastar um card até perto da borda do board —
-  // antes precisava soltar o card, rolar manualmente e pegar de novo pra alcançar uma
-  // coluna fora da tela (ex: arrastar "Novo lead" até "Baú"/"Fechado" pulando o funil).
-  // 2026-07-16 (fix real, primeira versão não funcionava): usava requestAnimationFrame,
-  // mas rAF fica suspenso/não dispara durante um arraste nativo HTML5 na maioria dos
-  // navegadores (o drag tem seu próprio loop de renderização, fora do rAF normal) — o
-  // scroll nunca rolava de verdade. Trocado pra setInterval (timer de verdade, não preso
-  // ao ciclo de paint), que é o jeito padrão de resolver auto-scroll durante drag nativo.
-  // 2026-07-16 (2º fix real): scroll-snap-type:x mandatory no .kanban-board (pras colunas
-  // "encaixarem" ao rolar) brigava com os incrementos programáticos de scrollLeft — o
-  // navegador puxava de volta pro encaixe mais próximo a cada tick, cancelando o auto-
-  // scroll na prática (por isso "não acontecia nada" mesmo com o timer rodando certo). A
-  // função de arrastar-pra-rolar com o mouse (mais acima) já tinha resolvido isso desativando
-  // o snap via a classe .grabbing enquanto arrasta — reaproveitada aqui pelo mesmo motivo.
-  const autoScrollRef=useRef({dir:0,timer:null});
-  function pararAutoScroll(){
-    autoScrollRef.current.dir=0;
-    if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;}
-    boardRef.current?.classList.remove("grabbing");
-  }
-  function iniciarAutoScroll(){
-    if(autoScrollRef.current.timer)return;
-    boardRef.current?.classList.add("grabbing");
-    autoScrollRef.current.timer=setInterval(()=>{
-      const board=boardRef.current;
-      if(!board||autoScrollRef.current.dir===0)return;
-      board.scrollLeft+=autoScrollRef.current.dir*18;
-    },16);
-  }
-  function onBoardDragOver(e){
-    const board=boardRef.current;
-    if(!board)return;
-    const rect=board.getBoundingClientRect();
-    const zona=80;
-    let dir=0;
-    if(e.clientX<rect.left+zona)dir=-1;
-    else if(e.clientX>rect.right-zona)dir=1;
-    autoScrollRef.current.dir=dir;
-    if(dir!==0)iniciarAutoScroll();
-    else if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;board.classList.remove("grabbing");}
-  }
-  // dragleave dispara toda vez que o cursor passa de um card/coluna filho pra outro
-  // (bubbling do HTML5 DnD), não só quando sai do board de verdade — se parasse aqui sem
-  // checar, o auto-scroll ficaria ligando/desligando (soluçando) o tempo todo durante o
-  // arraste. Só para de fato quando o cursor está fora do retângulo do board.
-  function onBoardDragLeave(e){
-    const board=boardRef.current;
-    if(!board)return;
-    const rect=board.getBoundingClientRect();
-    if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom){
-      pararAutoScroll();
-    }
   }
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
@@ -630,7 +627,6 @@ export default function CRM(){
           className="kanban-board" ref={boardRef}
           onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
           onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}
-          onDragOver={onBoardDragOver} onDragLeave={onBoardDragLeave}
         >
           {estagios.map(est=>{
             const leads=leadsDaColuna(est,kanban).filter(l=>leadBate(l,busca));
