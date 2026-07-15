@@ -535,33 +535,36 @@ export default function CRM(){
 
   // 2026-07-16: auto-scroll horizontal ao arrastar um card até perto da borda do board —
   // antes precisava soltar o card, rolar manualmente e pegar de novo pra alcançar uma
-  // coluna fora da tela (ex: arrastar "Novo lead" até "Fechado" com 12 colunas). Loop via
-  // requestAnimationFrame (não por evento dragover direto — dragover dispara devagar/
-  // irregular entre navegadores, ficaria travado) que só roda enquanto o cursor estiver
-  // dentro da faixa de 70px nas bordas esquerda/direita do board.
-  const autoScrollRef=useRef({dir:0,raf:null});
+  // coluna fora da tela (ex: arrastar "Novo lead" até "Baú"/"Fechado" pulando o funil).
+  // 2026-07-16 (fix real, primeira versão não funcionava): usava requestAnimationFrame,
+  // mas rAF fica suspenso/não dispara durante um arraste nativo HTML5 na maioria dos
+  // navegadores (o drag tem seu próprio loop de renderização, fora do rAF normal) — o
+  // scroll nunca rolava de verdade. Trocado pra setInterval (timer de verdade, não preso
+  // ao ciclo de paint), que é o jeito padrão de resolver auto-scroll durante drag nativo.
+  const autoScrollRef=useRef({dir:0,timer:null});
   function pararAutoScroll(){
     autoScrollRef.current.dir=0;
-    if(autoScrollRef.current.raf){cancelAnimationFrame(autoScrollRef.current.raf);autoScrollRef.current.raf=null;}
+    if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;}
   }
-  function tickAutoScroll(){
-    const board=boardRef.current;
-    if(!board||autoScrollRef.current.dir===0){autoScrollRef.current.raf=null;return;}
-    board.scrollLeft+=autoScrollRef.current.dir*14;
-    autoScrollRef.current.raf=requestAnimationFrame(tickAutoScroll);
+  function iniciarAutoScroll(){
+    if(autoScrollRef.current.timer)return;
+    autoScrollRef.current.timer=setInterval(()=>{
+      const board=boardRef.current;
+      if(!board||autoScrollRef.current.dir===0)return;
+      board.scrollLeft+=autoScrollRef.current.dir*18;
+    },16);
   }
   function onBoardDragOver(e){
     const board=boardRef.current;
     if(!board)return;
     const rect=board.getBoundingClientRect();
-    const zona=70;
+    const zona=80;
     let dir=0;
     if(e.clientX<rect.left+zona)dir=-1;
     else if(e.clientX>rect.right-zona)dir=1;
-    if(dir!==autoScrollRef.current.dir){
-      autoScrollRef.current.dir=dir;
-      if(dir!==0&&!autoScrollRef.current.raf)autoScrollRef.current.raf=requestAnimationFrame(tickAutoScroll);
-    }
+    autoScrollRef.current.dir=dir;
+    if(dir!==0)iniciarAutoScroll();
+    else if(autoScrollRef.current.timer){clearInterval(autoScrollRef.current.timer);autoScrollRef.current.timer=null;}
   }
   // dragleave dispara toda vez que o cursor passa de um card/coluna filho pra outro
   // (bubbling do HTML5 DnD), não só quando sai do board de verdade — se parasse aqui sem
