@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getDashboard, getMetricasDashboard } from "../api.js";
 import { getUser } from "../auth.js";
 
@@ -54,22 +55,27 @@ function TabOportunidades({ data }) {
         ))}
       </div>
 
-      {/* Por vendedor */}
+      {/* Por vendedor — 2026-07-15: barra agora é relativa ao maior total_leads do grupo
+          (antes usava "/40" fixo, sem nenhuma base real — com poucos leads/vendedor toda
+          barra ficava vazia; com muitos, estourava). Ganhou taxa_conversao (%) também. */}
       <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-users"/> Por vendedor</div>
-        {vendedores.map((v,i)=>(
+        {vendedores.map((v,i)=>{
+          const maxLeads = Math.max(...vendedores.map(x=>x.total_leads), 1);
+          return (
           <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
             <div className="av" style={{background:`${AV_CORES[i]}22`,color:AV_CORES[i]}}>{v.iniciais}</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                 <span style={{fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
-                <span style={{fontSize:12,color:"var(--muted)"}}>{v.vendas} vendas</span>
+                <span style={{fontSize:12,color:"var(--muted)"}}>{v.vendas} vendas · {v.taxa_conversao}%</span>
               </div>
-              <div className="funnel-track"><div className="funnel-bar" style={{width:`${Math.round(v.total_leads/40*100)}%`,background:AV_CORES[i]}}/></div>
+              <div className="funnel-track"><div className="funnel-bar" style={{width:`${Math.round(v.total_leads/maxLeads*100)}%`,background:AV_CORES[i]}}/></div>
             </div>
             <div style={{fontSize:12,color:"var(--muted)",minWidth:24}}>{v.total_leads}</div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Canais — alinhado com tags Chatwoot: whatsapp | site | indicacao | facebook */}
@@ -118,44 +124,34 @@ function TabJornada({ data }) {
   };
   return (
     <>
-      {/* Timeline jornada */}
+      {/* Ciclo médio — 2026-07-15 (auditoria): removido o timeline etapa-a-etapa (1º
+          contato→Interesse→Proposta→Negociação→Fechamento) que existia aqui, dependia de
+          visita_em/proposta_em quase nunca preenchidos (1 e 0 de 59 leads) — 3 das 5
+          etapas sempre "sem dados". O funil de referência na aba Métricas cobre essa
+          jornada com dado real (Agenda). Mantido só o ciclo médio total, que não depende
+          desses campos. */}
       <div className="card" style={{marginBottom:12}}>
-        <div className="card-title"><i className="ti ti-route"/> Jornada do cliente</div>
-        <div style={{overflowX:"auto",paddingBottom:8}}>
-          <div style={{display:"flex",alignItems:"center",gap:0,minWidth:"max-content"}}>
-            {jornada.etapas.map((e,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center"}}>
-                <div style={{background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 16px",textAlign:"center",minWidth:90}}>
-                  <div style={{fontSize:22,marginBottom:4}}>{e.icone}</div>
-                  <div style={{fontSize:12,color:"var(--fg)",fontWeight:500}}>{e.nome}</div>
-                  <div style={{fontSize:13,color:e.tempo?"#C8A84B":"var(--muted)",fontWeight:e.tempo?700:400,marginTop:2}}>{e.tempo||"sem dados"}</div>
-                </div>
-                {i < jornada.etapas.length-1 && (
-                  <div style={{color:"var(--muted)",fontSize:16,padding:"0 4px"}}>→</div>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="card-title"><i className="ti ti-route"/> Ciclo médio de venda</div>
+        <div style={{fontSize:13,color:"var(--muted)"}}>
+          {jornada.ciclo_medio_dias!=null?<span>Do 1º contato até fechar: <strong style={{color:"#C8A84B",fontSize:16}}>{jornada.ciclo_medio_dias} dias</strong></span>:"sem dados ainda (nenhuma venda fechada completa no período)"}
         </div>
-        <div style={{marginTop:14,fontSize:13,color:"var(--muted)"}}>
-          Ciclo médio total: {jornada.ciclo_medio_dias!=null?<strong style={{color:"#C8A84B"}}>{jornada.ciclo_medio_dias} dias</strong>:"sem dados ainda (nenhuma venda fechada completa no período)"}
-        </div>
-        {/* barra de progresso do ciclo */}
         {jornada.ciclo_medio_dias!=null&&(
-          <div style={{marginTop:6,height:4,background:"var(--border)",borderRadius:4}}>
+          <div style={{marginTop:10,height:4,background:"var(--border)",borderRadius:4}}>
             <div style={{height:"100%",width:`${Math.min(jornada.ciclo_medio_dias/10*100,100)}%`,background:"#C8A84B",borderRadius:4}}/>
           </div>
         )}
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:10}}>Jornada etapa-a-etapa (agendamento, comparecimento, fechamento) está na aba Métricas → Funil de referência.</div>
       </div>
 
-      {/* Agente IA */}
+      {/* Agente IA — 2026-07-15 (auditoria): "LEADS QUALIF." removido, sempre mostrava 0
+          (qualificado_ia nunca é escrito por nenhum processo real do sistema hoje). */}
       <div style={{marginBottom:8,fontSize:11,color:"var(--muted)",fontWeight:700,letterSpacing:1.5}}>AGENTE IA</div>
       <div className="metrics-grid" style={{marginBottom:12}}>
         {[
-          { label:"LEADS QUALIF.",  value:agente_ia.leads_qualif,  sub:`quentes: ${agente_ia.leads_quentes}` },
+          { label:"LEADS QUENTES",  value:agente_ia.leads_quentes,  sub:"temperatura" },
           { label:"SCORE QUENTE",   value:agente_ia.score_quente,   sub:"≥60 pts" },
-          { label:"MORNOS REAT.",   value:agente_ia.mornos_reat,    sub:"nutrição" },
-          { label:"TAXA RESPOSTA",  value:`${agente_ia.taxa_resposta}%`, sub:"responderam" },
+          { label:"MORNOS",         value:agente_ia.mornos_reat,    sub:"nutrição" },
+          { label:"TAXA RESPOSTA",  value:agente_ia.taxa_resposta!==null?`${agente_ia.taxa_resposta}%`:"sem dados", sub:"follow-ups respondidos" },
           { label:"HANDOFFS",       value:agente_ia.handoffs,       sub:"para vendedor" },
           { label:"FOLLOW-UPS",     value:agente_ia.followups,      sub:"enviados" },
         ].map((m,i)=>(
@@ -239,7 +235,7 @@ function TabEstoque({ data }) {
         </div>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-clock"/> Tempo Médio</div>
-          <div className="metric-value" style={{color:estoque.tempo_medio_dias>estoque.meta_dias?"#e07b7b":"var(--fg)"}}>{estoque.tempo_medio_dias}d</div>
+          <div className="metric-value" style={{color:estoque.tempo_medio_dias>estoque.meta_dias?"#e07b7b":"var(--fg)"}}>{estoque.tempo_medio_dias!=null?`${estoque.tempo_medio_dias}d`:"sem dados"}</div>
           <div className="metric-delta" style={{color:"var(--muted)"}}>meta: {estoque.meta_dias}d</div>
         </div>
         <div className="metric-card">
@@ -278,12 +274,14 @@ function TabEstoque({ data }) {
         })}
       </div>
 
-      {/* Sugestão IA */}
-      {estoque.sugestao_ia && (
+      {/* 2026-07-15 (auditoria): renomeado de "Sugestão da IA" — é um alerta gerado por
+          regra fixa (veículo mais parado há +30d), nenhum modelo de IA gera esse texto,
+          chamar de "IA" seria enganoso. */}
+      {estoque.alerta_estoque_parado && (
         <div style={{padding:"12px 14px",background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}>
-          <i className="ti ti-robot" style={{color:"#C8A84B",fontSize:18,marginTop:1}}/>
+          <i className="ti ti-alert-triangle" style={{color:"#C8A84B",fontSize:18,marginTop:1}}/>
           <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.5}}>
-            <strong style={{color:"var(--fg)"}}>Sugestão da IA:</strong> {estoque.sugestao_ia}
+            <strong style={{color:"var(--fg)"}}>Alerta de estoque parado:</strong> {estoque.alerta_estoque_parado}
           </div>
         </div>
       )}
@@ -300,7 +298,7 @@ function TabMetricas({ metricas, loading, erro }) {
   if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if (loading || !metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
 
-  const { funil, porVendedor, porOrigem, iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups, funilReferencia, resumoFunil } = metricas;
+  const { funil, iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups, funilReferencia, resumoFunil } = metricas;
   const maxFunil = Math.max(...funil.map(f=>Number(f.total)), 1);
   const totalTemp = temperatura.reduce((s,t)=>s+Number(t.total),0) || 1;
   // Funil de referência (leads->contatados->agendaram->compareceram->fecharam), cada
@@ -435,43 +433,20 @@ function TabMetricas({ metricas, loading, erro }) {
         <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>Até negociação: {tempoPorEstagio.ate_negociacao_horas??"—"}h · Negociação até fechar: {tempoPorEstagio.negociacao_ate_fechar_horas??"—"}h</div>
       </div>
 
-      <div className="card" style={{marginBottom:12}}>
-        <div className="card-title"><i className="ti ti-trophy"/> Ranking por vendedor</div>
-        {porVendedor.map((v,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-            <div className="av" style={{background:`${AV_CORES[i%AV_CORES.length]}22`,color:AV_CORES[i%AV_CORES.length]}}>{v.iniciais}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <span style={{fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
-                <span style={{fontSize:12,color:"var(--muted)"}}>{v.vendas} vendas · {v.taxa_conversao}%</span>
-              </div>
-              <div className="funnel-track"><div className="funnel-bar" style={{width:`${v.taxa_conversao}%`,background:AV_CORES[i%AV_CORES.length]}}/></div>
-            </div>
-            <div style={{fontSize:12,color:"var(--muted)",minWidth:24}}>{v.total_leads}</div>
+      {/* 2026-07-15 (auditoria): "Ranking por vendedor" e "Por origem" removidos daqui —
+          eram duplicatas de "Por vendedor" (aba Oportunidades) e "Leads por canal" (idem),
+          calculadas sem filtro de período (sempre todo o histórico) enquanto a outra
+          versão respeita 7d/mês/trimestre — podiam mostrar números diferentes pro mesmo
+          vendedor dependendo da aba. Ver Oportunidades pra esses dois. */}
+      <div className="card">
+        <div className="card-title"><i className="ti ti-temperature"/> Temperatura</div>
+        {temperatura.map((t,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{width:10,height:10,borderRadius:"50%",background:TEMP_CORES[t.temperatura]||"var(--muted)",flexShrink:0}}/>
+            <div style={{flex:1,fontSize:13,color:"var(--fg)",textTransform:"capitalize"}}>{t.temperatura}</div>
+            <div style={{fontSize:12,color:"var(--muted)"}}>{t.total} ({Math.round(t.total/totalTemp*100)}%)</div>
           </div>
         ))}
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        <div className="card">
-          <div className="card-title"><i className="ti ti-chart-pie"/> Por origem</div>
-          {porOrigem.map((o,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-              <div style={{flex:1,fontSize:13,color:"var(--fg)"}}>{o.origem}</div>
-              <div style={{fontSize:12,color:"var(--muted)"}}>{o.total_leads} · {o.taxa_conversao}%</div>
-            </div>
-          ))}
-        </div>
-        <div className="card">
-          <div className="card-title"><i className="ti ti-temperature"/> Temperatura</div>
-          {temperatura.map((t,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-              <div style={{width:10,height:10,borderRadius:"50%",background:TEMP_CORES[t.temperatura]||"var(--muted)",flexShrink:0}}/>
-              <div style={{flex:1,fontSize:13,color:"var(--fg)",textTransform:"capitalize"}}>{t.temperatura}</div>
-              <div style={{fontSize:12,color:"var(--muted)"}}>{t.total} ({Math.round(t.total/totalTemp*100)}%)</div>
-            </div>
-          ))}
-        </div>
       </div>
     </>
   );
@@ -489,6 +464,7 @@ export default function Dashboard() {
   const [loadingMetricas, setLoadingMetricas] = useState(false);
   const [erroMetricas, setErroMetricas] = useState(null);
   const user = getUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
@@ -560,33 +536,43 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Notificação lead quente */}
+      {/* Notificação lead quente — 2026-07-15 (auditoria mobile): banner e botões agora
+          quebram linha em telas estreitas em vez de espremer texto+2 botões numa linha só;
+          os dois botões ganharam alvo de toque real (44px). */}
       {notif && (
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#C8A84B18",border:"1px solid #C8A84B55",borderRadius:10,marginBottom:14}}>
-          <div style={{width:10,height:10,borderRadius:"50%",background:"#e07b7b",animation:"pulse 1.5s infinite"}}/>
-          <div style={{flex:1,fontSize:13}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#C8A84B18",border:"1px solid #C8A84B55",borderRadius:10,marginBottom:14,flexWrap:"wrap"}}>
+          <div style={{width:10,height:10,borderRadius:"50%",background:"#e07b7b",animation:"pulse 1.5s infinite",flexShrink:0}}/>
+          <div style={{flex:"1 1 200px",fontSize:13,minWidth:0}}>
             <strong style={{color:"#C8A84B"}}>Lead quente!</strong> {notif.nome} ({notif.score}pts) · {notif.veiculo} · Atribuído a {notif.vendedor}
           </div>
-          <button style={{fontSize:12,padding:"4px 12px",background:"#C8A84B",color:"#000",border:"none",borderRadius:6,cursor:"pointer",fontWeight:700}}>
-            Ver lead →
-          </button>
-          <button onClick={()=>setNotif(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--muted)",fontSize:16}}>×</button>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginLeft:"auto"}}>
+            {/* 2026-07-15 (auditoria): botão não tinha onClick nenhum, não fazia nada ao
+                clicar. Leva pro CRM Pipeline (a busca por nome ali já acha o lead rápido —
+                não existe hoje um jeito de abrir um lead específico direto por URL). */}
+            <button onClick={()=>navigate("/crm")} style={{fontSize:12,padding:"0 14px",minHeight:44,background:"#C8A84B",color:"#000",border:"none",borderRadius:6,cursor:"pointer",fontWeight:700}}>
+              Ver lead →
+            </button>
+            <button onClick={()=>setNotif(null)} aria-label="Fechar" style={{background:"none",border:"none",cursor:"pointer",color:"var(--muted)",fontSize:18,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>×</button>
+          </div>
         </div>
       )}
 
       {/* Tabs — 4 opções, precisam caber lado a lado sem rolar mesmo em telas
           estreitas (2026-07-13): compactas de propósito (padding/fonte menores que
-          o filtro de período acima, que é usado com mais frequência). */}
+          o filtro de período acima, que é usado com mais frequência).
+          2026-07-15 (auditoria mobile): flex:1 pra dividir a largura igualmente entre as 4
+          (antes cada uma só ocupava o tamanho do próprio texto) e altura de toque real
+          via .tab-pill (44px) — clicar/tocar numa aba errada por engano era fácil antes. */}
       <div style={{marginBottom:16,paddingBottom:12,borderBottom:"1px solid var(--border)"}}>
         <div style={{display:"flex",gap:4,flexWrap:"nowrap"}}>
           {ABAS.map(a=>(
-            <button key={a.id} onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}
-              style={{padding:"6px 8px",fontSize:10,fontWeight:aba===a.id?700:500,
+            <button key={a.id} className="tab-pill" onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}
+              style={{padding:"0 6px",fontSize:11,fontWeight:aba===a.id?700:500,
                 color:aba===a.id?"#0c0c0a":"var(--muted)",
                 background:aba===a.id?"#C8A84B":"transparent",
                 border:"none",borderRadius:99,cursor:"pointer",
                 boxShadow:aba===a.id?"0 2px 10px rgba(200,168,75,.35)":"none",
-                transition:"all .2s",whiteSpace:"nowrap",flex:"0 1 auto",minWidth:0,
+                transition:"all .2s",whiteSpace:"nowrap",flex:"1 1 0",minWidth:0,
                 overflow:"hidden",textOverflow:"ellipsis"}}>
               {a.label}
             </button>

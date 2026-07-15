@@ -125,7 +125,9 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 .page-title i{font-size:22px;color:var(--brand)}
 
 /* ── Buttons ── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;min-height:40px;white-space:nowrap;text-decoration:none;-webkit-tap-highlight-color:transparent}
+/* min-height 44px = alvo de toque recomendado (Apple HIG / Material Design), pra não
+   ficar difícil de acertar com o dedo em tela pequena (Android/iOS). */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;min-height:44px;white-space:nowrap;text-decoration:none;-webkit-tap-highlight-color:transparent}
 .btn:active{transform:scale(.97);opacity:.9}
 /* Contorno dourado só em navegação real por teclado (:focus-visible) — clique de
    mouse/toque não deve deixar um contorno "preso" no botão depois de clicar. */
@@ -135,7 +137,12 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .btn-primary{background:linear-gradient(135deg,#C8A84B,#a88a35);color:#0c0c0a;box-shadow:0 2px 8px rgba(200,168,75,.25)}
 .btn-ghost{background:var(--surface2);color:var(--fg);border:1px solid var(--border)}
 .btn-danger{background:rgba(224,82,82,.15);color:var(--danger);border:1px solid rgba(224,82,82,.2)}
-.btn-icon{padding:8px;min-height:40px;min-width:40px}
+.btn-icon{padding:8px;min-height:44px;min-width:44px}
+
+/* Botões de aba compactos (ex: Dashboard: Oportunidades/Jornada/Estoque/Métricas) — mais
+   estreitos que .btn normal (4 precisam caber numa linha só em tela de celular), mas com
+   altura de toque real (44px) em vez de depender só do padding. */
+.tab-pill{min-height:44px;-webkit-tap-highlight-color:transparent}
 
 /* ── Forms ── */
 .form-group{margin-bottom:14px}
