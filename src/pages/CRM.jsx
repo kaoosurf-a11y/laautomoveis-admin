@@ -42,13 +42,15 @@ const ESTAGIOS_ADMIN=[
   {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
-// Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou — ele não
-// precisa das 2 colunas iniciais separadas, só decidir o desfecho. "Novo lead" e
-// "Em negociação" viram uma coluna virtual só ("Para atender"); `estagiosDb` lista
-// quais valores reais de estagio caem nela (o card guarda o estagio real, não
-// "para_atender" — isso é só agrupamento visual).
+// Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou, cai em
+// "Para atender" (= estagio novo_lead, só com rótulo mais claro pro vendedor).
+// 2026-07-16: "Em negociação" deixou de ser fundida em "Para atender" — agora é
+// coluna própria também pro vendedor (igual já era pro admin), pra ficar visível
+// quando a Lara ou o Observador identificam que o atendimento avançou pra negociação
+// de verdade, e pro vendedor poder mover manualmente também.
 const ESTAGIOS_VENDEDOR=[
-  {key:"para_atender",label:"Para atender",cor:"#C8A84B",estagiosDb:["novo_lead","negociando"]},
+  {key:"para_atender",label:"Para atender",cor:"#7ba7e0",estagiosDb:["novo_lead"]},
+  {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
