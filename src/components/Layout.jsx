@@ -16,7 +16,10 @@ export default function Layout({ children }) {
     const data = new Date().toISOString().split("T")[0];
     getAgenda(data).then(ags => {
       const CONCLUIDOS = ["cancelado","realizado","realizado_comprou","realizado_nao_comprou"];
-      const ativos = ags.filter(a => !CONCLUIDOS.includes(a.status));
+      // "bloqueio" é horário pessoal do vendedor (almoço, indisponibilidade) — mesma
+      // exclusão já aplicada no filtro de notificação abaixo, só que faltava aqui,
+      // inflando esse número com compromissos que não são de cliente nenhum.
+      const ativos = ags.filter(a => !CONCLUIDOS.includes(a.status) && a.tipo !== "bloqueio");
       setAgendaHoje(ativos.length);
     }).catch(() => {});
 
@@ -137,7 +140,10 @@ export default function Layout({ children }) {
           <div className="notif-icon"><i className="ti ti-calendar-event"/></div>
           <div className="notif-body">
             <div className="notif-title">{TIPOS_NOTIF[notif.tipo]?.icon || "⚠️"} {TIPOS_NOTIF[notif.tipo]?.label || "Agendamento"} em {minAte(notif.data_hora)} min!</div>
-            <div className="notif-sub">{notif.cliente_nome} · {notif.veiculo}</div>
+            <div className="notif-sub">
+              {notif.cliente_nome}{notif.veiculo ? ` · ${notif.veiculo}` : ""}
+              {notif.lead_estagio === "negociando" && <span className="badge" style={{marginLeft:6,fontSize:10,background:"#C8A84B22",color:"#C8A84B"}}>Em negociação</span>}
+            </div>
           </div>
           <div className="notif-hora">{fmtH(notif.data_hora)}</div>
           <button className="notif-close" onClick={() => { setNotifDismissed(true); setNotif(null); }}>×</button>
