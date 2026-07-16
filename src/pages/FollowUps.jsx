@@ -177,6 +177,11 @@ export default function FollowUps(){
   // "Agendados pela Lara" (silêncio pós-handoff, revisão de carro não encontrado etc)
   // é visão de administração — só owner/manager, nunca vendedor (2026-07-16).
   const podeVerAgendados=role!=="agent";
+  // "Agendamentos" (lembrete de visita) é redundante pro vendedor — a página Agenda
+  // (menu lateral) já é a visão dedicada de compromissos, sincronizada com o Kanban
+  // dos dois lados. Só owner/manager continuam vendo aqui, útil pra auditoria cruzada
+  // de todos os vendedores num só lugar (2026-07-16).
+  const podeVerAgendamentos=role!=="agent";
   const[data,setData]=useState({porTipo:{}});
   const[aba,setAba]=useState("estagio");
   // Filtro de data dentro de "Por estágio" — antes eram 2 abas próprias (Agenda de
@@ -234,7 +239,7 @@ export default function FollowUps(){
       <div className="tabs-wrap">
         <button className={`tab-btn ${aba==="estagio"?"active":""}`} onClick={()=>setAba("estagio")}>Por estágio ({totalEmFollowup})</button>
         {podeVerAgendados&&<button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Agendados pela Lara ({data.agendados?.length||0})</button>}
-        <button className={`tab-btn ${aba==="agendamentos"?"active":""}`} onClick={()=>setAba("agendamentos")}>Agendamentos ({data.agendamentos?.length||0})</button>
+        {podeVerAgendamentos&&<button className={`tab-btn ${aba==="agendamentos"?"active":""}`} onClick={()=>setAba("agendamentos")}>Agendamentos ({data.agendamentos?.length||0})</button>}
       </div>
 
       {aba==="estagio"&&(<>
@@ -319,7 +324,7 @@ export default function FollowUps(){
         </div>
       )}
 
-      {aba==="agendamentos"&&(
+      {aba==="agendamentos"&&podeVerAgendamentos&&(
         <div className="card fu-scroll-list">
           {(!data.agendamentos||data.agendamentos.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum agendamento com lembrete pendente</p></div>}
           {data.agendamentos?.map(ag=>(
