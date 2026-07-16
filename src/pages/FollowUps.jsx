@@ -1,6 +1,23 @@
-import { useState, useEffect, useRef } from "react";
-import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento } from "../api.js";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
+
+// Ordem das colunas — só preferência visual (mesmo padrão do CRM Kanban em CRM.jsx),
+// localStorage já basta. Uma chave só (não por role): as 7 colunas são as mesmas pra
+// todo mundo aqui, diferente do CRM que tem conjuntos de estágio distintos por papel.
+const FU_ORDER_KEY="la_followups_col_order";
+function carregarOrdemColunasFU(){
+  try{const raw=localStorage.getItem(FU_ORDER_KEY);return raw?JSON.parse(raw):null;}catch{return null;}
+}
+function salvarOrdemColunasFU(keys){
+  try{localStorage.setItem(FU_ORDER_KEY,JSON.stringify(keys));}catch{}
+}
+function ordenarTipos(base,savedKeys){
+  if(!savedKeys||!savedKeys.length)return base;
+  const ordenados=savedKeys.filter(k=>base.includes(k));
+  const faltantes=base.filter(k=>!savedKeys.includes(k));
+  return[...ordenados,...faltantes];
+}
 
 const MSG_STATUS_INFO = {
   agendada: ["#7ba7e0", "Agendada"], enviada: ["#25D366", "Enviada"],
@@ -178,6 +195,51 @@ function ClassificacaoBadge({f}){
   return null;
 }
 
+// Editar nome/veículo do lead (mesmos campos editáveis do modal do CRM) ou remover
+// (soft-delete, só owner — mesma rota DELETE /api/crm/leads/:id já usada em CRM.jsx)
+// direto do card de Follow-ups, sem precisar ir até o Pipeline pra corrigir um nome
+// de teste/erro ou tirar um lead de teste da lista (2026-07-16).
+function LeadCardHeader({f,role,onAtualizado}){
+  const[editando,setEditando]=useState(false);
+  const[nome,setNome]=useState(f.cliente_nome||"");
+  const[veiculo,setVeiculo]=useState(f.veiculo||"");
+  const[salvando,setSalvando]=useState(false);
+  async function salvar(){
+    if(!nome.trim())return;
+    setSalvando(true);
+    try{await atualizarLeadCRM(f.lead_id,{nome:nome.trim(),veiculo_interesse:veiculo.trim()});onAtualizado();setEditando(false);}
+    catch{alert("Erro ao salvar. Tente de novo (talvez esse lead não seja seu).");}
+    setSalvando(false);
+  }
+  async function remover(){
+    if(!confirm(`Remover ${f.cliente_nome} do CRM? Use só pra lead de teste ou cadastro errado.`))return;
+    try{await excluirLeadCRM(f.lead_id);onAtualizado();}
+    catch{alert("Erro ao remover.");}
+  }
+  if(editando){
+    return(
+      <>
+        <input className="form-input" style={{marginBottom:4,fontSize:12,padding:"4px 6px"}} value={nome} onChange={e=>setNome(e.target.value)} placeholder="Nome"/>
+        <input className="form-input" style={{marginBottom:4,fontSize:12,padding:"4px 6px"}} value={veiculo} onChange={e=>setVeiculo(e.target.value)} placeholder="Veículo de interesse"/>
+        <div style={{display:"flex",gap:4}}>
+          <button className="btn btn-primary" style={{padding:"3px 8px",fontSize:11}} onClick={salvar} disabled={salvando}>{salvando?<span className="spinner"/>:"Salvar"}</button>
+          <button className="btn btn-ghost" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditando(false);setNome(f.cliente_nome||"");setVeiculo(f.veiculo||"");}}>Cancelar</button>
+        </div>
+      </>
+    );
+  }
+  return(
+    <>
+      <div style={{display:"flex",alignItems:"center",gap:3}}>
+        <div className="fu-nome">{f.cliente_nome}</div>
+        <button className="btn btn-ghost" style={{padding:"1px 3px",fontSize:10,lineHeight:1}} onClick={()=>setEditando(true)} title="Editar nome/veículo"><i className="ti ti-pencil" style={{fontSize:11}}/></button>
+        {role==="owner"&&<button className="btn btn-ghost" style={{padding:"1px 3px",fontSize:10,lineHeight:1,color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)"><i className="ti ti-trash" style={{fontSize:11}}/></button>}
+      </div>
+      <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
+    </>
+  );
+}
+
 export default function FollowUps(){
   const role=getRole();
   const readOnly=role==="manager";
@@ -202,6 +264,34 @@ export default function FollowUps(){
   const load=()=>getFollowups().then(d=>{setData(d);setLoading(false);})
     .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   useEffect(()=>{load();},[]);
+
+  // Reordenar as colunas do board — mesmo padrão de drag no cabeçalho do Kanban do
+  // CRM (CRM.jsx), só que aqui é sobre TIPO_ORDEM (array de string, não de objeto).
+  const[colOrder,setColOrder]=useState(()=>carregarOrdemColunasFU());
+  const tiposOrdenados=useMemo(()=>ordenarTipos(TIPO_ORDEM,colOrder),[colOrder]);
+  const[colArrastando,setColArrastando]=useState(null);
+  function onColHeaderDragStart(e,tipo){
+    e.dataTransfer.setData("application/x-fu-col",tipo);
+    e.dataTransfer.effectAllowed="move";
+    setColArrastando(tipo);
+  }
+  function onColHeaderDragOver(e){
+    if(e.dataTransfer.types.includes("application/x-fu-col")){e.preventDefault();e.stopPropagation();}
+  }
+  function onColHeaderDrop(e,targetTipo){
+    if(!e.dataTransfer.types.includes("application/x-fu-col"))return;
+    e.preventDefault();e.stopPropagation();
+    const srcTipo=e.dataTransfer.getData("application/x-fu-col");
+    setColArrastando(null);
+    if(!srcTipo||srcTipo===targetTipo)return;
+    const keys=[...tiposOrdenados];
+    const from=keys.indexOf(srcTipo),to=keys.indexOf(targetTipo);
+    if(from<0||to<0)return;
+    keys.splice(from,1);keys.splice(to,0,srcTipo);
+    setColOrder(keys);
+    salvarOrdemColunasFU(keys);
+  }
+  function onColHeaderDragEnd(){setColArrastando(null);}
 
   // "Grab to scroll" horizontal, mesmo padrão do Kanban do CRM — clicar e arrastar
   // numa área vazia do board rola pros outros estágios sem precisar mirar na
@@ -299,13 +389,22 @@ export default function FollowUps(){
           <div className="fu-kanban-board" ref={boardRef}
             onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
             onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}>
-            {TIPO_ORDEM.map(tipo=>{
+            {tiposOrdenados.map(tipo=>{
               const leads=(data.porTipo?.[tipo]||[]).filter(passaFiltro);
               const cor=TIPO_COR[tipo];
               return (
               <div key={tipo} className="fu-kanban-col">
-                <div className="fu-kanban-col-header" style={{borderTopColor:cor}}>
-                  <span className="fu-kanban-col-title" style={{color:cor}}>{TIPO_LABEL[tipo]||tipo}</span>
+                <div className="fu-kanban-col-header" style={{borderTopColor:cor,opacity:colArrastando===tipo?.4:1,cursor:"grab"}}
+                  draggable
+                  onDragStart={e=>onColHeaderDragStart(e,tipo)}
+                  onDragOver={onColHeaderDragOver}
+                  onDrop={e=>onColHeaderDrop(e,tipo)}
+                  onDragEnd={onColHeaderDragEnd}
+                  title="Arraste pra reordenar as colunas">
+                  <span style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
+                    <i className="ti ti-grip-vertical" style={{fontSize:13,color:"var(--muted)",flexShrink:0}}/>
+                    <span className="fu-kanban-col-title" style={{color:cor}}>{TIPO_LABEL[tipo]||tipo}</span>
+                  </span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
                 <div className="fu-kanban-cards">
@@ -315,8 +414,7 @@ export default function FollowUps(){
                       <div className="fu-item">
                         <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
                         <div className="fu-info">
-                          <div className="fu-nome">{f.cliente_nome}</div>
-                          <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
+                          <LeadCardHeader f={f} role={role} onAtualizado={load}/>
                           <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
                             Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
                           </div>
