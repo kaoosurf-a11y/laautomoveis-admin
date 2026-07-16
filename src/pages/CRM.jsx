@@ -37,6 +37,11 @@ const FOLLOWUP_LABEL={
 // longe na roda de cores de qualquer outro estágio.
 // Essas 3 (nao_achou_carro/parou_responder/feirao) são compartilhadas com o
 // TIPO_COR de FollowUps.jsx — qualquer mudança aqui precisa espelhar lá também.
+// "pos_venda" removida como coluna (2026-07-16, pedido explícito): a comunicação de
+// pós-venda já é 100% o follow-up pos_venda_satisfacao, disparado sozinho ao entrar
+// em fechado_ganho (ver estagioLead.js) — não precisa de um estágio de Kanban à
+// parte pra isso, só duplicava o conceito. Leads que estavam em pos_venda foram
+// migrados pra fechado_ganho (backend routes/crm.js ALIAS cobre qualquer resquício).
 const ESTAGIOS_ADMIN=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
@@ -48,7 +53,6 @@ const ESTAGIOS_ADMIN=[
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
   {key:"agendados",label:"Agendados",cor:"#FF3EC9"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
-  {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
 // Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou, cai em
@@ -68,7 +72,6 @@ const ESTAGIOS_VENDEDOR=[
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
   {key:"agendados",label:"Agendados",cor:"#FF3EC9"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
-  {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
 function leadsDaColuna(est,kanban){
