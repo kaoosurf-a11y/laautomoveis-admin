@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento } from "../api.js";
 import { getRole } from "../auth.js";
 
@@ -196,6 +196,31 @@ export default function FollowUps(){
     .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   useEffect(()=>{load();},[]);
 
+  // "Grab to scroll" horizontal, mesmo padrão do Kanban do CRM — clicar e arrastar
+  // numa área vazia do board rola pros outros estágios sem precisar mirar na
+  // scrollbar fina embaixo (2026-07-16, pedido pra facilitar ver as colunas fora
+  // da tela).
+  const boardRef=useRef(null);
+  const arrastandoBoard=useRef({ativo:false,startX:0,startScroll:0});
+  function onBoardMouseDown(e){
+    if(e.button!==0)return;
+    if(e.target.closest(".fu-kanban-card")||e.target.closest(".fu-kanban-col-header"))return;
+    const board=boardRef.current;
+    if(!board)return;
+    arrastandoBoard.current={ativo:true,startX:e.pageX,startScroll:board.scrollLeft};
+    board.classList.add("grabbing");
+  }
+  function onBoardMouseMove(e){
+    if(!arrastandoBoard.current.ativo)return;
+    const board=boardRef.current;
+    if(!board)return;
+    board.scrollLeft=arrastandoBoard.current.startScroll-(e.pageX-arrastandoBoard.current.startX);
+  }
+  function onBoardMouseUpOrLeave(){
+    arrastandoBoard.current.ativo=false;
+    boardRef.current?.classList.remove("grabbing");
+  }
+
   const upd=(id,changes)=>setData(d=>({
     ...d,
     porTipo:Object.fromEntries(Object.entries(d.porTipo||{}).map(([k,v])=>[k,v.map(f=>f.id===id?{...f,...changes}:f)])),
@@ -263,7 +288,9 @@ export default function FollowUps(){
           mais alto/detalhado (mostra a mensagem real), então um contorno inteiro
           ficaria pesado. Card sem duplicar informação: ClassificacaoBadge já
           resume o "motivo" (IA+confiança ou manual), não repete o texto cru. */}
-          <div className="fu-kanban-board">
+          <div className="fu-kanban-board" ref={boardRef}
+            onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
+            onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}>
             {TIPO_ORDEM.map(tipo=>{
               const leads=(data.porTipo?.[tipo]||[]).filter(passaFiltro);
               const cor=TIPO_COR[tipo];

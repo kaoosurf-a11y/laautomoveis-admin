@@ -221,13 +221,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
    resumo). Diferenciação visual proposital do Kanban do CRM: lá a cor do estágio
    contorna a coluna inteira; aqui é só um acento (barra no topo do cabeçalho + borda
    lateral do card) — mesma linguagem de cor, layout mais leve pro card mais alto. ── */
-.fu-kanban-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:16px;-webkit-overflow-scrolling:touch}
+.fu-kanban-board{display:flex;gap:14px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2);cursor:grab}
+.fu-kanban-board.grabbing{cursor:grabbing;user-select:none}
+.fu-kanban-board::-webkit-scrollbar{height:14px}
+.fu-kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
+.fu-kanban-board::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px;border:3px solid var(--surface2)}
+.fu-kanban-board::-webkit-scrollbar-thumb:hover{background:#dbb95a}
 .fu-kanban-col{flex-shrink:0;width:320px;display:flex;flex-direction:column;min-height:0}
 .fu-kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-top:3px solid;margin-bottom:8px}
 .fu-kanban-col-title{font-size:13px;font-weight:700}
-.fu-kanban-cards{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 300px);overflow-y:auto;padding:2px 2px 4px}
+.fu-kanban-cards{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 300px);overflow-y:auto;padding:2px 2px 4px;scrollbar-width:thin;scrollbar-color:var(--brand) var(--surface2)}
 .fu-kanban-cards::-webkit-scrollbar{width:8px}
-.fu-kanban-cards::-webkit-scrollbar-track{background:transparent}
+.fu-kanban-cards::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
 .fu-kanban-cards::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
 .fu-kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 
