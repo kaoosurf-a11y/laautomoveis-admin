@@ -309,7 +309,7 @@ export default function FollowUps(){
                 <div className="fu-kanban-cards">
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
                   {leads.map(f=>(
-                    <div key={f.id} className="fu-kanban-card" style={{borderLeft:`3px solid ${cor}`}}>
+                    <div key={f.id} className="fu-kanban-card" style={{border:`2px solid ${cor}`,boxShadow:`0 0 8px ${cor}4d`}}>
                       <div className="fu-item">
                         <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
                         <div className="fu-info">

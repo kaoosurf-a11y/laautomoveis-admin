@@ -749,7 +749,7 @@ export default function CRM(){
                       onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
                       onDragEnd={readOnly?undefined:pararAutoScroll}
                       onClick={()=>setLeadSel(lead)}
-                      style={{cursor:readOnly?"pointer":"grab"}}
+                      style={{cursor:readOnly?"pointer":"grab",border:`2px solid ${est.cor}`,boxShadow:`0 0 8px ${est.cor}4d`}}
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
                       <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
