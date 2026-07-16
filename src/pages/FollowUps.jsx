@@ -169,8 +169,8 @@ const TIPO_LABEL={
 // backend (estoqueMatch.js), só não aparece mais como card próprio aqui.
 const TIPO_COR={
   sem_credito:"#e67e22",vai_pensar:"#8E44AD",
-  nao_achou_carro:"#2980B9",parou_responder:"#16a085",
-  feirao:"#F39C12",fecha_mes:"#E74C3C",
+  nao_achou_carro:"#17A2B8",parou_responder:"#82C91E",
+  feirao:"#FFD43B",fecha_mes:"#E74C3C",
   pos_venda_satisfacao:"#d1637a",
 };
 const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder","feirao","fecha_mes","pos_venda_satisfacao"];

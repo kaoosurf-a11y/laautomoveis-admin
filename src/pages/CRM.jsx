@@ -28,16 +28,22 @@ const FOLLOWUP_LABEL={
 // pos_venda/bau dividiam tons de cinza quase idênticos, difícil de diferenciar num
 // piscar de olhos). Harmonizada com o tema escuro do admin — mesmo nível de saturação
 // e brilho das cores já existentes (novo_lead/negociando/sem_credito/vai_pensar).
+// 2026-07-16: 2º ajuste — nao_achou_carro/agendados usavam tons de azul quase iguais
+// ao de novo_lead (3 colunas "azuis"). nao_achou_carro virou ciano, agendados virou
+// lavanda, parou_responder saiu do verde-azulado (que ia colidir com o novo ciano) pra
+// um verde-limão, feirao saiu do laranja (perto de sem_credito) pra amarelo puro.
+// Essas 3 (nao_achou_carro/parou_responder/feirao) são compartilhadas com o
+// TIPO_COR de FollowUps.jsx — qualquer mudança aqui precisa espelhar lá também.
 const ESTAGIOS_ADMIN=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
-  {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
-  {key:"parou_responder",label:"Parou de responder",cor:"#16a085"},
-  {key:"feirao",label:"Feirão",cor:"#F39C12"},
+  {key:"nao_achou_carro",label:"Não achou o carro",cor:"#17A2B8"},
+  {key:"parou_responder",label:"Parou de responder",cor:"#82C91E"},
+  {key:"feirao",label:"Feirão",cor:"#FFD43B"},
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
-  {key:"agendados",label:"Agendados",cor:"#5DADE2"},
+  {key:"agendados",label:"Agendados",cor:"#B197FC"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
   {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
@@ -53,11 +59,11 @@ const ESTAGIOS_VENDEDOR=[
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
-  {key:"nao_achou_carro",label:"Não achou o carro",cor:"#2980B9"},
-  {key:"parou_responder",label:"Parou de responder",cor:"#16a085"},
-  {key:"feirao",label:"Feirão",cor:"#F39C12"},
+  {key:"nao_achou_carro",label:"Não achou o carro",cor:"#17A2B8"},
+  {key:"parou_responder",label:"Parou de responder",cor:"#82C91E"},
+  {key:"feirao",label:"Feirão",cor:"#FFD43B"},
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
-  {key:"agendados",label:"Agendados",cor:"#5DADE2"},
+  {key:"agendados",label:"Agendados",cor:"#B197FC"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
   {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
