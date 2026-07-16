@@ -364,7 +364,21 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             </select>
           </div>
         }
-        {lead.telefone&&<div style={{marginBottom:14}}><a href={lead.chatwoot_conv_id?`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${lead.chatwoot_conv_id}`:`https://wa.me/55${lead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp"/>{lead.telefone}</a></div>}
+        {lead.telefone&&<div style={{marginBottom:14}}>
+          {lead.chatwoot_conv_id?(
+            // Vai pro Chatwoot, não pro WhatsApp Web do vendedor — é lá que o vendedor
+            // e a Lara continuam a conversa/follow-up de verdade. Azul + ícone de chat
+            // pra não confundir com o botão verde de WhatsApp direto (usado só quando
+            // ainda não existe conversa no Chatwoot pra esse lead).
+            <a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${lead.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot">
+              <i className="ti ti-message-2"/>{lead.telefone}
+            </a>
+          ):(
+            <a href={`https://wa.me/55${lead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa">
+              <i className="ti ti-brand-whatsapp"/>{lead.telefone}
+            </a>
+          )}
+        </div>}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
           {lead.troca&&<span className="badge badge-warning"><i className="ti ti-arrows-exchange" style={{fontSize:12}}/>Tem troca</span>}
           {lead.financiamento&&<span className="badge badge-brand"><i className="ti ti-credit-card" style={{fontSize:12}}/>Financiamento</span>}

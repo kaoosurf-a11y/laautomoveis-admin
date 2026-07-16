@@ -300,6 +300,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.2);border-top-color:#0c0c0a;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn-wa{color:#25D366;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.2);padding:8px 14px;border-radius:9px;cursor:pointer;text-decoration:none;white-space:nowrap;min-height:40px;-webkit-tap-highlight-color:transparent}
+/* Mesmo padrão do .btn-wa, mas azul — pro link que abre a conversa no Chatwoot (não o
+   WhatsApp Web do vendedor). Usado quando o lead já tem chatwoot_conv_id: é lá que o
+   vendedor e a Lara continuam o atendimento/follow-up, não no WhatsApp pessoal. */
+.btn-chatwoot{color:#1f93ff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;background:rgba(31,147,255,.08);border:1px solid rgba(31,147,255,.2);padding:8px 14px;border-radius:9px;cursor:pointer;text-decoration:none;white-space:nowrap;min-height:40px;-webkit-tap-highlight-color:transparent}
 .empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
 .empty-state i{font-size:48px;margin-bottom:12px;display:block;opacity:.5}
 .empty-state p{font-size:14px}
