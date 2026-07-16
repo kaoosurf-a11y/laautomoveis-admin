@@ -146,6 +146,30 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
   const[agendando,setAgendando]=useState(false);
   const[agendado,setAgendado]=useState(false);
   const colAtual=colunaVisual(estagios,est);
+  // Nome do cliente — editável (mesmo padrão do Veículo abaixo). Corrige o campo
+  // real (crm_leads.nome); o backend já marca editado_manualmente=true nessa
+  // gravação, e o "Sync CRM Lead" (n8n) já respeita essa trava — depois de editado
+  // aqui, o nome nunca mais é sobrescrito pelo que a Lara captura no WhatsApp. O CRM
+  // é sempre o dono da verdade pra esse campo a partir da primeira edição manual.
+  const[nomeAtual,setNomeAtual]=useState(lead.nome||"");
+  const[editandoNome,setEditandoNome]=useState(false);
+  const[nomeInput,setNomeInput]=useState(nomeAtual);
+  const[salvandoNome,setSalvandoNome]=useState(false);
+  async function salvarNome(){
+    const v=nomeInput.trim();
+    if(!v){setNomeInput(nomeAtual);setEditandoNome(false);return;}
+    if(v===nomeAtual){setEditandoNome(false);return;}
+    setSalvandoNome(true);
+    try{
+      await atualizarLeadCRM(lead.id,{nome:v});
+      setNomeAtual(v);
+      setEditandoNome(false);
+      onAtualizado?.();
+    }catch{
+      alert("Erro ao atualizar o nome. Tente novamente.");
+    }
+    setSalvandoNome(false);
+  }
   // Veículo associado ao lead — editável (ex: caso Santos, veio pelo anúncio do Gol
   // mas fechou em outro carro). Corrige o campo real (crm_leads.veiculo_interesse),
   // então reflete em todo lugar que lê esse campo (card do Kanban, relatório do
@@ -188,7 +212,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
     setSalvandoResp(false);
   }
   async function handleAgendar(){
-    if(!confirm(`A Lara vai tentar marcar um horário com ${lead.nome} pelo WhatsApp (só pra agendar — não é uma retomada geral do atendimento). Confirma?`))return;
+    if(!confirm(`A Lara vai tentar marcar um horário com ${nomeAtual} pelo WhatsApp (só pra agendar — não é uma retomada geral do atendimento). Confirma?`))return;
     setAgendando(true);
     try{await agendarVisita(lead.id);setAgendado(true);}catch{alert("Erro ao iniciar agendamento. Tente de novo.");}
     setAgendando(false);
@@ -238,7 +262,31 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-handle"/>
         <div className="modal-header">
-          <h2 className="modal-title">{lead.nome}</h2>
+          {editandoNome?(
+            <div style={{display:"flex",gap:6,flex:1,marginRight:12}}>
+              <input
+                className="form-input" style={{marginBottom:0}} autoFocus
+                value={nomeInput} onChange={e=>setNomeInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")salvarNome();if(e.key==="Escape"){setNomeInput(nomeAtual);setEditandoNome(false);}}}
+              />
+              <button className="btn btn-primary" style={{padding:"6px 12px"}} onClick={salvarNome} disabled={salvandoNome}>
+                {salvandoNome?<span className="spinner"/>:<i className="ti ti-check"/>}
+              </button>
+              <button className="btn btn-ghost" style={{padding:"6px 12px"}} onClick={()=>{setNomeInput(nomeAtual);setEditandoNome(false);}}>
+                <i className="ti ti-x"/>
+              </button>
+            </div>
+          ):(
+            <h2 className="modal-title" style={{display:"flex",alignItems:"center",gap:8}}>
+              {nomeAtual}
+              {!readOnly&&
+                <button onClick={()=>{setNomeInput(nomeAtual);setEditandoNome(true);}} title="Editar nome"
+                  style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:14,display:"flex"}}>
+                  <i className="ti ti-pencil"/>
+                </button>
+              }
+            </h2>
+          )}
           <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button>
         </div>
         <div style={{marginBottom:14}}>
