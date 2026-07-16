@@ -231,29 +231,44 @@ export default function FollowUps(){
       {aba==="estagio"&&(
         tiposComDados.length===0
           ?<div className="card"><div className="empty-state"><i className="ti ti-check"/><p>Nenhum lead em follow-up no momento</p></div></div>
-          :tiposComDados.map(tipo=>(
-            <div key={tipo} className="card" style={{marginBottom:16}}>
-              <div style={{fontWeight:600,color:"var(--brand)",marginBottom:8,fontSize:14}}>{TIPO_LABEL[tipo]||tipo} ({data.porTipo[tipo].length})</div>
-              {data.porTipo[tipo].map(f=>(
-                <div key={f.id} style={{marginBottom:8}}>
-                  <div className="fu-item">
-                    <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
-                    <div className="fu-info">
-                      <div className="fu-nome">{f.cliente_nome}</div>
-                      <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
-                      <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
-                        Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
-                      </div>
-                      <div style={{marginTop:4}}><ClassificacaoBadge f={f}/></div>
-                      {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
-                    </div>
-                    {AcoesLead(f)}
-                  </div>
-                  {f.mensagens&&f.mensagens.length>0&&<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={load}/>}
+          // Board horizontal, uma coluna por tipo de follow-up — TIPO_ORDEM já bate 1:1
+          // com os estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/
+          // parou_responder são o mesmo estágio, não uma categoria à parte; só
+          // pos_venda_satisfacao e match_estoque não são coluna do Kanban, ver
+          // FOLLOWUP_LABEL em CRM.jsx). Cada card já mostra a mensagem real que vai
+          // ser mandada (FluxoMensagens), não só o motivo da classificação.
+          :<div className="fu-kanban-board">
+            {tiposComDados.map(tipo=>(
+              <div key={tipo} className="fu-kanban-col">
+                <div className="kanban-col-header">
+                  <span className="kanban-col-title">{TIPO_LABEL[tipo]||tipo}</span>
+                  <span className="kanban-col-count">{data.porTipo[tipo].length}</span>
                 </div>
-              ))}
-            </div>
-          ))
+                <div className="fu-kanban-cards">
+                  {data.porTipo[tipo].map(f=>(
+                    <div key={f.id} className="fu-kanban-card">
+                      <div className="fu-item">
+                        <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
+                        <div className="fu-info">
+                          <div className="fu-nome">{f.cliente_nome}</div>
+                          <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
+                          <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
+                            Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
+                          </div>
+                          <div style={{marginTop:4}}><ClassificacaoBadge f={f}/></div>
+                          {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
+                        </div>
+                        {AcoesLead(f)}
+                      </div>
+                      {f.mensagens&&f.mensagens.length>0
+                        ?<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={load}/>
+                        :<div style={{fontSize:11,color:"var(--muted)",fontStyle:"italic",marginTop:6,textAlign:"center"}}>Sem mensagem automática pra esse estágio</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
       )}
 
       {aba==="agendados"&&(
