@@ -231,6 +231,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .fu-kanban-cards::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
 .fu-kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 
+/* Listas verticais de "Agendados pela Lara"/"Agendamentos" — mesma barra de
+   rolagem com cor de marca do Kanban (.fu-kanban-cards/.kanban-cards) em vez de
+   deixar a página crescer sem fim conforme os itens acumulam. */
+.fu-scroll-list{max-height:calc(100vh - 260px);overflow-y:auto}
+.fu-scroll-list::-webkit-scrollbar{width:8px}
+.fu-scroll-list::-webkit-scrollbar-track{background:transparent}
+.fu-scroll-list::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
+.fu-scroll-list::-webkit-scrollbar-thumb:hover{background:#dbb95a}
+
 /* ── Follow-ups ── */
 .fu-item{display:flex;align-items:flex-start;gap:10px;padding:14px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .fu-item:last-child{border-bottom:none}

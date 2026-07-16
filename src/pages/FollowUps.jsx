@@ -172,7 +172,11 @@ function ClassificacaoBadge({f}){
 }
 
 export default function FollowUps(){
-  const readOnly=getRole()==="manager";
+  const role=getRole();
+  const readOnly=role==="manager";
+  // "Agendados pela Lara" (silêncio pós-handoff, revisão de carro não encontrado etc)
+  // é visão de administração — só owner/manager, nunca vendedor (2026-07-16).
+  const podeVerAgendados=role!=="agent";
   const[data,setData]=useState({porTipo:{}});
   const[aba,setAba]=useState("estagio");
   // Filtro de data dentro de "Por estágio" — antes eram 2 abas próprias (Agenda de
@@ -229,7 +233,7 @@ export default function FollowUps(){
       <div className="page-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1></div>
       <div className="tabs-wrap">
         <button className={`tab-btn ${aba==="estagio"?"active":""}`} onClick={()=>setAba("estagio")}>Por estágio ({totalEmFollowup})</button>
-        <button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Agendados pela Lara ({data.agendados?.length||0})</button>
+        {podeVerAgendados&&<button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Agendados pela Lara ({data.agendados?.length||0})</button>}
         <button className={`tab-btn ${aba==="agendamentos"?"active":""}`} onClick={()=>setAba("agendamentos")}>Agendamentos ({data.agendamentos?.length||0})</button>
       </div>
 
@@ -295,8 +299,8 @@ export default function FollowUps(){
           </div>
       </>)}
 
-      {aba==="agendados"&&(
-        <div className="card">
+      {aba==="agendados"&&podeVerAgendados&&(
+        <div className="card fu-scroll-list">
           {(!data.agendados||data.agendados.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum follow-up agendado pela Lara no momento</p></div>}
           {data.agendados?.map(a=>(
             <div key={a.id} className="fu-item">
@@ -304,7 +308,6 @@ export default function FollowUps(){
               <div className="fu-info">
                 <div className="fu-nome">{a.cliente_nome||a.phone}</div>
                 <div className="fu-sub">{a.cenario} · {fmtData(a.agendado_para)}</div>
-                <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{a.mensagem}</div>
                 {a.status==="pendente_revisao"&&<span className="badge badge-warning" style={{fontSize:10,marginTop:4,display:"inline-flex"}}><i className="ti ti-alert-triangle" style={{fontSize:11}}/> Revisão manual</span>}
               </div>
               <div className="fu-actions">
@@ -317,7 +320,7 @@ export default function FollowUps(){
       )}
 
       {aba==="agendamentos"&&(
-        <div className="card">
+        <div className="card fu-scroll-list">
           {(!data.agendamentos||data.agendamentos.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum agendamento com lembrete pendente</p></div>}
           {data.agendamentos?.map(ag=>(
             <div key={ag.id} style={{marginBottom:8}}>
