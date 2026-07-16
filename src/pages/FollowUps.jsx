@@ -175,6 +175,19 @@ const TIPO_COR={
 };
 const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder","feirao","fecha_mes","pos_venda_satisfacao"];
 
+// la_followup_agendado.cenario — só "lembrete_visita" ainda gera linha nova (ver auditoria
+// 2026-07-16 no comentário da aba "agendados" mais abaixo); mapa cobre os cenários antigos
+// só pra não vazar o valor cru na tela caso alguma linha velha reapareça por engano.
+const CENARIO_LABEL={
+  lembrete_visita:"Visita mencionada",
+  pos_handoff_silencio:"Silêncio pós-handoff (legado)",
+  revisao_vai_pensar:"Vai pensar (legado)",
+  revisao_carro_nao_encontrado:"Carro não encontrado (legado)",
+  revisao_fechado_perdido:"Fechado perdido (legado)",
+  revisao_visita_agendada:"Visita agendada (legado)",
+  vou_pensar:"Vai pensar (legado)",
+};
+
 function fmtData(iso){
   if(!iso) return "—";
   return new Date(iso).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"});
@@ -243,8 +256,13 @@ function LeadCardHeader({f,role,onAtualizado}){
 export default function FollowUps(){
   const role=getRole();
   const readOnly=role==="manager";
-  // "Agendados pela Lara" (silêncio pós-handoff, revisão de carro não encontrado etc)
-  // é visão de administração — só owner/manager, nunca vendedor (2026-07-16).
+  // "Visitas mencionadas" (la_followup_agendado, cenário lembrete_visita — cliente citou
+  // uma data em conversa, ainda não confirmada na Agenda de verdade) é visão de
+  // administração — só owner/manager, nunca vendedor (2026-07-16). Os outros cenários que
+  // essa tabela guardava (pos_handoff_silencio, revisao_vai_pensar/carro_nao_encontrado/
+  // fechado_perdido/visita_agendada, vou_pensar) são mecanismo morto desde 2026-07-14,
+  // substituído pelo OBSERVADOR POS-HANDOFF atual (followups.parou_responder + mover_estagio
+  // direto) — 68 linhas órfãs canceladas em massa nessa auditoria.
   const podeVerAgendados=role!=="agent";
   // "Agendamentos" (lembrete de visita) é redundante pro vendedor — a página Agenda
   // (menu lateral) já é a visão dedicada de compromissos, sincronizada com o Kanban
@@ -360,7 +378,7 @@ export default function FollowUps(){
       <div className="page-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1></div>
       <div className="tabs-wrap">
         <button className={`tab-btn ${aba==="estagio"?"active":""}`} onClick={()=>setAba("estagio")}>Por estágio ({totalEmFollowup})</button>
-        {podeVerAgendados&&<button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Agendados pela Lara ({data.agendados?.length||0})</button>}
+        {podeVerAgendados&&<button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Visitas mencionadas ({data.agendados?.length||0})</button>}
         {podeVerAgendamentos&&<button className={`tab-btn ${aba==="agendamentos"?"active":""}`} onClick={()=>setAba("agendamentos")}>Agendamentos ({data.agendamentos?.length||0})</button>}
       </div>
 
@@ -439,13 +457,21 @@ export default function FollowUps(){
 
       {aba==="agendados"&&podeVerAgendados&&(
         <div className="card fu-scroll-list">
-          {(!data.agendados||data.agendados.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum follow-up agendado pela Lara no momento</p></div>}
+          {/* 2026-07-16: auditoria encontrou 68 linhas 100% órfãs aqui (la_followup_agendado)
+          — mecanismo antigo (pos_handoff_silencio, revisao_vai_pensar/carro_nao_encontrado/
+          fechado_perdido/visita_agendada, vou_pensar) substituído em 2026-07-14 pela lógica
+          nova do OBSERVADOR POS-HANDOFF (mover_estagio direto no backend + parou_responder
+          na tabela followups, já visível em "Por estágio"). Nenhuma linha nova desde
+          2026-07-11. Canceladas em massa. O único cenário ainda vivo aqui é "lembrete_visita"
+          (cliente mencionou uma data de visita em conversa, ainda não confirmada na Agenda de
+          verdade) — por isso a aba continua existindo, só vazia até isso disparar. */}
+          {(!data.agendados||data.agendados.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhuma visita mencionada pelo cliente aguardando confirmação</p></div>}
           {data.agendados?.map(a=>(
             <div key={a.id} className="fu-item">
               <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{a.vendedor_iniciais}</div>
               <div className="fu-info">
                 <div className="fu-nome">{a.cliente_nome||a.phone}</div>
-                <div className="fu-sub">{a.cenario} · {fmtData(a.agendado_para)}</div>
+                <div className="fu-sub">{CENARIO_LABEL[a.cenario]||a.cenario} · {fmtData(a.agendado_para)}</div>
                 {a.status==="pendente_revisao"&&<span className="badge badge-warning" style={{fontSize:10,marginTop:4,display:"inline-flex"}}><i className="ti ti-alert-triangle" style={{fontSize:11}}/> Revisão manual</span>}
               </div>
               <div className="fu-actions">

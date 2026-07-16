@@ -13,6 +13,13 @@ function haQuanto(iso){
   return `há ${Math.floor(h/24)}d`;
 }
 
+// Motivos de skip conhecidos, logados pelo RECEPTOR (n8n) quando decide não processar
+// de propósito — hoje só existe o caso do @lid sem telefone resolvível (ver auditoria
+// 2026-07-16). Mapa só pra não vazar o valor cru na tela.
+const MOTIVO_SKIP_LABEL = {
+  lid_sem_senderpn: "Número via @lid do WhatsApp sem telefone resolvível (limitação técnica conhecida)",
+};
+
 export default function ContatosPerdidos(){
   const[lista,setLista]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -55,7 +62,9 @@ export default function ContatosPerdidos(){
       </div>
       <div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>
         Mensagens que chegaram pelo WhatsApp mas, por algum motivo, nunca foram processadas pela Lara (RECEPTOR/PROCESSADOR).
-        Capturadas por uma camada de segurança independente — se aparecer algo aqui, provavelmente precisa de resposta manual.
+        Capturadas por uma camada de segurança independente. Tela de monitoramento técnico — nem toda linha é falha real:
+        auditoria de 2026-07-16 achou casos de reentrega duplicada do webhook e de limitação conhecida do @lid do WhatsApp
+        misturados com falhas genuínas. Os avisos abaixo (quando aparecem) ajudam a separar ruído de caso real.
       </div>
       <div className="card">
         {lista.length===0&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum contato perdido — tudo processado normalmente</p></div>}
@@ -70,6 +79,16 @@ export default function ContatosPerdidos(){
               <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
                 Recebido em {fmtDataHora(c.timestamp_recebimento)} · {haQuanto(c.timestamp_recebimento)}
               </div>
+              {c.motivo_skip&&(
+                <div style={{fontSize:11,color:"var(--muted)",marginTop:4,display:"flex",alignItems:"center",gap:4}}>
+                  <i className="ti ti-info-circle" style={{fontSize:12}}/> {MOTIVO_SKIP_LABEL[c.motivo_skip]||c.motivo_skip}
+                </div>
+              )}
+              {c.provavel_ja_tratado&&(
+                <div style={{fontSize:11,color:"var(--warning)",marginTop:4,display:"flex",alignItems:"center",gap:4}}>
+                  <i className="ti ti-copy" style={{fontSize:12}}/> Provável reentrega duplicada — há conversa registrada bem perto desse horário, talvez já tratado
+                </div>
+              )}
             </div>
             <div>
               <div className="fu-actions" style={{display:"flex",gap:6,alignItems:"center"}}>
