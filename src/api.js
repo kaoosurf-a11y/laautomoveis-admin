@@ -43,6 +43,7 @@ export async function getCRMKanban() {
 export async function moverLead(id,est,motivo,veiculo_vendido_id) { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est,motivo,veiculo_vendido_id})}); }
 export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method:"POST",body:JSON.stringify(d)}); }
 export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`,{method:"PATCH",body:JSON.stringify(d)}); }
+export async function excluirLeadCRM(id) { return req(`/api/crm/leads/${id}`,{method:"DELETE"}); }
 export async function atualizarTemperatura(id,temperatura) { return req(`/api/crm/leads/${id}/temperatura`,{method:"PATCH",body:JSON.stringify({temperatura})}); }
 export async function atualizarResponsavel(id,responsavel_atual) { return req(`/api/crm/leads/${id}/responsavel`,{method:"PATCH",body:JSON.stringify({responsavel_atual})}); }
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }

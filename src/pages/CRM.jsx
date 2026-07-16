@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
 
@@ -141,7 +141,20 @@ const AGENDAMENTO_IA_INFO={
   desviou_assunto:{background:"#e0525222",color:"#e05252"},
 };
 
-function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
+function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
+  const[excluindo,setExcluindo]=useState(false);
+  async function handleExcluir(){
+    if(!confirm(`Excluir "${lead.nome}" do CRM? Isso remove o lead do Kanban (não aparece mais em nenhuma coluna). Use só pra lead de teste ou cadastrado por engano.`))return;
+    setExcluindo(true);
+    try{
+      await excluirLeadCRM(lead.id);
+      onAtualizado?.();
+      onClose();
+    }catch{
+      alert("Erro ao excluir o lead. Tente novamente.");
+      setExcluindo(false);
+    }
+  }
   const[est,setEst]=useState(lead.estagio||"novo_lead"); // sempre o valor REAL de estagio
   const[agendando,setAgendando]=useState(false);
   const[agendado,setAgendado]=useState(false);
@@ -426,6 +439,11 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios}){
             </select>
           </>)}
         </div>
+        {role==="owner"&&
+          <button className="btn btn-ghost" style={{width:"100%",marginBottom:8,color:"var(--danger, #e05252)"}} onClick={handleExcluir} disabled={excluindo}>
+            {excluindo?<span className="spinner"/>:<><i className="ti ti-trash" style={{marginRight:6}}/>Excluir lead (teste/erro)</>}
+          </button>
+        }
         <button className="btn btn-ghost" onClick={onClose} style={{width:"100%"}}>Fechar</button>
       </div>
     </div>
@@ -750,7 +768,7 @@ export default function CRM(){
         </div>
       )}
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );
