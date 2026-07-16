@@ -1,6 +1,63 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 
+// Editor inline de preço (2026-07-17) + exibição condicional de histórico: reaproveita
+// PUT /api/veiculos/:id (mesma rota do modal, enviando o veículo inteiro com só o
+// preço trocado) — toda a lógica de "quando guardar preco_anterior" mora no backend,
+// aqui só decide COMO mostrar o resultado. Clique no preço (tabela ou card mobile)
+// vira input; Enter ou blur salva, Esc cancela.
+function PrecoInline({ v, brl, onSalvo }) {
+  const [editando, setEditando] = useState(false);
+  const [valor, setValor] = useState(String(v.preco));
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar() {
+    const novo = Number(valor);
+    if (!novo || novo <= 0) { setEditando(false); setValor(String(v.preco)); return; }
+    if (novo === Number(v.preco)) { setEditando(false); return; }
+    setSalvando(true);
+    try {
+      await api.editarVeiculo(v.id, { ...v, preco: novo });
+      await onSalvo();
+      setEditando(false);
+    } catch (e) { alert("Erro ao salvar preço: " + e.message); }
+    finally { setSalvando(false); }
+  }
+
+  if (editando) {
+    return (
+      <input
+        autoFocus
+        className="form-input"
+        type="number"
+        value={valor}
+        disabled={salvando}
+        style={{ padding: "4px 8px", fontSize: 14, width: 130 }}
+        onChange={e => setValor(e.target.value)}
+        onBlur={salvar}
+        onKeyDown={e => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") { setValor(String(v.preco)); setEditando(false); }
+        }}
+        onClick={e => e.stopPropagation()}
+      />
+    );
+  }
+
+  const baixou = v.preco_anterior != null && Number(v.preco_anterior) > Number(v.preco);
+  return (
+    <span
+      title="Clique pra editar o preço"
+      style={{ cursor: "pointer", display: "inline-flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}
+      onClick={() => setEditando(true)}
+    >
+      {baixou && <span style={{ fontSize: 12, color: "var(--muted)", textDecoration: "line-through" }}>{brl(v.preco_anterior)}</span>}
+      <span>{brl(v.preco)}</span>
+      <i className="ti ti-pencil" style={{ fontSize: 11, color: "var(--muted)" }} />
+    </span>
+  );
+}
+
 const CAMBIOS = ["Automático", "Manual", "CVT"];
 const COMBUSTIVEIS = ["Flex", "Gasolina", "Diesel", "Elétrico", "Híbrido"];
 const BADGES = ["", "Destaque", "Seminovo", "Oportunidade", "Novo"];
@@ -117,7 +174,7 @@ export default function Veiculos() {
                       <div style={{color:"var(--muted)",fontSize:12}}>{v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel} · {v.cor}</div>
                     </td>
                     <td style={{color:"var(--muted)"}}>{v.ano}</td>
-                    <td style={{fontWeight:700,color:"var(--brand)"}}>{brl(v.preco)}</td>
+                    <td style={{fontWeight:700,color:"var(--brand)"}}><PrecoInline v={v} brl={brl} onSalvo={load}/></td>
                     <td style={{color:"var(--muted)"}}>{Number(v.km).toLocaleString("pt-BR")} km</td>
                     <td>{v.badge ? <span className="badge badge-brand">{v.badge}</span> : <span className="badge badge-muted">—</span>}</td>
                     <td>
@@ -157,7 +214,7 @@ export default function Veiculos() {
               </div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                 <div>
-                  <div style={{fontSize:20,fontWeight:800,color:"var(--brand)"}}>{brl(v.preco)}</div>
+                  <div style={{fontSize:20,fontWeight:800,color:"var(--brand)"}}><PrecoInline v={v} brl={brl} onSalvo={load}/></div>
                   <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{Number(v.km).toLocaleString("pt-BR")} km</div>
                 </div>
                 <div style={{display:"flex",gap:8}}>
