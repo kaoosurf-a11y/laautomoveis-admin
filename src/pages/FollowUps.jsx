@@ -141,6 +141,15 @@ const TIPO_LABEL={
   nao_achou_carro:"Não achou o carro",parou_responder:"Parou de responder",
   pos_venda_satisfacao:"Pós-venda",match_estoque:"Veículo compatível chegou!",
 };
+// Mesma cor do estágio no Kanban do CRM (CRM.jsx ESTAGIOS_ADMIN) — a coluna aqui é o
+// mesmo estágio, só com o follow-up em detalhe, então a cor é o elo visual entre as
+// duas telas. pos_venda_satisfacao/match_estoque não são estágio do Kanban (são
+// follow-up à parte), cor própria pra não emprestar de nenhum estágio real.
+const TIPO_COR={
+  sem_credito:"#e67e22",vai_pensar:"#8E44AD",
+  nao_achou_carro:"#2980B9",parou_responder:"#16a085",
+  pos_venda_satisfacao:"#d1637a",match_estoque:"#4caf7d",
+};
 const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder","pos_venda_satisfacao","match_estoque"];
 
 function fmtData(iso){
@@ -229,26 +238,30 @@ export default function FollowUps(){
 
       {aba==="estagio"&&(
           // Board horizontal, uma coluna por tipo de follow-up, SEMPRE as 6 (mesmo
-          // vazias, igual ao Kanban do CRM — antes só mostrava coluna com lead dentro,
-          // o que parecia quebrado quando só 1 tipo tinha dado). TIPO_ORDEM já bate 1:1
-          // com os estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/
+          // vazias, igual ao Kanban do CRM). TIPO_ORDEM já bate 1:1 com os
+          // estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/
           // parou_responder são o mesmo estágio, não uma categoria à parte; só
-          // pos_venda_satisfacao e match_estoque não são coluna do Kanban, ver
-          // FOLLOWUP_LABEL em CRM.jsx). Cada card já mostra a mensagem real que vai
-          // ser mandada (FluxoMensagens), não só o motivo da classificação.
+          // pos_venda_satisfacao e match_estoque não são coluna do Kanban).
+          // Diferenciação visual do Kanban do CRM (mesmas abas, telas diferentes):
+          // aqui a cor do estágio vira um acento (barra no topo da coluna + borda
+          // lateral no card) em vez do contorno completo que o CRM usa — o card é
+          // mais alto/detalhado (mostra a mensagem real), então um contorno inteiro
+          // ficaria pesado. Card sem duplicar informação: ClassificacaoBadge já
+          // resume o "motivo" (IA+confiança ou manual), não repete o texto cru.
           <div className="fu-kanban-board">
             {TIPO_ORDEM.map(tipo=>{
               const leads=data.porTipo?.[tipo]||[];
+              const cor=TIPO_COR[tipo];
               return (
               <div key={tipo} className="fu-kanban-col">
-                <div className="kanban-col-header">
-                  <span className="kanban-col-title">{TIPO_LABEL[tipo]||tipo}</span>
+                <div className="fu-kanban-col-header" style={{borderTopColor:cor}}>
+                  <span className="fu-kanban-col-title" style={{color:cor}}>{TIPO_LABEL[tipo]||tipo}</span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
                 <div className="fu-kanban-cards">
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
                   {leads.map(f=>(
-                    <div key={f.id} className="fu-kanban-card">
+                    <div key={f.id} className="fu-kanban-card" style={{borderLeft:`3px solid ${cor}`}}>
                       <div className="fu-item">
                         <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
                         <div className="fu-info">
@@ -257,8 +270,10 @@ export default function FollowUps(){
                           <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
                             Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
                           </div>
-                          <div style={{marginTop:4}}><ClassificacaoBadge f={f}/></div>
-                          {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
+                          <div style={{marginTop:4}}>
+                            <ClassificacaoBadge f={f}/>
+                            {!f.estagio_definido_por&&f.motivo&&<span style={{fontSize:11,color:"var(--muted)"}}>{f.motivo}</span>}
+                          </div>
                         </div>
                         {AcoesLead(f)}
                       </div>
