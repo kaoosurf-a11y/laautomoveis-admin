@@ -138,18 +138,23 @@ function AgendamentoItem({ag, readOnly, onAtualizado}){
 const TIPO_LABEL={
   sem_credito:"Sem crédito",vai_pensar:"Vai pensar",
   nao_achou_carro:"Não achou o carro",parou_responder:"Parou de responder",
-  pos_venda_satisfacao:"Pós-venda",match_estoque:"Veículo compatível chegou!",
+  pos_venda_satisfacao:"Pós-venda",
 };
 // Mesma cor do estágio no Kanban do CRM (CRM.jsx ESTAGIOS_ADMIN) — a coluna aqui é o
 // mesmo estágio, só com o follow-up em detalhe, então a cor é o elo visual entre as
-// duas telas. pos_venda_satisfacao/match_estoque não são estágio do Kanban (são
-// follow-up à parte), cor própria pra não emprestar de nenhum estágio real.
+// duas telas. pos_venda_satisfacao não é estágio do Kanban (é follow-up à parte),
+// cor própria pra não emprestar de nenhum estágio real.
+// match_estoque não vira coluna própria: é o mesmo lead de "não achou o carro" só
+// que já com o aviso de veículo compatível disparado — mostrar como coluna separada
+// dava a impressão de lead duplicado (2026-07-16, pedido explícito pra remover e
+// manter só "não achou o carro"). O follow-up em si continua rodando normal no
+// backend (estoqueMatch.js), só não aparece mais como card próprio aqui.
 const TIPO_COR={
   sem_credito:"#e67e22",vai_pensar:"#8E44AD",
   nao_achou_carro:"#2980B9",parou_responder:"#16a085",
-  pos_venda_satisfacao:"#d1637a",match_estoque:"#4caf7d",
+  pos_venda_satisfacao:"#d1637a",
 };
-const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder","pos_venda_satisfacao","match_estoque"];
+const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder","pos_venda_satisfacao"];
 
 function fmtData(iso){
   if(!iso) return "—";
@@ -277,11 +282,12 @@ export default function FollowUps(){
               Vencidos {totalVencidos>0&&<span style={{background:"var(--danger)",color:"white",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,marginLeft:4}}>{totalVencidos}</span>}
             </button>
           </div>
-          {/* Board horizontal, uma coluna por tipo de follow-up, SEMPRE as 6 (mesmo
-          vazias, igual ao Kanban do CRM). TIPO_ORDEM já bate 1:1 com os
+          {/* Board horizontal, uma coluna por tipo de follow-up, SEMPRE todas
+          (mesmo vazias, igual ao Kanban do CRM). TIPO_ORDEM já bate 1:1 com os
           estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/
           parou_responder são o mesmo estágio, não uma categoria à parte; só
-          pos_venda_satisfacao e match_estoque não são coluna do Kanban).
+          pos_venda_satisfacao não é coluna do Kanban). match_estoque não tem
+          coluna própria — ver comentário perto de TIPO_COR.
           Diferenciação visual do Kanban do CRM (mesmas abas, telas diferentes):
           aqui a cor do estágio vira um acento (barra no topo da coluna + borda
           lateral no card) em vez do contorno completo que o CRM usa — o card é
