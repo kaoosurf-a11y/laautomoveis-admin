@@ -48,6 +48,10 @@ export default function Layout({ children }) {
     { to:"/followups", icon:"ti-clock",          label:"Follow-ups",   section:null },
     { to:"/agenda",    icon:"ti-calendar-event", label:"Agenda",       badge:agendaHoje||null, section:null },
     { to:"/veiculos",  icon:"ti-car",            label:"Veículos",     section:"ESTOQUE" },
+    // Disparador (2026-07-16): contatos AINDA na campanha de reativação, antes de
+    // validação — aba separada de Clientes por pedido explícito (fases diferentes
+    // da jornada, mesmo par de permissão).
+    ...(isManager() ? [{ to:"/disparador", icon:"ti-send", label:"Disparador", section:"ADMIN" }] : []),
     // Clientes (2026-07-16): clientes validados (compraram ou confirmados manualmente
     // da campanha de reativação) — visão distinta do CRM Pipeline (funil de leads
     // ativos), só owner/manager.

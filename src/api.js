@@ -45,6 +45,10 @@ export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method
 export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`,{method:"PATCH",body:JSON.stringify(d)}); }
 export async function excluirLeadCRM(id) { return req(`/api/crm/leads/${id}`,{method:"DELETE"}); }
 export async function getClientesValidados() { return req("/api/crm/clientes"); }
+export async function getDisparador(params={}) {
+  const qs = new URLSearchParams(params).toString();
+  return req(`/api/crm/disparador${qs ? `?${qs}` : ""}`);
+}
 export async function atualizarTemperatura(id,temperatura) { return req(`/api/crm/leads/${id}/temperatura`,{method:"PATCH",body:JSON.stringify({temperatura})}); }
 export async function atualizarResponsavel(id,responsavel_atual) { return req(`/api/crm/leads/${id}/responsavel`,{method:"PATCH",body:JSON.stringify({responsavel_atual})}); }
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }
