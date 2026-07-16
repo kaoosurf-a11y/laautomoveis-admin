@@ -29,9 +29,12 @@ const FOLLOWUP_LABEL={
 // piscar de olhos). Harmonizada com o tema escuro do admin — mesmo nível de saturação
 // e brilho das cores já existentes (novo_lead/negociando/sem_credito/vai_pensar).
 // 2026-07-16: 2º ajuste — nao_achou_carro/agendados usavam tons de azul quase iguais
-// ao de novo_lead (3 colunas "azuis"). nao_achou_carro virou ciano, agendados virou
-// lavanda, parou_responder saiu do verde-azulado (que ia colidir com o novo ciano) pra
-// um verde-limão, feirao saiu do laranja (perto de sem_credito) pra amarelo puro.
+// ao de novo_lead (3 colunas "azuis"). nao_achou_carro virou ciano, parou_responder
+// saiu do verde-azulado (que ia colidir com o novo ciano) pra um verde-limão, feirao
+// saiu do laranja (perto de sem_credito) pra amarelo puro. agendados virou lavanda
+// primeiro, mas ainda ficava parecido com o azul de novo_lead (mesma família
+// azul/roxo, luminosidade parecida) — trocado por um rosa neon bem saturado, bem
+// longe na roda de cores de qualquer outro estágio.
 // Essas 3 (nao_achou_carro/parou_responder/feirao) são compartilhadas com o
 // TIPO_COR de FollowUps.jsx — qualquer mudança aqui precisa espelhar lá também.
 const ESTAGIOS_ADMIN=[
@@ -43,7 +46,7 @@ const ESTAGIOS_ADMIN=[
   {key:"parou_responder",label:"Parou de responder",cor:"#82C91E"},
   {key:"feirao",label:"Feirão",cor:"#FFD43B"},
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
-  {key:"agendados",label:"Agendados",cor:"#B197FC"},
+  {key:"agendados",label:"Agendados",cor:"#FF3EC9"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
   {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
@@ -63,7 +66,7 @@ const ESTAGIOS_VENDEDOR=[
   {key:"parou_responder",label:"Parou de responder",cor:"#82C91E"},
   {key:"feirao",label:"Feirão",cor:"#FFD43B"},
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
-  {key:"agendados",label:"Agendados",cor:"#B197FC"},
+  {key:"agendados",label:"Agendados",cor:"#FF3EC9"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
   {key:"pos_venda",label:"Pós-venda",cor:"#d1637a"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
