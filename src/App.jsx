@@ -9,6 +9,7 @@ import Agenda from "./pages/Agenda.jsx";
 import Veiculos from "./pages/Veiculos.jsx";
 import Equipe from "./pages/Equipe.jsx";
 import ContatosPerdidos from "./pages/ContatosPerdidos.jsx";
+import Clientes from "./pages/Clientes.jsx";
 
 function Priv({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/followups" element={<Priv><FollowUps /></Priv>} />
       <Route path="/agenda"    element={<Priv><Agenda /></Priv>} />
       <Route path="/veiculos"  element={<Priv><Veiculos /></Priv>} />
+      <Route path="/clientes"  element={<OwnerOnly><Clientes /></OwnerOnly>} />
       <Route path="/equipe"    element={<OwnerOnly><Equipe /></OwnerOnly>} />
       <Route path="/contatos-perdidos" element={<OwnerOnly><ContatosPerdidos /></OwnerOnly>} />
       <Route path="*"          element={<Navigate to="/" replace />} />

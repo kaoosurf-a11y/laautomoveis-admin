@@ -505,7 +505,16 @@ function NovoModal({onClose,onCriado}){
           <select className="form-input" value={form.origem} onChange={e=>set("origem",e.target.value)}>
             <option value="presencial">Presencial (loja)</option>
             <option value="organico">Orgânico</option><option value="site">Site</option><option value="anuncio">Anúncio</option>
+            <option value="reativacao">Campanha de reativação</option>
           </select>
+        </div>
+        {/* Validação humana (2026-07-16): cliente antigo da campanha de reativação que
+        respondeu confirmando o número — o vendedor conferiu que é ele de verdade antes
+        de marcar aqui. Vira "cliente validado" (tela Clientes) na hora, sem precisar
+        esperar uma venda nova. */}
+        <div className="form-group" style={{display:"flex",alignItems:"center",gap:8}}>
+          <input type="checkbox" id="validar_campanha" checked={form.validar_campanha||false} onChange={e=>set("validar_campanha",e.target.checked)}/>
+          <label htmlFor="validar_campanha" style={{fontSize:13,cursor:"pointer"}}>Confirmei que é um cliente antigo real (marcar como cliente validado)</label>
         </div>
         {erro&&<div style={{color:"var(--danger)",fontSize:13,marginBottom:10}}>{erro}</div>}
         <div style={{display:"flex",gap:8}}>
