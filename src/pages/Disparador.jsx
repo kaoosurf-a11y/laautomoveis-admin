@@ -16,6 +16,15 @@ const FILTROS = [
   { key: "sem_resposta", label: "Sem resposta" },
 ];
 
+const PERIODOS = [
+  { key: "todos", label: "Todos" },
+  { key: "hoje", label: "Hoje" },
+  { key: "semana", label: "Esta semana" },
+  { key: "mes", label: "Este mês" },
+  { key: "ano", label: "Este ano" },
+  { key: "personalizado", label: "Personalizado" },
+];
+
 const STATUS_INFO = {
   confirmado: ["#4caf7d", "Confirmado"],
   invalido: ["#e05252", "Inválido"],
@@ -38,9 +47,17 @@ function InstanciaBadge({ nome, status }) {
 }
 
 export default function Disparador() {
-  const [data, setData] = useState({ contatos: [], resumo: [], instancias: {} });
+  const [data, setData] = useState({ contatos: [], total: 0, resumo: [], instancias: {} });
   const [filtro, setFiltro] = useState("todos");
   const [busca, setBusca] = useState("");
+  // "quando" decide a QUE data o filtro de período se aplica: data de entrada na
+  // campanha (criado_em) ou data prevista/real de envio (estimativa pra quem ainda
+  // não foi mandado, ultimo_envio real pra quem já foi) — os dois combinam com
+  // qualquer filtro de status acima, sem substituí-lo.
+  const [quando, setQuando] = useState("previsto_enviado");
+  const [periodo, setPeriodo] = useState("todos");
+  const [desde, setDesde] = useState("");
+  const [ate, setAte] = useState("");
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [expandido, setExpandido] = useState(null);
@@ -50,20 +67,18 @@ export default function Disparador() {
     const params = { limit: 100 };
     if (filtro !== "todos") params.filtro = filtro;
     if (busca.trim()) params.busca = busca.trim();
+    if (periodo !== "todos") {
+      params.quando = quando;
+      params.periodo = periodo;
+      if (periodo === "personalizado" && desde) { params.desde = desde; params.ate = ate || desde; }
+    }
     getDisparador(params).then(d => { setData(d); setLoading(false); })
       .catch(() => { setErro("Erro ao carregar dados. Tente novamente."); setLoading(false); });
-  }, [filtro, busca]);
+  }, [filtro, busca, quando, periodo, desde, ate]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Resumo por status (soma todos os vendedores) — pra badge de contagem nas abas.
-  const totalPorStatus = {};
-  let totalGeral = 0;
-  data.resumo.forEach(r => {
-    totalGeral += r.total;
-    const key = r.status === "validando-numero" ? "validando" : r.status;
-    totalPorStatus[key] = (totalPorStatus[key] || 0) + r.total;
-  });
+  const totalGeral = data.resumo.reduce((s, r) => s + r.total, 0);
   const totalRetido = data.resumo.filter(r => r.vendedor_atribuido === "dariana").reduce((s, r) => s + r.total, 0);
 
   if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle" /><p>{erro}</p></div>;
@@ -93,13 +108,47 @@ export default function Disparador() {
           <button key={f.key} className={`tab-btn ${filtro === f.key ? "active" : ""}`} onClick={() => setFiltro(f.key)}>{f.label}</button>
         ))}
       </div>
-      <input className="form-input" style={{ marginBottom: 16, maxWidth: 320 }} placeholder="Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
+
+      <input className="form-input" style={{ marginBottom: 14, maxWidth: 320 }} placeholder="Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
+
+      {/* Filtro de período — combinável com o filtro de status acima, não substitui. */}
+      <div className="card" style={{ marginBottom: 16, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>Filtrar data de:</span>
+            <select className="form-input" style={{ marginBottom: 0, width: "auto", padding: "5px 8px", fontSize: 12 }} value={quando} onChange={e => setQuando(e.target.value)}>
+              <option value="previsto_enviado">Previsão/envio</option>
+              <option value="entrada">Entrada na campanha</option>
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {PERIODOS.map(p => (
+              <button key={p.key} className={`tab-btn ${periodo === p.key ? "active" : ""}`} style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => setPeriodo(p.key)}>{p.label}</button>
+            ))}
+          </div>
+        </div>
+        {periodo === "personalizado" && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input type="date" className="form-input" style={{ marginBottom: 0, width: "auto" }} value={desde} onChange={e => setDesde(e.target.value)} />
+            <span style={{ color: "var(--muted)", fontSize: 12 }}>até</span>
+            <input type="date" className="form-input" style={{ marginBottom: 0, width: "auto" }} value={ate} onChange={e => setAte(e.target.value)} />
+          </div>
+        )}
+        {quando === "entrada" && (
+          <div style={{ fontSize: 11, color: "var(--warning)" }}>
+            <i className="ti ti-alert-triangle" /> Todos os 3.763 contatos entraram no mesmo dia (importação em lote) — esse filtro só fica útil quando novos contatos forem adicionados em datas diferentes.
+          </div>
+        )}
+      </div>
 
       {loading && <div className="empty-state"><i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }} /><p>Carregando...</p></div>}
       {!loading && data.contatos.length === 0 && <div className="empty-state"><i className="ti ti-send" /><p>Nenhum contato nesse filtro.</p></div>}
 
       {!loading && data.contatos.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {data.total > data.contatos.length && (
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mostrando {data.contatos.length} de {data.total} — use a busca ou os filtros pra refinar.</div>
+          )}
           {data.contatos.map(c => {
             const retido = c.vendedor_atribuido === "dariana" && c.instancia_status !== "open";
             const aguardando = c.status === "validando-numero" && c.tentativas === 0;
@@ -123,9 +172,19 @@ export default function Disparador() {
                     </span>
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
-                  {c.tentativas} tentativa(s) · Último envio: {fmtData(c.ultimo_envio)} · Próxima: {fmtData(c.proxima_tentativa)}
-                </div>
+
+                {aguardando && !retido && (
+                  <div style={{ fontSize: 12, color: "var(--brand)", marginTop: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                    <i className="ti ti-clock" style={{ fontSize: 13 }} />
+                    {c.estimativa_envio ? <>Previsão de envio: <b>{c.estimativa_envio}</b> <span style={{ color: "var(--muted)", fontWeight: 400 }}>(estimativa, não garantido)</span></> : "Sem estimativa disponível"}
+                  </div>
+                )}
+                {!aguardando && (
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
+                    {c.tentativas} tentativa(s) · Último envio: {fmtData(c.ultimo_envio)} · Próxima: {fmtData(c.proxima_tentativa)}
+                  </div>
+                )}
+
                 <div style={{ marginTop: 10, background: "var(--surface2)", borderRadius: 8, padding: "8px 10px" }}>
                   <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", marginBottom: 4 }}>
                     {c.mensagem_ja_enviada ? "Última mensagem enviada" : "Prévia da próxima mensagem"}
@@ -150,7 +209,6 @@ export default function Disparador() {
               </div>
             );
           })}
-          {data.contatos.length >= 100 && <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, padding: "8px 0" }}>Mostrando os primeiros 100 — use a busca ou os filtros pra refinar.</div>}
         </div>
       )}
     </div>
