@@ -378,6 +378,30 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .cal-cel-badge{font-size:10px;padding:1px 7px;border-radius:99px;background:var(--brand);color:#1a1a1a;font-weight:700}
 @media(max-width:639px){.cal-cel-num{font-size:11px}.cal-cel-badge{font-size:9px;padding:0 5px}}
 
+/* Visão mês com prévia dos compromissos (estilo Google Agenda) — célula deixa de
+   ser quadrada fixa (precisa de espaço vertical pra caber os "chips"). */
+.cal-cel-mes{aspect-ratio:auto;min-height:76px;align-items:stretch;justify-content:flex-start;padding:4px 3px;gap:3px}
+.cal-cel-chips{display:flex;flex-direction:column;gap:2px;width:100%;overflow:hidden}
+.cal-chip{font-size:9px;line-height:1.5;padding:1px 4px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;font-weight:600}
+.cal-chip-mais{background:var(--surface);color:var(--muted);font-weight:600}
+@media(max-width:639px){.cal-cel-mes{min-height:54px}.cal-chip{font-size:8px}}
+
+/* ── Grade de horários (visão dia/semana, estilo Google Agenda) ── */
+.time-grid-wrap{overflow-x:auto;margin-bottom:16px}
+.time-grid{position:relative;min-width:480px;border-top:1px solid var(--border);margin-left:52px}
+.time-grid-row{position:absolute;left:0;right:0;height:60px;border-bottom:1px solid var(--border)}
+.time-grid-label{position:absolute;left:-52px;top:-7px;width:44px;font-size:11px;color:var(--muted);text-align:right}
+.time-grid-content{position:absolute;top:0;left:0;right:0;bottom:0}
+.time-grid-now{position:absolute;left:0;right:0;height:2px;background:var(--danger);z-index:5}
+.time-grid-now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger)}
+.time-grid-block{position:absolute;border-radius:6px;padding:3px 6px;overflow:hidden;text-align:left;cursor:default;border:none;font-family:inherit;box-sizing:border-box}
+.time-grid-block.ag{border-left:3px solid var(--brand);display:flex;flex-direction:column;gap:1px;cursor:pointer;transition:filter .1s}
+.time-grid-block.ag:hover{filter:brightness(1.25)}
+.time-grid-block-hora{font-size:9px;color:var(--muted);font-weight:600}
+.time-grid-block-nome{font-size:11px;color:var(--fg);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.time-grid-block.ocupado{background:var(--surface2);color:var(--muted);font-size:10px;display:flex;align-items:center;justify-content:center;opacity:.7}
+.time-grid-block.bloqueio{background:rgba(224,82,82,.12);color:var(--danger);font-size:10px;display:flex;align-items:center;gap:4px}
+
 /* ── Responsive utils ── */
 .d-mobile{display:flex;flex-direction:column}
 .d-desktop{display:none}

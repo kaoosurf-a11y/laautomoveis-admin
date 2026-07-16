@@ -10,6 +10,12 @@ const ESTAGIOS_NAO_COMPROU=[
   {key:"parou_responder",label:"Parou de responder"},
 ];
 
+// Data local (YYYY-MM-DD) — nunca usar toISOString().split("T")[0] aqui: perto da
+// meia-noite em UTC-3 o UTC já virou o dia seguinte e a data sai errada.
+function dataLocalISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
 // Acha o veículo do estoque que bate com o texto livre do agendamento (ex: "Onix 2019"),
 // pra linkar direto na tela de edição dele no lembrete de "Venda feita". Best-effort —
 // se não achar, o lembrete ainda aparece, só sem o link direto.
@@ -72,36 +78,9 @@ function HorariosModal({onClose}){
   );
 }
 
-function OcupadoCard({ag}){
-  return(
-    <div className="agenda-card" style={{borderLeftColor:"var(--muted)",opacity:.6}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontSize:14,fontWeight:600,color:"var(--muted)"}}>
-          {ag.recorrente&&<i className="ti ti-repeat" style={{fontSize:12,marginRight:4}}/>}
-          {fmtH(ag.data_hora)} — {fmtHF(ag.data_hora,ag.duracao_min)} · Ocupado
-        </span>
-        <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{ag.vendedor_iniciais}</div>
-      </div>
-    </div>
-  );
-}
-
-function BloqueioCard({ag}){
-  return(
-    <div className="agenda-card" style={{borderLeftColor:"var(--danger)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontSize:14,fontWeight:600,color:"var(--fg)"}}>
-          {fmtH(ag.data_hora)} — {fmtHF(ag.data_hora,ag.duracao_min)}
-        </span>
-        <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{ag.vendedor_iniciais}</div>
-      </div>
-      <span className="badge badge-warning" style={{fontSize:11,marginTop:6,display:"inline-flex",alignItems:"center",gap:4}}>
-        <i className={`ti ${ag.recorrente?"ti-repeat":"ti-lock"}`} style={{fontSize:12}}/>
-        {ag.recorrente?"Recorrente":"Bloqueado"} {ag.observacoes?`· ${ag.observacoes}`:""}
-      </span>
-    </div>
-  );
-}
+// "Ocupado" (compromisso de outro vendedor) e "Bloqueio" (almoço/recorrente) agora
+// renderizam direto como bloco compacto dentro de GradeHorarios (mais abaixo) — não
+// precisam mais do card full-width que tinham na lista antiga.
 
 const DIAS_CURTO=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const DIAS_UTEIS=[1,2,3,4,5];
@@ -114,7 +93,7 @@ function somaMin(horario,min){
 }
 
 function BloqueioModal({onClose,onCriado}){
-  const[form,setForm]=useState({data:new Date().toISOString().split("T")[0],horario:"12:00",duracao_min:60,observacoes:"Almoço"});
+  const[form,setForm]=useState({data:dataLocalISO(new Date()),horario:"12:00",duracao_min:60,observacoes:"Almoço"});
   const[recorrente,setRecorrente]=useState(false);
   const[diasSemana,setDiasSemana]=useState(DIAS_UTEIS);
   const[existentes,setExistentes]=useState([]);
@@ -182,7 +161,7 @@ function BloqueioModal({onClose,onCriado}){
             </div>
           </div>
         ):(
-          <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>set("data",e.target.value)} min={new Date().toISOString().split("T")[0]}/></div>
+          <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>set("data",e.target.value)} min={dataLocalISO(new Date())}/></div>
         )}
         <div className="form-grid">
           <div className="form-group"><label className="form-label">Horário {recorrente?"de início":""}</label><input className="form-input" type="time" value={form.horario} onChange={e=>set("horario",e.target.value)}/></div>
@@ -205,6 +184,82 @@ function mesmoDia(a,b){return a.toDateString()===b.toDateString();}
 function minAte(iso){return Math.round((new Date(iso)-Date.now())/60000);}
 function getStatus(ag){const m=minAte(ag.data_hora);if(ag.status==="confirmado"&&m>0&&m<=30)return "em_breve";return ag.status;}
 
+// ── Grade de horários (estilo Google Agenda) ──
+// Eixo vertical de horas com os compromissos posicionados/dimensionados pelo horário
+// real, em vez da lista plana de cards agrupada só em "manhã"/"tarde" que existia
+// antes. 1px = 1min (GRID_PX_HORA=60), evita depender de lib de calendário externa —
+// o resto do painel também é tudo componente próprio.
+const GRID_H_INICIO=7, GRID_H_FIM=21, GRID_PX_HORA=60;
+function minutosNoGrid(iso){
+  const d=new Date(iso);
+  return Math.max(0,Math.min((GRID_H_FIM-GRID_H_INICIO)*60,(d.getHours()-GRID_H_INICIO)*60+d.getMinutes()));
+}
+// Empacota compromissos que se sobrepõem em colunas lado a lado (mesma ideia do
+// Google Agenda pra 2 reuniões no mesmo horário) — aproximação simples (1 grupo de
+// colunas pro dia inteiro, não por cluster de sobreposição), suficiente pro volume
+// real de agendamentos de uma revenda (poucos por dia, conflito é exceção).
+function atribuirColunas(itens){
+  const ordenados=[...itens].sort((a,b)=>a._ini-b._ini);
+  const finalColuna=[];
+  const comColuna=ordenados.map(it=>{
+    let col=finalColuna.findIndex(fim=>fim<=it._ini);
+    if(col===-1){col=finalColuna.length;finalColuna.push(it._fim);}
+    else finalColuna[col]=it._fim;
+    return {...it,_col:col};
+  });
+  const totalCols=finalColuna.length||1;
+  return comColuna.map(it=>({...it,_totalCols:totalCols}));
+}
+
+function GradeHorarios({doDia,onAbrirAg}){
+  const alturaGrid=(GRID_H_FIM-GRID_H_INICIO)*GRID_PX_HORA;
+  const horas=Array.from({length:GRID_H_FIM-GRID_H_INICIO+1},(_,i)=>GRID_H_INICIO+i);
+  const itens=atribuirColunas(doDia.filter(ag=>ag.status!=="cancelado").map(ag=>({
+    ag,
+    _ini:minutosNoGrid(ag.data_hora),
+    _fim:minutosNoGrid(ag.data_hora)+((ag.duracao_min||30)*(GRID_PX_HORA/60)),
+  })));
+  const agora=new Date();
+  const linhaAgoraTop=mesmoDia(agora,new Date())?( (agora.getHours()-GRID_H_INICIO)*60+agora.getMinutes() ):null;
+  return(
+    <div className="time-grid-wrap">
+      <div className="time-grid" style={{height:alturaGrid}}>
+        {horas.map(h=>(
+          <div key={h} className="time-grid-row" style={{top:(h-GRID_H_INICIO)*GRID_PX_HORA}}>
+            <span className="time-grid-label">{String(h).padStart(2,"0")}:00</span>
+          </div>
+        ))}
+        <div className="time-grid-content">
+          {linhaAgoraTop!==null&&linhaAgoraTop>=0&&linhaAgoraTop<=alturaGrid&&
+            <div className="time-grid-now" style={{top:linhaAgoraTop}}/>}
+          {itens.map(({ag,_ini,_fim,_col,_totalCols})=>{
+            const altura=Math.max(_fim-_ini,22);
+            const largura=`calc((100% - 8px) / ${_totalCols})`;
+            const esquerda=`calc(${_col} * (100% - 8px) / ${_totalCols} + 8px)`;
+            if(ag.ocupado){
+              return <div key={ag.id} className="time-grid-block ocupado" style={{top:_ini,height:altura,left:esquerda,width:largura}} title="Ocupado">Ocupado</div>;
+            }
+            if(ag.tipo==="bloqueio"){
+              return <div key={ag.id} className="time-grid-block bloqueio" style={{top:_ini,height:altura,left:esquerda,width:largura}} title={ag.observacoes||"Bloqueado"}>
+                <i className={`ti ${ag.recorrente?"ti-repeat":"ti-lock"}`} style={{fontSize:11}}/> {ag.observacoes||"Bloqueado"}
+              </div>;
+            }
+            const tipo=TIPOS[ag.tipo]||{icon:"📅",cor:"var(--muted)"};
+            const status=getStatus(ag);
+            return(
+              <button key={ag.id} className="time-grid-block ag" onClick={()=>onAbrirAg(ag)}
+                style={{top:_ini,height:altura,left:esquerda,width:largura,borderLeftColor:SBORDA[status]||tipo.cor,background:`${tipo.cor}1c`}}>
+                <span className="time-grid-block-hora">{fmtH(ag.data_hora)}</span>
+                <span className="time-grid-block-nome">{tipo.icon} {ag.cliente_nome}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOnly}){
   const status=getStatus(ag);
   const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"📅",cor:"var(--muted)"};
@@ -214,7 +269,7 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
   const[escolhendoMotivo,setEscolhendoMotivo]=useState(false);
   const[pedidoLaraEnviado,setPedidoLaraEnviado]=useState(false);
   const iso=new Date(ag.data_hora);
-  const[novaData,setNovaData]=useState(iso.toISOString().split("T")[0]);
+  const[novaData,setNovaData]=useState(dataLocalISO(iso));
   const[novoHorario,setNovoHorario]=useState(`${String(iso.getHours()).padStart(2,"0")}:${String(iso.getMinutes()).padStart(2,"0")}`);
   function confirmarReagendar(){
     onReagendar(ag.id,`${novaData}T${novoHorario}:00`);
@@ -302,7 +357,7 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
 
 function NovoModal({onClose,onCriado}){
   const user=getUser();
-  const[form,setForm]=useState({cliente_nome:"",cliente_tel:"",veiculo:"",tipo:"test_drive",data:new Date().toISOString().split("T")[0],horario:"09:00",duracao_min:45,vendedor_nome:isManager()?"":user?.nome,observacoes:""});
+  const[form,setForm]=useState({cliente_nome:"",cliente_tel:"",veiculo:"",tipo:"test_drive",data:dataLocalISO(new Date()),horario:"09:00",duracao_min:45,vendedor_nome:isManager()?"":user?.nome,observacoes:""});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   function slots(){const d=new Date(form.data+"T12:00:00");const dow=d.getDay();if(dow===0)return[];const fim=dow===6?12:18;const s=[];for(let h=8;h<fim;h++){s.push(`${String(h).padStart(2,"0")}:00`);s.push(`${String(h).padStart(2,"0")}:30`);}return s;}
   async function submit(){if(!form.cliente_nome||!form.veiculo)return;const data_hora=`${form.data}T${form.horario}:00`;try{await criarAgendamento({...form,data_hora});}catch{}onCriado();onClose();}
@@ -317,7 +372,7 @@ function NovoModal({onClose,onCriado}){
         <div className="form-grid">
           <div className="form-group"><label className="form-label">Tipo</label><select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>{Object.entries(TIPOS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}</select></div>
           <div className="form-group"><label className="form-label">Duração</label><select className="form-input" value={form.duracao_min} onChange={e=>set("duracao_min",+e.target.value)}><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 hora</option><option value={90}>1h30</option></select></div>
-          <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>set("data",e.target.value)} min={new Date().toISOString().split("T")[0]}/></div>
+          <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>set("data",e.target.value)} min={dataLocalISO(new Date())}/></div>
           <div className="form-group"><label className="form-label">Horário</label><select className="form-input" value={form.horario} onChange={e=>set("horario",e.target.value)}>{slots().map(s=><option key={s} value={s}>{s}</option>)}</select></div>
         </div>
         {isManager()&&<div className="form-group"><label className="form-label">Vendedor</label><select className="form-input" value={form.vendedor_nome} onChange={e=>set("vendedor_nome",e.target.value)}><option value="">Selecionar...</option>{["Dariana","Alex","Wolni"].map(n=><option key={n} value={n}>{n}</option>)}</select></div>}
@@ -337,8 +392,10 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
   const totalDias=new Date(ano,mes+1,0).getDate();
   const offsetInicial=primeiroDia.getDay();
   const hoje=new Date();
-  const contagem={};
-  resumo.forEach(r=>{contagem[r.data]=r.total;});
+  // Prévia por dia (não só contagem) — mostra "09:00 João" dentro da célula, igual
+  // o Google Agenda, em vez de só um número que obriga clicar pra saber o que tem.
+  const previaPorDia={};
+  resumo.forEach(r=>{previaPorDia[r.data]={total:r.total,eventos:r.eventos||[]};});
   const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
   const celulas=[];
@@ -358,16 +415,23 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
       <div className="cal-grid">
         {celulas.map((d,i)=>{
           if(!d) return <div key={i}/>;
-          const total=contagem[iso(d)]||0;
+          const{total=0,eventos=[]}=previaPorDia[iso(d)]||{};
           const isHoje=mesmoDia(d,hoje);
           const isSel=mesmoDia(d,diaSel);
+          const sobrando=total-eventos.length;
           return(
-            <button key={i} className="cal-cel" onClick={()=>onSelecionarDia(d)} style={{
+            <button key={i} className="cal-cel cal-cel-mes" onClick={()=>onSelecionarDia(d)} style={{
               border:isSel?"2px solid var(--brand)":isHoje?"1px solid var(--brand)":"1px solid var(--border)",
               background:isSel?"rgba(200,168,75,.12)":"var(--surface2)",
             }}>
               <span className="cal-cel-num" style={{fontWeight:isHoje?700:500}}>{d.getDate()}</span>
-              {total>0&&<span className="cal-cel-badge">{total}</span>}
+              <div className="cal-cel-chips">
+                {eventos.map(ev=>{
+                  const tipo=TIPOS[ev.tipo]||{icon:"📅",cor:"var(--muted)"};
+                  return <span key={ev.id} className="cal-chip" style={{background:`${tipo.cor}22`,color:tipo.cor}}>{ev.hora} {ev.cliente_nome||"—"}</span>;
+                })}
+                {sobrando>0&&<span className="cal-chip cal-chip-mais">+{sobrando} mais</span>}
+              </div>
             </button>
           );
         })}
@@ -390,10 +454,15 @@ export default function Agenda(){
   const[visao,setVisao]=useState("semana");
   const[mesAtual,setMesAtual]=useState(()=>{const d=new Date();d.setDate(1);return d;});
   const[resumoMes,setResumoMes]=useState([]);
+  // Bloco clicado na grade de horários abre o card completo (com as ações de
+  // confirmar/reagendar/etc) num modal — o bloco em si fica compacto, só
+  // horário+nome, igual o Google Agenda; o detalhe rico continua sendo o mesmo
+  // AgendaCard de sempre, só que sob demanda em vez de sempre visível.
+  const[agAberto,setAgAberto]=useState(null);
 
   function load(){
     setLoading(true);setErro(null);
-    const data=diaSel.toISOString().split("T")[0];
+    const data=dataLocalISO(diaSel);
     getAgenda(data).then(a=>{setAgs(a);setLoading(false);})
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   }
@@ -411,13 +480,14 @@ export default function Agenda(){
   const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-3+i);return d;});
   const hoje=new Date();
   const doDia=ags.filter(ag=>mesmoDia(new Date(ag.data_hora),diaSel));
-  const manha=doDia.filter(ag=>new Date(ag.data_hora).getHours()<12);
-  const tarde=doDia.filter(ag=>new Date(ag.data_hora).getHours()>=12);
+  // Busca sempre no array atual (não guarda cópia própria) — assim o modal reflete
+  // na hora qualquer mudança de status/reagendamento feita nele mesmo.
+  const agAbertoAtual=agAberto?doDia.find(a=>a.id===agAberto):null;
 
   async function handleStatus(id,status,estagio){try{await atualizarStatusAgendamento(id,status,estagio);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
   async function handleReagendar(id,data_hora){try{await reagendarAgendamento(id,data_hora);}catch{}load();}
   async function handleReagendarLara(id){try{await pedirReagendamentoLara(id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status:"aguardando_reagendamento_lara"}:ag));}
-  function handleVendaFeita(ag){setVendaFeitaAviso({ag,veiculo:acharVeiculo(veiculos,ag.veiculo)});}
+  function handleVendaFeita(ag){setVendaFeitaAviso({ag,veiculo:acharVeiculo(veiculos,ag.veiculo)});setAgAberto(null);}
 
   return(
     <div>
@@ -444,11 +514,19 @@ export default function Agenda(){
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
       {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {manha.length>0&&<><div className="sec-label">Manhã</div>{manha.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
-      {tarde.length>0&&<><div className="sec-label">Tarde</div>{tarde.map(ag=>ag.ocupado?<OcupadoCard key={ag.id} ag={ag}/>:ag.tipo==="bloqueio"?<BloqueioCard key={ag.id} ag={ag}/>:<AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>)}</>}
+      {!erro&&!loading&&doDia.length>0&&<GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&horariosModal&&<HorariosModal onClose={()=>setHorariosModal(false)}/>}
+      {agAbertoAtual&&(
+        <div className="modal-overlay" onClick={()=>setAgAberto(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+            <div className="modal-handle"/>
+            <div className="modal-header"><h2 className="modal-title">Compromisso</h2><button onClick={()=>setAgAberto(null)} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button></div>
+            <AgendaCard ag={agAbertoAtual} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>
+          </div>
+        </div>
+      )}
       {vendaFeitaAviso&&(
         <div className="modal-overlay" onClick={()=>setVendaFeitaAviso(null)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
