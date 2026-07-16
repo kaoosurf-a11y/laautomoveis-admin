@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getFollowups, marcarFollowupEnviado, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento } from "../api.js";
+import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento } from "../api.js";
 import { getRole } from "../auth.js";
 
 const MSG_STATUS_INFO = {
@@ -173,8 +173,13 @@ function ClassificacaoBadge({f}){
 
 export default function FollowUps(){
   const readOnly=getRole()==="manager";
-  const[data,setData]=useState({hoje:[],vencidos:[],porTipo:{}});
+  const[data,setData]=useState({porTipo:{}});
   const[aba,setAba]=useState("estagio");
+  // Filtro de data dentro de "Por estágio" — antes eram 2 abas próprias (Agenda de
+  // hoje / Vencidos), mas liam a MESMA tabela (followups) que já aparece aqui, só
+  // com um WHERE de data diferente. Virou filtro em vez de aba: menos lugar pra
+  // Dariana checar, mesma informação (2026-07-16).
+  const[filtroData,setFiltroData]=useState("todos");
   const[loading,setLoading]=useState(true);
   const[erro,setErro]=useState(null);
 
@@ -183,12 +188,10 @@ export default function FollowUps(){
   useEffect(()=>{load();},[]);
 
   const upd=(id,changes)=>setData(d=>({
-    hoje:d.hoje.map(f=>f.id===id?{...f,...changes}:f),
-    vencidos:d.vencidos.map(f=>f.id===id?{...f,...changes}:f),
+    ...d,
     porTipo:Object.fromEntries(Object.entries(d.porTipo||{}).map(([k,v])=>[k,v.map(f=>f.id===id?{...f,...changes}:f)])),
   }));
 
-  async function marcarEnviado(id){try{await marcarFollowupEnviado(id);}catch{}upd(id,{enviado:true});}
   async function marcarRespondeu(id){try{await marcarFollowupRespondeu(id);}catch{}upd(id,{respondeu:true});}
   const[concluindo,setConcluindo]=useState(null);
   async function concluirAgendado(id){
@@ -198,8 +201,13 @@ export default function FollowUps(){
     setConcluindo(null);
   }
 
-  const lista=aba==="hoje"?data.hoje:aba==="vencidos"?data.vencidos:null;
+  const hoje=new Date().toDateString();
+  const ehHoje=f=>f.horario&&new Date(f.horario).toDateString()===hoje;
+  const ehVencido=f=>f.horario&&new Date(f.horario)<new Date()&&!f.enviado&&!ehHoje(f);
+  const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&ehVencido(f));
   const totalEmFollowup=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.length,0);
+  const totalHoje=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehHoje).length,0);
+  const totalVencidos=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehVencido).length,0);
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
@@ -221,29 +229,34 @@ export default function FollowUps(){
       <div className="page-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1></div>
       <div className="tabs-wrap">
         <button className={`tab-btn ${aba==="estagio"?"active":""}`} onClick={()=>setAba("estagio")}>Por estágio ({totalEmFollowup})</button>
-        <button className={`tab-btn ${aba==="hoje"?"active":""}`} onClick={()=>setAba("hoje")}>Agenda de hoje ({data.hoje?.length||0})</button>
-        <button className={`tab-btn ${aba==="vencidos"?"active":""}`} onClick={()=>setAba("vencidos")} style={{color:data.vencidos?.length>0?"var(--danger)":undefined}}>
-          Vencidos {data.vencidos?.length>0&&<span style={{background:"var(--danger)",color:"white",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,marginLeft:4}}>{data.vencidos.length}</span>}
-        </button>
         <button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Agendados pela Lara ({data.agendados?.length||0})</button>
         <button className={`tab-btn ${aba==="agendamentos"?"active":""}`} onClick={()=>setAba("agendamentos")}>Agendamentos ({data.agendamentos?.length||0})</button>
       </div>
 
-      {aba==="estagio"&&(
-          // Board horizontal, uma coluna por tipo de follow-up, SEMPRE as 6 (mesmo
-          // vazias, igual ao Kanban do CRM). TIPO_ORDEM já bate 1:1 com os
-          // estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/
-          // parou_responder são o mesmo estágio, não uma categoria à parte; só
-          // pos_venda_satisfacao e match_estoque não são coluna do Kanban).
-          // Diferenciação visual do Kanban do CRM (mesmas abas, telas diferentes):
-          // aqui a cor do estágio vira um acento (barra no topo da coluna + borda
-          // lateral no card) em vez do contorno completo que o CRM usa — o card é
-          // mais alto/detalhado (mostra a mensagem real), então um contorno inteiro
-          // ficaria pesado. Card sem duplicar informação: ClassificacaoBadge já
-          // resume o "motivo" (IA+confiança ou manual), não repete o texto cru.
+      {aba==="estagio"&&(<>
+          {/* Filtro de data — substitui as antigas abas "Agenda de hoje"/"Vencidos"
+              (mesma tabela de "Por estágio", só um recorte por data). */}
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            <button className={`tab-btn ${filtroData==="todos"?"active":""}`} onClick={()=>setFiltroData("todos")}>Todos ({totalEmFollowup})</button>
+            <button className={`tab-btn ${filtroData==="hoje"?"active":""}`} onClick={()=>setFiltroData("hoje")}>Hoje ({totalHoje})</button>
+            <button className={`tab-btn ${filtroData==="vencidos"?"active":""}`} onClick={()=>setFiltroData("vencidos")} style={{color:totalVencidos>0?"var(--danger)":undefined}}>
+              Vencidos {totalVencidos>0&&<span style={{background:"var(--danger)",color:"white",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,marginLeft:4}}>{totalVencidos}</span>}
+            </button>
+          </div>
+          {/* Board horizontal, uma coluna por tipo de follow-up, SEMPRE as 6 (mesmo
+          vazias, igual ao Kanban do CRM). TIPO_ORDEM já bate 1:1 com os
+          estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/
+          parou_responder são o mesmo estágio, não uma categoria à parte; só
+          pos_venda_satisfacao e match_estoque não são coluna do Kanban).
+          Diferenciação visual do Kanban do CRM (mesmas abas, telas diferentes):
+          aqui a cor do estágio vira um acento (barra no topo da coluna + borda
+          lateral no card) em vez do contorno completo que o CRM usa — o card é
+          mais alto/detalhado (mostra a mensagem real), então um contorno inteiro
+          ficaria pesado. Card sem duplicar informação: ClassificacaoBadge já
+          resume o "motivo" (IA+confiança ou manual), não repete o texto cru. */}
           <div className="fu-kanban-board">
             {TIPO_ORDEM.map(tipo=>{
-              const leads=data.porTipo?.[tipo]||[];
+              const leads=(data.porTipo?.[tipo]||[]).filter(passaFiltro);
               const cor=TIPO_COR[tipo];
               return (
               <div key={tipo} className="fu-kanban-col">
@@ -280,7 +293,7 @@ export default function FollowUps(){
               );
             })}
           </div>
-      )}
+      </>)}
 
       {aba==="agendados"&&(
         <div className="card">
@@ -314,29 +327,6 @@ export default function FollowUps(){
         </div>
       )}
 
-      {lista!==null&&(
-        <div className="card">
-          {lista?.length===0&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum follow-up {aba==="hoje"?"hoje":"vencido"}</p></div>}
-          {lista?.map(f=>(
-            <div key={f.id} className="fu-item" style={{borderLeft:aba==="vencidos"?"3px solid var(--danger)":"none",paddingLeft:aba==="vencidos"?10:0}}>
-              <span style={{fontSize:12,color:"var(--muted)",minWidth:80,flexShrink:0}}>{f.horario}</span>
-              <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
-              <div className="fu-info">
-                <div className="fu-nome">{f.cliente_nome}</div>
-                <div className="fu-sub">{f.veiculo} · <span style={{color:"var(--brand)"}}>{TIPO_LABEL[f.tipo]||f.tipo}</span></div>
-                {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
-              </div>
-              <div className="fu-actions">
-                {f.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${f.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/></a>}
-                {!f.enviado?(readOnly?null:<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarEnviado(f.id)}><i className="ti ti-send" style={{fontSize:14}}/> Enviado</button>)
-                  :<span className="badge badge-brand" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Enviado</span>}
-                {f.enviado&&!f.respondeu&&!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Respondeu</button>}
-                {f.respondeu&&<span className="badge badge-success" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Respondeu</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
