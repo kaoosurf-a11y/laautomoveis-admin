@@ -118,7 +118,7 @@ const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E4
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
-function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"],presencial:["#C8A84B","Loja"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
+function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"],presencial:["#C8A84B","Loja"],reativacao:["#8E44AD","Reat"],particular:["#17A2B8","Part"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 // Badge de responsável (IA/Humano/Pausado) — grava só em crm_leads.responsavel_atual,
 // pra fins de indicador visual. Não controla de fato quem responde no WhatsApp (isso
 // é la_leads.human_takeover_at, lido só pelo n8n) — ver aviso no seletor do modal.
@@ -506,6 +506,7 @@ function NovoModal({onClose,onCriado}){
             <option value="presencial">Presencial (loja)</option>
             <option value="organico">Orgânico</option><option value="site">Site</option><option value="anuncio">Anúncio</option>
             <option value="reativacao">Campanha de reativação</option>
+            <option value="particular">WhatsApp particular do vendedor</option>
           </select>
         </div>
         {/* Validação humana (2026-07-16): cliente antigo da campanha de reativação que
