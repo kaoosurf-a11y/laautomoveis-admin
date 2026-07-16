@@ -107,8 +107,7 @@ function AgendamentoItem({ag, readOnly, onAtualizado}){
           <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>Agendado pra {fmtData(ag.data_hora)}</div>
           {ag.lembrete_pausado&&<span className="badge" style={{fontSize:10,marginTop:4,background:"var(--warning)22",color:"var(--warning)",display:"inline-flex"}}><i className="ti ti-player-pause" style={{fontSize:11}}/> Lembrete pausado</span>}
         </div>
-        {ag.telefone&&<a href={`https://wa.me/55${ag.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}
-        {ag.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${ag.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}}><i className="ti ti-message-circle" style={{fontSize:14}}/></a>}
+        {ag.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${ag.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/></a>}
       </div>
       <div style={{background:"var(--surface2)",borderRadius:8,padding:"8px 10px",marginTop:8}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -200,17 +199,17 @@ export default function FollowUps(){
   }
 
   const lista=aba==="hoje"?data.hoje:aba==="vencidos"?data.vencidos:null;
-  const resumo={hoje:data.hoje?.length||0,pendentes:data.hoje?.filter(f=>!f.enviado)?.length||0,responderam:data.hoje?.filter(f=>f.respondeu)?.length||0};
   const totalEmFollowup=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.length,0);
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
 
+  // Chatwoot é o único link de conversa — já leva pra thread certa, não precisa do
+  // atalho de WhatsApp Web ao lado (que abria a conversa "solta", sem contexto).
   function AcoesLead(f){
     return (
       <div className="fu-actions">
-        {f.telefone&&<a href={`https://wa.me/55${f.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}
-        {f.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${f.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}}><i className="ti ti-message-circle" style={{fontSize:14}}/> Chatwoot</a>}
+        {f.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${f.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/> Chatwoot</a>}
         {!f.respondeu&&!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Marcar respondido</button>}
         {f.respondeu&&<span className="badge badge-success" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Respondeu</span>}
       </div>
@@ -220,12 +219,6 @@ export default function FollowUps(){
   return(
     <div>
       <div className="page-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1></div>
-      <div className="metrics-grid" style={{marginBottom:20}}>
-        <div className="metric-card"><div className="metric-label"><i className="ti ti-list-details"/>Em follow-up</div><div className="metric-value">{totalEmFollowup}</div><div className="metric-delta">aguardando resposta</div></div>
-        <div className="metric-card"><div className="metric-label"><i className="ti ti-calendar"/>Hoje</div><div className="metric-value">{resumo.hoje}</div><div className="metric-delta">agendados</div></div>
-        <div className="metric-card"><div className="metric-label"><i className="ti ti-send"/>Pendentes</div><div className="metric-value" style={{color:"var(--warning)"}}>{resumo.pendentes}</div><div className="metric-delta">não enviados</div></div>
-        <div className="metric-card"><div className="metric-label"><i className="ti ti-message-check"/>Responderam</div><div className="metric-value" style={{color:"var(--success)"}}>{resumo.responderam}</div><div className="metric-delta">hoje</div></div>
-      </div>
       <div className="tabs-wrap">
         <button className={`tab-btn ${aba==="estagio"?"active":""}`} onClick={()=>setAba("estagio")}>Por estágio ({totalEmFollowup})</button>
         <button className={`tab-btn ${aba==="hoje"?"active":""}`} onClick={()=>setAba("hoje")}>Agenda de hoje ({data.hoje?.length||0})</button>
@@ -302,8 +295,7 @@ export default function FollowUps(){
                 {a.status==="pendente_revisao"&&<span className="badge badge-warning" style={{fontSize:10,marginTop:4,display:"inline-flex"}}><i className="ti ti-alert-triangle" style={{fontSize:11}}/> Revisão manual</span>}
               </div>
               <div className="fu-actions">
-                {a.phone&&<a href={`https://wa.me/55${a.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}
-                {a.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${a.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}}><i className="ti ti-message-circle" style={{fontSize:14}}/> Chatwoot</a>}
+                {a.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${a.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/> Chatwoot</a>}
                 {!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>concluirAgendado(a.id)} disabled={concluindo===a.id}>{concluindo===a.id?<span className="spinner"/>:<><i className="ti ti-check" style={{fontSize:14}}/> Concluir</>}</button>}
               </div>
             </div>
@@ -335,7 +327,7 @@ export default function FollowUps(){
                 {f.motivo&&<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{f.motivo}</div>}
               </div>
               <div className="fu-actions">
-                {f.telefone&&<a href={`https://wa.me/55${f.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa"><i className="ti ti-brand-whatsapp" style={{fontSize:16}}/></a>}
+                {f.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${f.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/></a>}
                 {!f.enviado?(readOnly?null:<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarEnviado(f.id)}><i className="ti ti-send" style={{fontSize:14}}/> Enviado</button>)
                   :<span className="badge badge-brand" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Enviado</span>}
                 {f.enviado&&!f.respondeu&&!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Respondeu</button>}
