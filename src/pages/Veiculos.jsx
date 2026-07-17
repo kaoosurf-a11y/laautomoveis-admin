@@ -141,6 +141,23 @@ export default function Veiculos() {
     await load();
   }
 
+  // Lixeira reversível (2026-07-17): qualquer usuário logado no admin pode restaurar,
+  // não só quem excluiu. Purga automática definitiva depois de 7 dias sem restauração
+  // é feita pelo workflow n8n "LA - Purga Veiculos Excluidos" (roda 1x por dia), não
+  // por nada aqui no front — isso só mostra a contagem regressiva.
+  const [restaurando, setRestaurando] = useState(null);
+  async function restaurar(v) {
+    setRestaurando(v.id);
+    try { await api.restaurarVeiculo(v.id); await load(); }
+    catch (e) { alert("Erro ao restaurar: " + e.message); }
+    finally { setRestaurando(null); }
+  }
+  function diasRestantes(v) {
+    if (!v.excluido_em) return null;
+    const passados = (Date.now() - new Date(v.excluido_em).getTime()) / 86400000;
+    return Math.max(0, Math.ceil(7 - passados));
+  }
+
   const brl = n => Number(n).toLocaleString("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:0});
 
   return (
@@ -160,16 +177,20 @@ export default function Veiculos() {
               <thead><tr><th>Foto</th><th>Veículo</th><th>Ano</th><th>Preço</th><th>KM</th><th>Badge</th><th></th></tr></thead>
               <tbody>
                 {veiculos.map(v => (
-                  <tr key={v.id}>
+                  <tr key={v.id} style={!v.ativo ? {opacity:.45} : undefined}>
                     <td style={{width:70}}>
                       {v.fotos?.[0]
                         ? <img src={v.fotos[0]} alt="" style={{width:60,height:46,objectFit:"cover",borderRadius:8}}/>
                         : <div style={{width:60,height:46,background:"var(--surface2)",borderRadius:8}}/>}
                     </td>
                     <td>
-                      <div style={{fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                         {v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}
-                        {!v.ativo && <span className="badge badge-muted" style={{fontSize:10}}>Oculto</span>}
+                        {!v.ativo && (
+                          <span className="badge badge-muted" style={{fontSize:10}}>
+                            <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d
+                          </span>
+                        )}
                       </div>
                       <div style={{color:"var(--muted)",fontSize:12}}>{v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel} · {v.cor}</div>
                     </td>
@@ -179,8 +200,16 @@ export default function Veiculos() {
                     <td>{v.badge ? <span className="badge badge-brand">{v.badge}</span> : <span className="badge badge-muted">—</span>}</td>
                     <td>
                       <div style={{display:"flex",gap:6}}>
-                        <button className="btn btn-ghost btn-icon" onClick={() => abrirEditar(v)} title="Editar"><i className="ti ti-edit"/></button>
-                        <button className="btn btn-danger btn-icon" onClick={() => setConfirmarDel(v)} title="Excluir"><i className="ti ti-trash"/></button>
+                        {v.ativo ? (
+                          <>
+                            <button className="btn btn-ghost btn-icon" onClick={() => abrirEditar(v)} title="Editar"><i className="ti ti-edit"/></button>
+                            <button className="btn btn-danger btn-icon" onClick={() => setConfirmarDel(v)} title="Excluir"><i className="ti ti-trash"/></button>
+                          </>
+                        ) : (
+                          <button className="btn btn-primary btn-icon" onClick={() => restaurar(v)} disabled={restaurando===v.id} title="Restaurar">
+                            {restaurando===v.id ? <span className="spinner"/> : <i className="ti ti-rotate-2"/>}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -195,15 +224,19 @@ export default function Veiculos() {
       <div className="d-mobile" style={{gap:12}}>
         {veiculos.length===0 ? <div className="empty-state"><i className="ti ti-car"/><p>Nenhum veículo cadastrado.</p></div>
         : veiculos.map(v => (
-          <div key={v.id} style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden",marginBottom:0}}>
+          <div key={v.id} style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden",marginBottom:0,opacity:v.ativo?1:.45}}>
             {/* Foto capa */}
-            {v.fotos?.[0] && (
-              <div style={{position:"relative"}}>
-                <img src={v.fotos[0]} alt="" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
-                {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
-                {!v.ativo && <span className="badge badge-muted" style={{position:"absolute",top:10,left:10}}>Oculto</span>}
-              </div>
-            )}
+            <div style={{position:"relative"}}>
+              {v.fotos?.[0]
+                ? <img src={v.fotos[0]} alt="" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
+                : <div style={{width:"100%",height:v.badge||!v.ativo?60:0,background:"var(--surface2)"}}/>}
+              {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
+              {!v.ativo && (
+                <span className="badge badge-muted" style={{position:"absolute",top:10,left:10}}>
+                  <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d
+                </span>
+              )}
+            </div>
             <div style={{padding:"14px 14px 16px"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:8}}>
                 <div style={{flex:1,minWidth:0}}>
@@ -218,12 +251,20 @@ export default function Veiculos() {
                   <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{Number(v.km).toLocaleString("pt-BR")} km</div>
                 </div>
                 <div style={{display:"flex",gap:8}}>
-                  <button className="btn btn-ghost" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirEditar(v)}>
-                    <i className="ti ti-edit"/> Editar
-                  </button>
-                  <button className="btn btn-danger" style={{padding:"8px 14px",fontSize:13}} onClick={() => setConfirmarDel(v)}>
-                    <i className="ti ti-trash"/>
-                  </button>
+                  {v.ativo ? (
+                    <>
+                      <button className="btn btn-ghost" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirEditar(v)}>
+                        <i className="ti ti-edit"/> Editar
+                      </button>
+                      <button className="btn btn-danger" style={{padding:"8px 14px",fontSize:13}} onClick={() => setConfirmarDel(v)}>
+                        <i className="ti ti-trash"/>
+                      </button>
+                    </>
+                  ) : (
+                    <button className="btn btn-primary" style={{padding:"8px 14px",fontSize:13}} onClick={() => restaurar(v)} disabled={restaurando===v.id}>
+                      {restaurando===v.id ? <span className="spinner"/> : <><i className="ti ti-rotate-2"/> Restaurar</>}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -321,7 +362,7 @@ export default function Veiculos() {
               <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.5}}>
                 <strong style={{color:"var(--fg)"}}>{confirmarDel.marca} {confirmarDel.modelo} {confirmarDel.ano}</strong><br/>
                 será removido do estoque e do site.<br/>
-                <span style={{color:"var(--danger)",fontSize:13}}>Esta ação não pode ser desfeita.</span>
+                <span style={{fontSize:13}}>Fica na lixeira por 7 dias — qualquer pessoa no painel pode restaurar nesse período. Depois disso é apagado de vez.</span>
               </p>
             </div>
             <div style={{display:"flex",gap:10}}>

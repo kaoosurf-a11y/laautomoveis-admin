@@ -40,6 +40,7 @@ export const api = {
   criarVeiculo: (data) => req("POST", "/api/veiculos", data),
   editarVeiculo: (id, data) => req("PUT", `/api/veiculos/${id}`, data),
   removerVeiculo: (id) => req("DELETE", `/api/veiculos/${id}`),
+  restaurarVeiculo: (id) => req("PATCH", `/api/veiculos/${id}/restaurar`),
 
   // Upload
   uploadFotos: (formData) => req("POST", "/api/upload/fotos", formData, true),
