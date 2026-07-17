@@ -174,8 +174,8 @@ function BloqueioModal({onClose,onCriado}){
   );
 }
 
-const TIPOS={test_drive:{label:"Test drive",icon:"🚗",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"🏢",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"📋",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"🤝",cor:"#8E44AD"}};
-const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)",nao_compareceu:"#e67e22",aguardando_reagendamento_lara:"var(--brand)"};
+const TIPOS={test_drive:{label:"Test drive",icon:"🚗",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"🏢",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"📋",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"🤝",cor:"#8E44AD"},visita_mencionada:{label:"Visita mencionada",icon:"💬",cor:"#16A085"}};
+const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)",nao_compareceu:"#e67e22",aguardando_reagendamento_lara:"var(--brand)",intencao:"#16A085"};
 
 function fmtH(iso){const d=new Date(iso);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
 function fmtHF(iso,dur){const d=new Date(iso);d.setMinutes(d.getMinutes()+dur);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
