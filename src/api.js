@@ -52,7 +52,7 @@ export async function getDisparador(params={}) {
 export async function getStatusLaraConfig()          { return req("/api/status-lara/config"); }
 export async function atualizarStatusLaraConfig(pausado) { return req("/api/status-lara/config",{method:"PATCH",body:JSON.stringify({pausado})}); }
 export async function getStatusLaraHistorico(limit=30) { return req(`/api/status-lara/historico?limit=${limit}`); }
-export async function getStatusLaraPreview()          { return req("/api/status-lara/preview"); }
+export async function getStatusLaraFila()             { return req("/api/status-lara/fila"); }
 export async function atualizarTemperatura(id,temperatura) { return req(`/api/crm/leads/${id}/temperatura`,{method:"PATCH",body:JSON.stringify({temperatura})}); }
 export async function atualizarResponsavel(id,responsavel_atual) { return req(`/api/crm/leads/${id}/responsavel`,{method:"PATCH",body:JSON.stringify({responsavel_atual})}); }
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }

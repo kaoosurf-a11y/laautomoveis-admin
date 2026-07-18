@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getStatusLaraConfig, atualizarStatusLaraConfig, getStatusLaraHistorico, getStatusLaraPreview } from "../api.js";
+import { getStatusLaraConfig, atualizarStatusLaraConfig, getStatusLaraHistorico, getStatusLaraFila } from "../api.js";
 
 // Tela "Status" (2026-07-18) — Status/Stories automático da Lara no WhatsApp,
 // postado na instância felipe2la (a própria Lara, atendimento normal) via
@@ -24,11 +24,45 @@ function TipoBadge({ tipo }) {
   return <span className="badge" style={{ background: `${cor}22`, color: cor, fontSize: 11 }}>{label}</span>;
 }
 
+function FilaItem({ item }) {
+  return (
+    <div className="card" style={{ padding: 14, display: "flex", gap: 14, flexWrap: "wrap" }}>
+      {item.tipo === "texto_link" ? (
+        <div style={{ width: 100, height: 100, borderRadius: 10, flexShrink: 0, background: `#${item.backgroundColor || "FFD400"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#0c0c0a", textAlign: "center", padding: 8 }}>
+          texto (sem foto)
+        </div>
+      ) : item.veiculo ? (
+        <img src={item.veiculo.foto_url} alt={item.veiculo.nome} style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 10, background: "var(--surface2)", flexShrink: 0 }} />
+      ) : (
+        <div style={{ width: 100, height: 100, borderRadius: 10, flexShrink: 0, background: "var(--surface2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <i className="ti ti-car-off" style={{ color: "var(--muted)" }} />
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
+          <span className="badge" style={{ background: "var(--surface2)", color: "var(--brand)", fontSize: 11, fontWeight: 700 }}><i className="ti ti-clock" style={{ fontSize: 11 }} /> {item.horario}</span>
+          <TipoBadge tipo={item.tipo} />
+          {item.veiculo && <span style={{ fontSize: 12, color: "var(--muted)" }}>{item.veiculo.nome} · {fmtPreco(item.veiculo.preco)}</span>}
+        </div>
+        {item.legenda
+          ? <div style={{ fontSize: 13, color: "var(--fg)", background: "var(--surface2)", borderRadius: 8, padding: "10px 12px" }}>{item.legenda}</div>
+          : <div style={{ fontSize: 12, color: "var(--muted)" }}>Nenhum veículo elegível pra esse slot no momento.</div>}
+        {item.clima && (
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
+            Clima usado na legenda: {item.clima.condicao}, {item.clima.min}°C–{item.clima.max}°C, {item.clima.chuva_prob}% chance de chuva (Curitibanos/SC, hoje)
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Status() {
   const [config, setConfig] = useState(null);
   const [historico, setHistorico] = useState([]);
-  const [preview, setPreview] = useState(null);
-  const [loadingPreview, setLoadingPreview] = useState(true);
+  const [fila, setFila] = useState([]);
+  const [jaEnviadosHoje, setJaEnviadosHoje] = useState(0);
+  const [loadingFila, setLoadingFila] = useState(true);
   const [loadingHistorico, setLoadingHistorico] = useState(true);
   const [pausando, setPausando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -41,13 +75,13 @@ export default function Status() {
     getStatusLaraHistorico(30).then(d => { setHistorico(d.historico); setLoadingHistorico(false); })
       .catch(() => { setErro("Erro ao carregar histórico."); setLoadingHistorico(false); });
   }, []);
-  const loadPreview = useCallback(() => {
-    setLoadingPreview(true);
-    getStatusLaraPreview().then(d => { setPreview(d); setLoadingPreview(false); })
-      .catch(() => { setErro("Erro ao gerar prévia."); setLoadingPreview(false); });
+  const loadFila = useCallback(() => {
+    setLoadingFila(true);
+    getStatusLaraFila().then(d => { setFila(d.fila); setJaEnviadosHoje(d.jaEnviadosHoje); setLoadingFila(false); })
+      .catch(() => { setErro("Erro ao gerar fila do dia."); setLoadingFila(false); });
   }, []);
 
-  useEffect(() => { loadConfig(); loadHistorico(); loadPreview(); }, [loadConfig, loadHistorico, loadPreview]);
+  useEffect(() => { loadConfig(); loadHistorico(); loadFila(); }, [loadConfig, loadHistorico, loadFila]);
 
   const togglePausa = () => {
     if (!config) return;
@@ -79,7 +113,7 @@ export default function Status() {
             {config == null ? "Carregando..." : config.pausado ? "Pausado" : "Ativo"}
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-            {config?.pausado ? "Nenhum Status será postado enquanto estiver pausado." : "Postando até 6 Status por dia, dentro do horário comercial."}
+            {config?.pausado ? "Nenhum Status será postado enquanto estiver pausado." : "Postando até 6 Status por dia, todo dia (inclusive fim de semana), das 10h às 20h."}
           </div>
         </div>
         <button className={`btn ${config?.pausado ? "btn-primary" : "btn-danger"}`} disabled={!config || pausando} onClick={togglePausa}>
@@ -88,41 +122,23 @@ export default function Status() {
         </button>
       </div>
 
-      <div className="card" style={{ marginBottom: 16, padding: 16 }}>
+      <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)" }}><i className="ti ti-clock" /> Prévia do próximo Status</div>
-          <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={loadPreview} disabled={loadingPreview}>
-            <i className="ti ti-refresh" style={loadingPreview ? { animation: "spin 1s linear infinite" } : undefined} /> {loadingPreview ? "Gerando..." : "Gerar nova prévia"}
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)" }}>
+            <i className="ti ti-list-details" /> Fila de hoje {!loadingFila && `(${fila.length} restante${fila.length === 1 ? "" : "s"} de 6, ${jaEnviadosHoje} já postado${jaEnviadosHoje === 1 ? "" : "s"})`}
+          </div>
+          <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={loadFila} disabled={loadingFila}>
+            <i className="ti ti-refresh" style={loadingFila ? { animation: "spin 1s linear infinite" } : undefined} /> {loadingFila ? "Gerando..." : "Gerar nova fila"}
           </button>
         </div>
-        {loadingPreview && <div className="empty-state" style={{ padding: 20 }}><i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }} /><p>Gerando prévia...</p></div>}
-        {!loadingPreview && !preview?.veiculo && preview?.tipo !== "texto_link" && <div className="empty-state" style={{ padding: 20 }}><i className="ti ti-car-off" /><p>Nenhum veículo elegível no estoque no momento.</p></div>}
-        {!loadingPreview && preview?.tipo === "texto_link" && (
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <div style={{ width: 160, height: 160, borderRadius: 10, flexShrink: 0, background: `#${preview.backgroundColor || "FFD400"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#0c0c0a", textAlign: "center", padding: 10 }}>
-              Status de texto<br />(sem foto)
-            </div>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ marginBottom: 6 }}><TipoBadge tipo={preview.tipo} /></div>
-              <div style={{ fontSize: 13, color: "var(--fg)", background: "var(--surface2)", borderRadius: 8, padding: "10px 12px" }}>{preview.legenda}</div>
-            </div>
-          </div>
-        )}
-        {!loadingPreview && preview?.veiculo && (
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <img src={preview.veiculo.foto_url} alt={preview.veiculo.nome} style={{ width: 160, height: 160, objectFit: "cover", borderRadius: 10, background: "var(--surface2)" }} />
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                <TipoBadge tipo={preview.tipo} />
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>{preview.veiculo.nome} · {fmtPreco(preview.veiculo.preco)}</span>
-              </div>
-              <div style={{ fontSize: 13, color: "var(--fg)", background: "var(--surface2)", borderRadius: 8, padding: "10px 12px" }}>{preview.legenda}</div>
-              {preview.clima && (
-                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
-                  Clima usado na legenda: {preview.clima.condicao}, {preview.clima.min}°C–{preview.clima.max}°C, {preview.clima.chuva_prob}% chance de chuva (Curitibanos/SC, hoje)
-                </div>
-              )}
-            </div>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
+          Estimativa, não garantida — horário, veículo e legenda reais no momento do disparo podem variar um pouco.
+        </div>
+        {loadingFila && <div className="empty-state" style={{ padding: 20 }}><i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }} /><p>Gerando fila do dia...</p></div>}
+        {!loadingFila && fila.length === 0 && <div className="empty-state" style={{ padding: 20 }}><i className="ti ti-check" /><p>Todos os status de hoje já foram postados.</p></div>}
+        {!loadingFila && fila.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {fila.map(item => <FilaItem key={item.slot} item={item} />)}
           </div>
         )}
       </div>
