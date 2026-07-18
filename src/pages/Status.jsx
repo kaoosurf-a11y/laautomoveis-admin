@@ -15,13 +15,13 @@ function fmtPreco(v) {
   return v == null ? "—" : Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
+const TIPO_INFO = {
+  manha_especial: ["#C8A84B", "☀️ Especial da manhã"],
+  texto_link: ["#7ba7e0", "🔗 Texto com link"],
+};
 function TipoBadge({ tipo }) {
-  const manha = tipo === "manha_especial";
-  return (
-    <span className="badge" style={{ background: manha ? "#C8A84B22" : "var(--surface2)", color: manha ? "#C8A84B" : "var(--muted)", fontSize: 11 }}>
-      {manha ? "☀️ Especial da manhã" : "Normal"}
-    </span>
-  );
+  const [cor, label] = TIPO_INFO[tipo] || ["var(--muted)", "Normal"];
+  return <span className="badge" style={{ background: `${cor}22`, color: cor, fontSize: 11 }}>{label}</span>;
 }
 
 export default function Status() {
@@ -96,7 +96,18 @@ export default function Status() {
           </button>
         </div>
         {loadingPreview && <div className="empty-state" style={{ padding: 20 }}><i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }} /><p>Gerando prévia...</p></div>}
-        {!loadingPreview && !preview?.veiculo && <div className="empty-state" style={{ padding: 20 }}><i className="ti ti-car-off" /><p>Nenhum veículo elegível no estoque no momento.</p></div>}
+        {!loadingPreview && !preview?.veiculo && preview?.tipo !== "texto_link" && <div className="empty-state" style={{ padding: 20 }}><i className="ti ti-car-off" /><p>Nenhum veículo elegível no estoque no momento.</p></div>}
+        {!loadingPreview && preview?.tipo === "texto_link" && (
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ width: 160, height: 160, borderRadius: 10, flexShrink: 0, background: `#${preview.backgroundColor || "FFD400"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#0c0c0a", textAlign: "center", padding: 10 }}>
+              Status de texto<br />(sem foto)
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ marginBottom: 6 }}><TipoBadge tipo={preview.tipo} /></div>
+              <div style={{ fontSize: 13, color: "var(--fg)", background: "var(--surface2)", borderRadius: 8, padding: "10px 12px" }}>{preview.legenda}</div>
+            </div>
+          </div>
+        )}
         {!loadingPreview && preview?.veiculo && (
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <img src={preview.veiculo.foto_url} alt={preview.veiculo.nome} style={{ width: 160, height: 160, objectFit: "cover", borderRadius: 10, background: "var(--surface2)" }} />
@@ -124,7 +135,9 @@ export default function Status() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {historico.map(h => (
               <div key={h.id} style={{ display: "flex", gap: 12, padding: 10, borderRadius: 8, background: "var(--surface2)", alignItems: "flex-start" }}>
-                <img src={h.foto_url} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+                {h.foto_url
+                  ? <img src={h.foto_url} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+                  : <div style={{ width: 56, height: 56, borderRadius: 8, flexShrink: 0, background: "#FFD400" }} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
                     <TipoBadge tipo={h.tipo} />
@@ -133,7 +146,7 @@ export default function Status() {
                     </span>
                     <span style={{ fontSize: 11, color: "var(--muted)" }}>{fmtData(h.enviado_em)}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: "var(--fg)" }}>{h.marca} {h.modelo} {h.ano} — {h.legenda}</div>
+                  <div style={{ fontSize: 12, color: "var(--fg)" }}>{h.marca ? `${h.marca} ${h.modelo} ${h.ano} — ` : ""}{h.legenda}</div>
                   {!h.sucesso && h.erro && <div style={{ fontSize: 11, color: "#e05252", marginTop: 4 }}>{h.erro}</div>}
                 </div>
               </div>
