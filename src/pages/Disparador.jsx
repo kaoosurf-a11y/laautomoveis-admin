@@ -151,7 +151,7 @@ export default function Disparador() {
           )}
           {data.contatos.map(c => {
             const retido = c.vendedor_atribuido === "dariana" && c.instancia_status !== "open";
-            const aguardando = c.status === "validando-numero" && c.tentativas === 0;
+            const aguardando = c.status === "validando-numero" && !c.ultimo_envio;
             const [corStatus, labelStatus] = STATUS_INFO[c.status] || ["#7ba7e0", aguardando ? "Aguardando envio" : `Enviado (${c.tentativas}/3)`];
             const cor = retido ? "#C8A84B" : corStatus;
             const aberto = expandido === c.id;
