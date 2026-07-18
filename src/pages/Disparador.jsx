@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getDisparador } from "../api.js";
 
 // Tela "Disparador" (2026-07-16, ajustada 2026-07-19, só owner/manager) — contatos
@@ -9,11 +9,13 @@ import { getDisparador } from "../api.js";
 // CRM (checkbox em CRM.jsx NovoModal); a linha aqui continua existindo pra rastreio.
 //
 // 2026-07-19: simplificado pra 3 abas de status (o resto vira badge no card) e
-// reorganizado em SEÇÕES por vendedor (não colunas lado a lado — ver explicação
-// no README da tela / mensagem do commit: cards são densos demais pra caber em 3
-// colunas estreitas sem espremer o preview de mensagem e os badges). Cada seção
-// busca sua própria página de contatos (parâmetro "vendedor" já existia no backend)
-// pra não deixar um vendedor "roubar" a paginação combinada do outro.
+// reorganizado em board Kanban por vendedor — mesmo padrão visual/CSS de
+// FollowUps.jsx (.fu-kanban-board/.fu-kanban-col/.fu-kanban-cards), 3 colunas
+// fixas (Alex/Wolni/Dariana) com scroll vertical PRÓPRIO por coluna e scroll
+// horizontal "grab to drag" no board inteiro, pedido explícito pra consistência
+// visual com o resto do admin. Cada coluna busca sua própria página de contatos
+// (parâmetro "vendedor" já existia no backend) pra não deixar um vendedor
+// "roubar" a paginação combinada do outro.
 const FILTROS = [
   { key: "todos", label: "Todos" },
   { key: "aguardando", label: "Aguardando envio" },
@@ -52,7 +54,7 @@ function CardContato({ c, aberto, onToggle }) {
   const [corStatus, labelStatus] = STATUS_INFO[c.status] || ["#7ba7e0", aguardando ? "Aguardando envio" : `Enviado (${c.tentativas}/3)`];
   const cor = retido ? "#C8A84B" : corStatus;
   return (
-    <div className="card" style={{ borderLeft: `3px solid ${cor}`, padding: 14 }}>
+    <div className="fu-kanban-card" style={{ border: `2px solid ${cor}`, boxShadow: `0 0 8px ${cor}4d` }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--fg)" }}>{c.nome}</div>
@@ -141,6 +143,28 @@ export default function Disparador() {
   const totalGeral = resumo.reduce((s, r) => s + r.total, 0);
   const totalRetido = resumo.filter(r => r.vendedor_atribuido === "dariana").reduce((s, r) => s + r.total, 0);
 
+  // "Grab to scroll" horizontal no board — mesmo padrão do Kanban de FollowUps/CRM,
+  // clicar e arrastar numa área vazia rola pras outras colunas sem mirar na scrollbar.
+  const boardRef = useRef(null);
+  const arrastando = useRef({ ativo: false, startX: 0, startScroll: 0 });
+  function onBoardMouseDown(e) {
+    if (e.button !== 0 || e.target.closest(".fu-kanban-card")) return;
+    const board = boardRef.current;
+    if (!board) return;
+    arrastando.current = { ativo: true, startX: e.pageX, startScroll: board.scrollLeft };
+    board.classList.add("grabbing");
+  }
+  function onBoardMouseMove(e) {
+    if (!arrastando.current.ativo) return;
+    const board = boardRef.current;
+    if (!board) return;
+    board.scrollLeft = arrastando.current.startScroll - (e.pageX - arrastando.current.startX);
+  }
+  function onBoardMouseUpOrLeave() {
+    arrastando.current.ativo = false;
+    boardRef.current?.classList.remove("grabbing");
+  }
+
   if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle" /><p>{erro}</p></div>;
 
   return (
@@ -202,33 +226,38 @@ export default function Disparador() {
 
       {loading && <div className="empty-state"><i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }} /><p>Carregando...</p></div>}
 
-      {!loading && VENDEDORES.map(v => {
-        const info = porVendedor[v.key] || { contatos: [], total: 0 };
-        const conectado = instancias[v.instance] === "open";
-        return (
-          <div key={v.key} style={{ marginBottom: 26 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: conectado ? "#4caf7d" : "#e05252", display: "inline-block" }} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--fg)" }}>{v.label}</span>
-              <span className="badge" style={{ background: "var(--surface2)", color: "var(--muted)", fontSize: 11 }}>{info.total} contato{info.total === 1 ? "" : "s"}</span>
-              {!conectado && <span style={{ fontSize: 11, color: "#e05252" }}>desconectado</span>}
-            </div>
-
-            {info.contatos.length === 0 && <div className="empty-state" style={{ padding: 16 }}><i className="ti ti-send" style={{ fontSize: 20 }} /><p>Nenhum contato nesse filtro.</p></div>}
-
-            {info.contatos.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {info.total > info.contatos.length && (
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Mostrando {info.contatos.length} de {info.total} — use a busca ou os filtros pra refinar.</div>
-                )}
-                {info.contatos.map(c => (
-                  <CardContato key={c.id} c={c} aberto={expandido === c.id} onToggle={() => setExpandido(expandido === c.id ? null : c.id)} />
-                ))}
+      {!loading && (
+        <div className="fu-kanban-board" ref={boardRef}
+          onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
+          onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}>
+          {VENDEDORES.map(v => {
+            const info = porVendedor[v.key] || { contatos: [], total: 0 };
+            const conectado = instancias[v.instance] === "open";
+            const cor = conectado ? "#4caf7d" : "#e05252";
+            return (
+              <div key={v.key} className="fu-kanban-col">
+                <div className="fu-kanban-col-header" style={{ borderTopColor: cor }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor, flexShrink: 0 }} />
+                    <span className="fu-kanban-col-title" style={{ color: "var(--fg)" }}>{v.label}</span>
+                    {!conectado && <span style={{ fontSize: 10, color: "#e05252" }}>desconectado</span>}
+                  </span>
+                  <span className="kanban-col-count">{info.total}</span>
+                </div>
+                <div className="fu-kanban-cards">
+                  {info.contatos.length === 0 && <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, padding: "12px 0" }}>Nenhum contato nesse filtro</div>}
+                  {info.total > info.contatos.length && (
+                    <div style={{ fontSize: 11, color: "var(--muted)", padding: "0 2px" }}>Mostrando {info.contatos.length} de {info.total} — use a busca ou os filtros pra refinar.</div>
+                  )}
+                  {info.contatos.map(c => (
+                    <CardContato key={c.id} c={c} aberto={expandido === c.id} onToggle={() => setExpandido(expandido === c.id ? null : c.id)} />
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
