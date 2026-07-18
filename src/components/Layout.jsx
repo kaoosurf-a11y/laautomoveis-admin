@@ -52,6 +52,10 @@ export default function Layout({ children }) {
     // validação — aba separada de Clientes por pedido explícito (fases diferentes
     // da jornada, mesmo par de permissão).
     ...(isManager() ? [{ to:"/disparador", icon:"ti-send", label:"Disparador", section:"ADMIN" }] : []),
+    // Status (2026-07-18): Status/Stories automático da Lara no WhatsApp (felipe2la,
+    // não os números dos vendedores) — universo separado do Disparador, mesmo nível
+    // de permissão.
+    ...(isManager() ? [{ to:"/status", icon:"ti-photo", label:"Status", section:null }] : []),
     // Clientes (2026-07-16): clientes validados (compraram ou confirmados manualmente
     // da campanha de reativação) — visão distinta do CRM Pipeline (funil de leads
     // ativos), só owner/manager.
