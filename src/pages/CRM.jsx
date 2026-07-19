@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
+import { ChatwootLink } from "../components/ChatwootLink.jsx";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
 // nao_achou_carro/parou_responder o rótulo é o mesmo da coluna do Kanban (o tipo
@@ -21,8 +22,13 @@ const FOLLOWUP_LABEL={
 // vai_pensar/nao_achou_carro/parou_responder são os "motivos pós-atendimento": arrastar
 // o card pra uma delas JÁ dispara o follow-up automático correspondente no backend
 // (routes/crm.js) — não tem passo separado de marcar tag.
-// "fechado_perdido" removida (decisão do Felipe, 2026-07: não faz sentido pra jornada
-// do cliente da loja). "bau" adicionada como novo catch-all genérico — vazia por
+// "fechado_perdido" (Venda Perdida, 2026-07-19): resgatada — cliente atendido que não
+// fechou (comprou/achou o carro em outro lugar, ou desistiu). Manual (arrastar) ou
+// automático (Lara detecta declaração explícita em tempo real, ou OBSERVADOR
+// pós-handoff) — mesmo guard de prioridade vendedor>Lara de qualquer outro estágio.
+// Cor #546E7A (slate azul-acinzentado) escolhida por ser a única família de tom ainda
+// não usada em nenhuma coluna, pra não colidir visualmente com nenhuma outra.
+// "bau" adicionada como novo catch-all genérico — vazia por
 // padrão, o vendedor move pra lá manualmente quando fizer sentido.
 // Paleta 2026-07: cada coluna tem uma cor própria e distinta (antes parou_responder/
 // pos_venda/bau dividiam tons de cinza quase idênticos, difícil de diferenciar num
@@ -53,6 +59,7 @@ const ESTAGIOS_ADMIN=[
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
   {key:"agendados",label:"Agendados",cor:"#FF3EC9"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
+  {key:"fechado_perdido",label:"Venda Perdida",cor:"#546E7A"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
 // Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou, cai em
@@ -72,6 +79,7 @@ const ESTAGIOS_VENDEDOR=[
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
   {key:"agendados",label:"Agendados",cor:"#FF3EC9"},
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
+  {key:"fechado_perdido",label:"Venda Perdida",cor:"#546E7A"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
 function leadsDaColuna(est,kanban){
@@ -382,9 +390,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             // e a Lara continuam a conversa/follow-up de verdade. Azul + ícone de chat
             // pra não confundir com o botão verde de WhatsApp direto (usado só quando
             // ainda não existe conversa no Chatwoot pra esse lead).
-            <a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${lead.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot">
-              <i className="ti ti-message-2"/>{lead.telefone}
-            </a>
+            <ChatwootLink conv_id={lead.chatwoot_conv_id}>{lead.telefone}</ChatwootLink>
           ):(
             <a href={`https://wa.me/55${lead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa">
               <i className="ti ti-brand-whatsapp"/>{lead.telefone}
@@ -721,7 +727,10 @@ export default function CRM(){
                     </div>
                   }
                 </div>
-                <div className="av" style={{background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B",fontSize:10}}>{lead.vendedor_iniciais}</div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                  <ChatwootLink conv_id={lead.chatwoot_conv_id} compact onClick={e=>e.stopPropagation()}/>
+                  <div className="av" style={{background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B",fontSize:10}}>{lead.vendedor_iniciais}</div>
+                </div>
               </div>
             );
           })}
@@ -791,6 +800,7 @@ export default function CRM(){
                       <div className="kanban-card-footer">
                         <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}</div>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                          <ChatwootLink conv_id={lead.chatwoot_conv_id} compact onClick={e=>e.stopPropagation()}/>
                           <Score s={lead.score}/>
                           <div className="av" style={{width:24,height:24,fontSize:9,background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B"}}>{lead.vendedor_iniciais}</div>
                         </div>
