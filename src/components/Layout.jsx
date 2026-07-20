@@ -58,11 +58,13 @@ export default function Layout({ children }) {
     // Código da página (Status.jsx) e rota mantidos no repositório, só não navegáveis.
     // Clientes (2026-07-16): clientes validados (compraram ou confirmados manualmente
     // da campanha de reativação) — visão distinta do CRM Pipeline (funil de leads
-    // ativos), só owner/manager.
-    ...(isManager() ? [{ to:"/clientes", icon:"ti-users-group", label:"Clientes", section:"ADMIN" }] : []),
+    // ativos). 2026-07-20: restrito a admin_master por pedido explícito (Felipe só,
+    // por ora) — gerente perdeu acesso.
+    ...(isOwner() ? [{ to:"/clientes", icon:"ti-users-group", label:"Clientes", section:"ADMIN" }] : []),
     ...(isOwner() ? [{ to:"/equipe", icon:"ti-users", label:"Equipe", section:"ADMIN" }] : []),
     ...(isOwner() ? [{ to:"/lojas", icon:"ti-building-store", label:"Lojas", section:"ADMIN" }] : []),
-    ...(isManager() ? [{ to:"/contatos-perdidos", icon:"ti-alert-triangle", label:"Contatos perdidos", section:isOwner()?null:"ADMIN" }] : []),
+    // Contatos perdidos: 2026-07-20 restrito a admin_master (mesmo motivo de Clientes acima).
+    ...(isOwner() ? [{ to:"/contatos-perdidos", icon:"ti-alert-triangle", label:"Contatos perdidos", section:null }] : []),
   ];
 
   const sections = [];

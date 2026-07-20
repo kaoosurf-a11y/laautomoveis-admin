@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getDisparador } from "../api.js";
+import { api } from "../lib/api.js";
 
 // Tela "Disparador" (2026-07-16, ajustada 2026-07-19, só owner/manager) — contatos
 // AINDA na campanha de reativação (campanha_reativacao_clientes), antes de qualquer
@@ -36,12 +37,6 @@ const STATUS_INFO = {
   invalido: ["#e05252", "Inválido"],
   sem_resposta: ["#8d6e63", "Sem resposta"],
 };
-
-const VENDEDORES = [
-  { key: "alex", label: "Alex", instance: "vendedor-alex" },
-  { key: "wolni", label: "Wolni", instance: "vendedor-wolni" },
-  { key: "dariana", label: "Dariana", instance: "vendedor-dariana" },
-];
 
 function fmtData(iso) {
   if (!iso) return "—";
@@ -103,6 +98,7 @@ function CardContato({ c, aberto, onToggle }) {
 }
 
 export default function Disparador() {
+  const [vendedores, setVendedores] = useState(null);
   const [porVendedor, setPorVendedor] = useState({});
   const [resumo, setResumo] = useState([]);
   const [instancias, setInstancias] = useState({});
@@ -116,7 +112,21 @@ export default function Disparador() {
   const [erro, setErro] = useState(null);
   const [expandido, setExpandido] = useState(null);
 
+  // Colunas do board = vendedores reais da equipe (mesma fonte que Equipe.jsx,
+  // GET /api/admin/users — já vem escopado pra loja do gerente logado no backend),
+  // não mais uma lista fixa de nomes da loja 1. Cada gerente só vê a própria equipe.
+  useEffect(() => {
+    api.getUsers()
+      .then(u => setVendedores(
+        u.filter(m => m.role === "vendedor")
+         .map(m => ({ key: m.usuario, label: m.nome.split(" ")[0], instance: `vendedor-${m.usuario}` }))
+      ))
+      .catch(() => { setVendedores([]); setErro("Erro ao carregar equipe de vendedores."); });
+  }, []);
+
   const load = useCallback(() => {
+    if (vendedores === null) return; // ainda buscando a equipe de vendedores
+    if (vendedores.length === 0) { setLoading(false); return; }
     setLoading(true);
     const base = { limit: 50 };
     if (filtro !== "todos") base.filtro = filtro;
@@ -126,17 +136,17 @@ export default function Disparador() {
       base.periodo = periodo;
       if (periodo === "personalizado" && desde) { base.desde = desde; base.ate = ate || desde; }
     }
-    Promise.all(VENDEDORES.map(v => getDisparador({ ...base, vendedor: v.key })))
+    Promise.all(vendedores.map(v => getDisparador({ ...base, vendedor: v.key })))
       .then(results => {
         const next = {};
-        VENDEDORES.forEach((v, i) => { next[v.key] = results[i]; });
+        vendedores.forEach((v, i) => { next[v.key] = results[i]; });
         setPorVendedor(next);
         setResumo(results[0]?.resumo || []);
         setInstancias(results[0]?.instancias || {});
         setLoading(false);
       })
       .catch(() => { setErro("Erro ao carregar dados. Tente novamente."); setLoading(false); });
-  }, [filtro, busca, quando, periodo, desde, ate]);
+  }, [vendedores, filtro, busca, quando, periodo, desde, ate]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -177,7 +187,7 @@ export default function Disparador() {
       Evolution própria), não o número da Lara — diferente do atendimento normal. */}
       <div className="card" style={{ marginBottom: 16, borderLeft: "3px solid var(--brand)", display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ fontSize: 13, color: "var(--fg)" }}>
-          <i className="ti ti-info-circle" style={{ color: "var(--brand)" }} /> Esse disparo sai pelo WhatsApp <b>pessoal de cada vendedor</b> (Alex e Wolni), não pelo número da Lara — instâncias separadas da que atende o dia a dia.
+          <i className="ti ti-info-circle" style={{ color: "var(--brand)" }} /> Esse disparo sai pelo WhatsApp <b>pessoal de cada vendedor</b> da equipe, não pelo número da Lara — instâncias separadas da que atende o dia a dia.
         </div>
         {totalRetido > 0 && (
           <div>
@@ -226,11 +236,15 @@ export default function Disparador() {
 
       {loading && <div className="empty-state"><i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }} /><p>Carregando...</p></div>}
 
-      {!loading && (
+      {!loading && vendedores?.length === 0 && (
+        <div className="empty-state"><i className="ti ti-users-group" /><p>Nenhum vendedor cadastrado nessa loja.</p></div>
+      )}
+
+      {!loading && vendedores?.length > 0 && (
         <div className="fu-kanban-board" ref={boardRef}
           onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
           onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}>
-          {VENDEDORES.map(v => {
+          {vendedores.map(v => {
             const info = porVendedor[v.key] || { contatos: [], total: 0 };
             const conectado = instancias[v.instance] === "open";
             const cor = conectado ? "#4caf7d" : "#e05252";
