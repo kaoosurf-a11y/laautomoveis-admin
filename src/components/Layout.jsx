@@ -61,6 +61,7 @@ export default function Layout({ children }) {
     // ativos), só owner/manager.
     ...(isManager() ? [{ to:"/clientes", icon:"ti-users-group", label:"Clientes", section:"ADMIN" }] : []),
     ...(isOwner() ? [{ to:"/equipe", icon:"ti-users", label:"Equipe", section:"ADMIN" }] : []),
+    ...(isOwner() ? [{ to:"/lojas", icon:"ti-building-store", label:"Lojas", section:"ADMIN" }] : []),
     ...(isManager() ? [{ to:"/contatos-perdidos", icon:"ti-alert-triangle", label:"Contatos perdidos", section:isOwner()?null:"ADMIN" }] : []),
   ];
 

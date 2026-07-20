@@ -53,4 +53,8 @@ export const api = {
 
   // Equipe
   getUsers: () => req("GET", "/api/admin/users"),
+
+  // Lojas — status de assinatura (admin_master)
+  getLojas: () => req("GET", "/api/lojas"),
+  atualizarLoja: (id, data) => req("PATCH", `/api/lojas/${id}`, data),
 };

@@ -12,6 +12,7 @@ import ContatosPerdidos from "./pages/ContatosPerdidos.jsx";
 import Clientes from "./pages/Clientes.jsx";
 import Disparador from "./pages/Disparador.jsx";
 import Status from "./pages/Status.jsx";
+import Lojas from "./pages/Lojas.jsx";
 
 function Priv({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
@@ -38,6 +39,7 @@ export default function App() {
       <Route path="/disparador" element={<OwnerOnly><Disparador /></OwnerOnly>} />
       <Route path="/status"     element={<OwnerOnly><Status /></OwnerOnly>} />
       <Route path="/equipe"    element={<OwnerOnly><Equipe /></OwnerOnly>} />
+      <Route path="/lojas"     element={<OwnerOnly><Lojas /></OwnerOnly>} />
       <Route path="/contatos-perdidos" element={<OwnerOnly><ContatosPerdidos /></OwnerOnly>} />
       <Route path="*"          element={<Navigate to="/" replace />} />
     </Routes>
