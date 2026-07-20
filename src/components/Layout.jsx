@@ -118,7 +118,7 @@ export default function Layout({ children }) {
             <div className="avatar">{user?.iniciais||"??"}</div>
             <div style={{flex:1,minWidth:0}}>
               <div className="user-name">{user?.nome}</div>
-              <div className="user-role">{user?.role==="owner"?"Proprietário":user?.role==="manager"?"Gerente":"Vendedor"}</div>
+              <div className="user-role">{user?.role==="admin_master"?"Proprietário":user?.role==="gerente"?"Gerente":"Vendedor"}</div>
             </div>
             <button onClick={e=>{e.stopPropagation();handleLogout();}} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:20,padding:6,display:"flex",alignItems:"center"}}>
               <i className="ti ti-logout"/>
@@ -228,7 +228,7 @@ function PerfilModal({ user, onClose, onLogout }) {
           <div>
             <div style={{fontSize:16,fontWeight:700,color:"var(--fg)"}}>{user?.nome}</div>
             <div style={{fontSize:13,color:"var(--muted)",marginTop:2}}>@{user?.usuario}</div>
-            <div style={{fontSize:12,color:"var(--brand)",marginTop:2}}>{user?.role==="owner"?"Proprietário":user?.role==="manager"?"Gerente":"Vendedor"}</div>
+            <div style={{fontSize:12,color:"var(--brand)",marginTop:2}}>{user?.role==="admin_master"?"Proprietário":user?.role==="gerente"?"Gerente":"Vendedor"}</div>
           </div>
         </div>
 

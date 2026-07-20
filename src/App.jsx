@@ -20,7 +20,7 @@ function Priv({ children }) {
 function OwnerOnly({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
   const u = JSON.parse(localStorage.getItem("la_user")||"{}");
-  if (u.role === "agent") return <Navigate to="/crm" replace />;
+  if (u.role === "vendedor") return <Navigate to="/crm" replace />;
   return <Layout>{children}</Layout>;
 }
 

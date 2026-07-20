@@ -18,7 +18,7 @@ export default function Login() {
     const r = await login(usuario, senha, manter);
     setLoading(false);
     if (!r.ok) { setErro(r.erro || "E-mail ou senha incorretos"); return; }
-    navigate(r.user.role === "agent" ? "/crm" : "/dashboard", { replace:true });
+    navigate(r.user.role === "vendedor" ? "/crm" : "/dashboard", { replace:true });
   }
 
   return (

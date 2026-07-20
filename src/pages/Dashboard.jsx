@@ -493,8 +493,8 @@ export default function Dashboard() {
     });
   }, [chavePeriodo]);
 
-  const roleLabel = { owner:"Administrador", manager:"Gerente", agent:"Vendedor" }[user?.role] || "";
-  const podeVerMetricas = user?.role==="owner"||user?.role==="manager";
+  const roleLabel = { admin_master:"Administrador", gerente:"Gerente", vendedor:"Vendedor" }[user?.role] || "";
+  const podeVerMetricas = user?.role==="admin_master"||user?.role==="gerente";
 
   // 2026-07-15: aba Métricas ganhou o filtro de período (7 dias/Este mês/Trimestre/
   // Personalizado) — antes essa aba sempre mostrava "todo o histórico" e nem reagia ao

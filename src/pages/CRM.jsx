@@ -106,7 +106,7 @@ function colunaVisual(estagios,estagioReal){
 // localStorage por navegador/role já basta, sem precisar de coluna nova no banco nem
 // endpoint). Chave separada admin/vendedor porque os dois conjuntos de colunas são
 // diferentes (ver ESTAGIOS_ADMIN/ESTAGIOS_VENDEDOR acima).
-const ORDER_KEY=role=>`la_crm_col_order_${role==="agent"?"vendedor":"admin"}`;
+const ORDER_KEY=role=>`la_crm_col_order_${role==="vendedor"?"vendedor":"admin"}`;
 function carregarOrdemColunas(role){
   try{const raw=localStorage.getItem(ORDER_KEY(role));return raw?JSON.parse(raw):null;}catch{return null;}
 }
@@ -471,7 +471,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             </select>
           </>)}
         </div>
-        {role==="owner"&&
+        {role==="admin_master"&&
           <button className="btn btn-ghost" style={{width:"100%",marginBottom:8,color:"var(--danger, #e05252)"}} onClick={handleExcluir} disabled={excluindo}>
             {excluindo?<span className="spinner"/>:<><i className="ti ti-trash" style={{marginRight:6}}/>Excluir lead (teste/erro)</>}
           </button>
@@ -535,9 +535,9 @@ function NovoModal({onClose,onCriado}){
 
 export default function CRM(){
   const role=getRole();
-  const readOnly=role==="manager";
-  // Vendedor vê "Para atender" fundido; owner/manager continuam com o funil completo.
-  const estagiosBase=role==="agent"?ESTAGIOS_VENDEDOR:ESTAGIOS_ADMIN;
+  const readOnly=role==="gerente";
+  // Vendedor vê "Para atender" fundido; admin_master/gerente continuam com o funil completo.
+  const estagiosBase=role==="vendedor"?ESTAGIOS_VENDEDOR:ESTAGIOS_ADMIN;
   const[colOrder,setColOrder]=useState(()=>carregarOrdemColunas(role));
   // Reordenar coluna é preferência visual, não mutação de dado — liberado pra todo
   // mundo (inclusive manager/readOnly), diferente do drag de card entre estágios.

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
+import { ChatwootLink } from "../components/ChatwootLink.jsx";
 
 // Ordem das colunas — só preferência visual (mesmo padrão do CRM Kanban em CRM.jsx),
 // localStorage já basta. Uma chave só (não por role): as 7 colunas são as mesmas pra
@@ -124,7 +125,7 @@ function AgendamentoItem({ag, readOnly, onAtualizado}){
           <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>Agendado pra {fmtData(ag.data_hora)}</div>
           {ag.lembrete_pausado&&<span className="badge" style={{fontSize:10,marginTop:4,background:"var(--warning)22",color:"var(--warning)",display:"inline-flex"}}><i className="ti ti-player-pause" style={{fontSize:11}}/> Lembrete pausado</span>}
         </div>
-        {ag.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${ag.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/></a>}
+        <ChatwootLink conv_id={ag.chatwoot_conv_id} compact/>
       </div>
       <div style={{background:"var(--surface2)",borderRadius:8,padding:"8px 10px",marginTop:8}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -246,7 +247,7 @@ function LeadCardHeader({f,role,onAtualizado}){
       <div style={{display:"flex",alignItems:"center",gap:3}}>
         <div className="fu-nome">{f.cliente_nome}</div>
         <button className="btn btn-ghost" style={{padding:"1px 3px",fontSize:10,lineHeight:1}} onClick={()=>setEditando(true)} title="Editar nome/veículo"><i className="ti ti-pencil" style={{fontSize:11}}/></button>
-        {role==="owner"&&<button className="btn btn-ghost" style={{padding:"1px 3px",fontSize:10,lineHeight:1,color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)"><i className="ti ti-trash" style={{fontSize:11}}/></button>}
+        {role==="admin_master"&&<button className="btn btn-ghost" style={{padding:"1px 3px",fontSize:10,lineHeight:1,color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)"><i className="ti ti-trash" style={{fontSize:11}}/></button>}
       </div>
       <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
     </>
@@ -255,7 +256,7 @@ function LeadCardHeader({f,role,onAtualizado}){
 
 export default function FollowUps(){
   const role=getRole();
-  const readOnly=role==="manager";
+  const readOnly=role==="gerente";
   // "Visitas mencionadas" (la_followup_agendado, cenário lembrete_visita — cliente citou
   // uma data em conversa, ainda não confirmada na Agenda de verdade) é visão de
   // administração — só owner/manager, nunca vendedor (2026-07-16). Os outros cenários que
@@ -263,12 +264,12 @@ export default function FollowUps(){
   // fechado_perdido/visita_agendada, vou_pensar) são mecanismo morto desde 2026-07-14,
   // substituído pelo OBSERVADOR POS-HANDOFF atual (followups.parou_responder + mover_estagio
   // direto) — 68 linhas órfãs canceladas em massa nessa auditoria.
-  const podeVerAgendados=role!=="agent";
+  const podeVerAgendados=role!=="vendedor";
   // "Agendamentos" (lembrete de visita) é redundante pro vendedor — a página Agenda
   // (menu lateral) já é a visão dedicada de compromissos, sincronizada com o Kanban
   // dos dois lados. Só owner/manager continuam vendo aqui, útil pra auditoria cruzada
   // de todos os vendedores num só lugar (2026-07-16).
-  const podeVerAgendamentos=role!=="agent";
+  const podeVerAgendamentos=role!=="vendedor";
   const[data,setData]=useState({porTipo:{}});
   const[aba,setAba]=useState("estagio");
   // Filtro de data dentro de "Por estágio" — antes eram 2 abas próprias (Agenda de
@@ -366,7 +367,7 @@ export default function FollowUps(){
   function AcoesLead(f){
     return (
       <div className="fu-actions">
-        {f.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${f.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/> Chatwoot</a>}
+        <ChatwootLink conv_id={f.chatwoot_conv_id}> Chatwoot</ChatwootLink>
         {!f.respondeu&&!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Marcar respondido</button>}
         {f.respondeu&&<span className="badge badge-success" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Respondeu</span>}
       </div>
@@ -475,7 +476,7 @@ export default function FollowUps(){
                 {a.status==="pendente_revisao"&&<span className="badge badge-warning" style={{fontSize:10,marginTop:4,display:"inline-flex"}}><i className="ti ti-alert-triangle" style={{fontSize:11}}/> Revisão manual</span>}
               </div>
               <div className="fu-actions">
-                {a.chatwoot_conv_id&&<a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${a.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2"/> Chatwoot</a>}
+                <ChatwootLink conv_id={a.chatwoot_conv_id}> Chatwoot</ChatwootLink>
                 {!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>concluirAgendado(a.id)} disabled={concluindo===a.id}>{concluindo===a.id?<span className="spinner"/>:<><i className="ti ti-check" style={{fontSize:14}}/> Concluir</>}</button>}
               </div>
             </div>

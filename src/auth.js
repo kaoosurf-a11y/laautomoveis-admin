@@ -40,7 +40,7 @@ export function logout() {
 export function getToken()   { return store().getItem(TOKEN_KEY); }
 export function getUser()    { try { return JSON.parse(store().getItem(USER_KEY)||""); } catch { return null; } }
 export function isLoggedIn() { return !!getToken() && !!getUser(); }
-export function getRole()    { return getUser()?.role || "agent"; }
-export function isOwner()    { return getRole() === "owner"; }
-export function isManager()  { return ["owner","manager"].includes(getRole()); }
+export function getRole()    { return getUser()?.role || "vendedor"; }
+export function isOwner()    { return getRole() === "admin_master"; }
+export function isManager()  { return ["admin_master","gerente"].includes(getRole()); }
 export function authHeaders(){ return { "Content-Type":"application/json", "Authorization":`Bearer ${getToken()}` }; }

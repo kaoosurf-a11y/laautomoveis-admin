@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
 
-const ROLE_LABEL = { owner:"Proprietário", manager:"Gerente", agent:"Vendedor" };
+const ROLE_LABEL = { admin_master:"Proprietário", gerente:"Gerente", vendedor:"Vendedor" };
 const CORES=["#C8A84B","#e05252","#8E44AD","#2980B9","#27AE60","#e6a817"];
 
 export default function Equipe(){

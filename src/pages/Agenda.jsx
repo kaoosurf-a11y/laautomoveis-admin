@@ -441,7 +441,7 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
 }
 
 export default function Agenda(){
-  const readOnly=getRole()==="manager";
+  const readOnly=getRole()==="gerente";
   const[ags,setAgs]=useState([]);
   const[diaSel,setDiaSel]=useState(new Date());
   const[loading,setLoading]=useState(true);

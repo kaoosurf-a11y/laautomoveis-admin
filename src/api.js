@@ -37,7 +37,7 @@ export async function deletarVeiculo(id)    { return req(`/veiculos/${id}`,{meth
 export async function getLeads()            { try { return await req("/leads"); } catch { return {contato:MOCK_LEADS,financiamento:[]}; } }
 export async function marcarLido(id,tipo)   { return req(`/leads/${id}/lido`,{method:"PATCH",body:JSON.stringify({tipo})}); }
 export async function getCRMKanban() {
-  const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
+  const u=getUser(); const q=u?.role==="vendedor"?`?vendedor_id=${u.id}`:"";
   return req(`/api/crm/kanban${q}`);
 }
 export async function moverLead(id,est,motivo,veiculo_vendido_id) { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est,motivo,veiculo_vendido_id})}); }
@@ -68,7 +68,7 @@ export async function getMetricasDashboard(periodo="mes",horas=24,desde=null,ate
 }
 export async function getMetricasVendedor(id){ return req(`/api/metrics/vendedor/${id}`); }
 export async function getFollowups() {
-  const u=getUser(); const q=u?.role==="agent"?`?vendedor_id=${u.id}`:"";
+  const u=getUser(); const q=u?.role==="vendedor"?`?vendedor_id=${u.id}`:"";
   return req(`/api/followups${q}`);
 }
 export async function marcarFollowupEnviado(id)   { return req(`/api/followups/${id}/enviado`,{method:"PATCH"}); }
@@ -79,7 +79,7 @@ export async function concluirFollowupAgendado(id) { return req(`/api/followups/
 export async function criarFollowup(lead_id,tipo,motivo) { return req("/api/followups",{method:"POST",body:JSON.stringify({lead_id,tipo,motivo})}); }
 export async function atualizarLembreteAgendamento(id,d) { return req(`/api/agenda/${id}/lembrete`,{method:"PATCH",body:JSON.stringify(d)}); }
 export async function getAgenda(data) {
-  const u=getUser(); const q=new URLSearchParams(); if(data)q.set("data",data); if(u?.role==="agent")q.set("vendedor_id",u.id);
+  const u=getUser(); const q=new URLSearchParams(); if(data)q.set("data",data); if(u?.role==="vendedor")q.set("vendedor_id",u.id);
   return req(`/api/agenda?${q}`);
 }
 export async function criarAgendamento(d)             { return req("/api/agenda",{method:"POST",body:JSON.stringify(d)}); }
