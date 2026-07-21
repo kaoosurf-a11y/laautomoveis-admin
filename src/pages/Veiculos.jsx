@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
+import { getUser } from "../auth.js";
 
 // Editor inline de preço (2026-07-17) + exibição condicional de histórico: reaproveita
 // PUT /api/veiculos/:id (mesma rota do modal, enviando o veículo inteiro com só o
@@ -158,13 +159,16 @@ export default function Veiculos() {
     finally { setRestaurando(null); }
   }
 
-  // Reordenar manual (2026-07-21): setas cima/baixo trocam a posição de exibição no
-  // site público com o vizinho imediato — lista já vem do backend na mesma ordem
-  // efetiva (ordem ASC NULLS LAST, criado_em DESC) que o site usa.
+  // Reordenar manual (2026-07-21, ajustado no mesmo dia pra ordem por site): setas
+  // cima/baixo trocam a posição de exibição do PRÓPRIO site de quem está logado com o
+  // vizinho imediato — loja 2 mexe em ordem_site2, qualquer outra (incl. admin_master
+  // sem loja) mexe em ordem_site1. Lista já vem do backend na mesma ordem efetiva que
+  // o site correspondente usa.
+  const meuSite = getUser()?.loja_id === 2 ? "2" : "1";
   const [movendo, setMovendo] = useState(null);
   async function mover(v, direcao) {
     setMovendo(v.id);
-    try { await api.moverVeiculo(v.id, direcao); await load(); }
+    try { await api.moverVeiculo(v.id, direcao, meuSite); await load(); }
     catch (e) { alert("Erro ao reordenar: " + e.message); }
     finally { setMovendo(null); }
   }
