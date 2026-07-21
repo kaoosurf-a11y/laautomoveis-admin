@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
+import { getUser } from "../auth.js";
 
 // Editor inline de preço (2026-07-17) + exibição condicional de histórico: reaproveita
 // PUT /api/veiculos/:id (mesma rota do modal, enviando o veículo inteiro com só o
@@ -91,7 +92,18 @@ export default function Veiculos() {
     if (v) abrirEditar(v);
   }, [veiculos]);
 
-  function abrirCriar() { setForm(empty); setErro(""); setModal("criar"); }
+  // Checkboxes de publicação (2026-07-21): antes esses campos nem existiam no form,
+  // então toda criação mandava publicar_site1/2 undefined pro backend, que caía num
+  // fallback "publica nos dois sites sempre" — achado real: veículo de loja 2 vazava
+  // pro site da loja 1. Agora o form já inicia com a escolha explícita e correta pra
+  // loja de quem está logado (loja 2 -> só site2; qualquer outra, incl. admin_master
+  // sem loja, -> só site1), sem depender de fallback nenhum — o dono pode reabrir os
+  // dois se quiser publicar cruzado.
+  function abrirCriar() {
+    const minhaLoja = getUser()?.loja_id;
+    setForm({ ...empty, publicar_site1: minhaLoja !== 2, publicar_site2: minhaLoja === 2 });
+    setErro(""); setModal("criar");
+  }
   function abrirEditar(v) { setForm({...v}); setErro(""); setModal(v); }
   function fechar() { setModal(null); }
   function set(k, v) { setForm(f => ({...f, [k]:v})); }
@@ -338,6 +350,17 @@ export default function Veiculos() {
               <input type="checkbox" checked={form.ativo} onChange={e=>set("ativo",e.target.checked)} style={{width:18,height:18,accentColor:"var(--brand)"}}/>
               <span style={{fontSize:14,color:"var(--fg)"}}>Publicado no site</span>
             </label>
+
+            <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:16}}>
+              <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                <input type="checkbox" checked={form.publicar_site1 ?? true} onChange={e=>set("publicar_site1",e.target.checked)} style={{width:18,height:18,accentColor:"var(--brand)"}}/>
+                <span style={{fontSize:14,color:"var(--fg)"}}>Publicar no site 1 (Curitibanos)</span>
+              </label>
+              <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                <input type="checkbox" checked={form.publicar_site2 ?? false} onChange={e=>set("publicar_site2",e.target.checked)} style={{width:18,height:18,accentColor:"var(--brand)"}}/>
+                <span style={{fontSize:14,color:"var(--fg)"}}>Publicar no site 2 (Campos Novos)</span>
+              </label>
+            </div>
 
             {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:"rgba(224,82,82,.1)",borderRadius:8}}>{erro}</div>}
 
