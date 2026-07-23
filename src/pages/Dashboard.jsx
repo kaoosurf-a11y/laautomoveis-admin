@@ -591,7 +591,18 @@ export default function Dashboard() {
           <div style={{flex:"1 1 140px",minWidth:140}}>
             <label style={{display:"block",fontSize:11,color:"var(--muted)",marginBottom:4}}>Até</label>
             <input type="date" className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
-              value={customAte} onChange={e=>setCustomAte(e.target.value)}
+              value={customAte}
+              onChange={e=>{
+                const novaAte = e.target.value;
+                setCustomAte(novaAte);
+                // 2026-07-23 (pendência real, Diana): os outros botões de período aplicam
+                // direto no clique — "Personalizado" exigia abrir o painel E clicar em
+                // "Aplicar" à parte, um passo a mais que confundia. Assim que "De" já
+                // estava preenchido e o usuário escolhe "Até", aplica na hora, sem esperar
+                // um clique extra — "Aplicar" continua existindo pra quem só preenche "De"
+                // (período em aberto até hoje) e quer confirmar sem escolher "Até".
+                if (customDesde && novaAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
+              }}
               min={customDesde||undefined} max={new Date().toISOString().slice(0,10)}/>
           </div>
           <button className="btn btn-primary" style={{minHeight:44}} disabled={!customDesde} onClick={aplicarPersonalizado}>
