@@ -298,12 +298,16 @@ function TabMetricas({ metricas, loading, erro }) {
   if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if (loading || !metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
 
-  const { funil, iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups, funilReferencia, resumoFunil } = metricas;
-  const maxFunil = Math.max(...funil.map(f=>Number(f.total)), 1);
+  const { iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups, funilReferencia } = metricas;
   const totalTemp = temperatura.reduce((s,t)=>s+Number(t.total),0) || 1;
   // Funil de referência (leads->contatados->agendaram->compareceram->fecharam), cada
-  // etapa desenhada como % do total de leads (barra decrescente), igual convenção do
-  // "Funil completo" logo abaixo.
+  // etapa desenhada como % do total de leads (barra decrescente). 2026-07-23 (auditoria):
+  // esse é o único funil na aba Métricas agora — "Funil completo (estagio_funil)" foi
+  // removido por ser idêntico ao "Funil de vendas" da aba Oportunidades (mesmo GROUP BY
+  // estagio, só formatação diferente); "Resumo por etapa" também removido por repetir os
+  // mesmos números deste funil numa tabela. Fonte única de verdade pra distribuição por
+  // estágio do Kanban = aba Oportunidades; fonte única pra funil de conversão real
+  // (lead->contato->agendamento->comparecimento->fechamento) = este aqui.
   const ETAPAS_FUNIL_REF = funilReferencia ? [
     { label:"Leads gerados",    ...funilReferencia.leads },
     { label:"Contatados",       ...funilReferencia.contatados },
@@ -367,24 +371,12 @@ function TabMetricas({ metricas, loading, erro }) {
         <div style={{fontSize:11,color:"var(--muted)",marginTop:4}}>% sobre o total de leads gerados no período · "Agendaram"/"Compareceram" usam compromissos reais da Agenda, não o card "Agendados" do Kanban.</div>
       </div>}
 
-      {resumoFunil && <div className="card" style={{marginBottom:12,overflowX:"auto"}}>
-        <div className="card-title"><i className="ti ti-table"/> Resumo por etapa</div>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,marginBottom:12}}>
-          <thead>
-            <tr style={{borderBottom:"1px solid var(--border)"}}>
-              <th style={{textAlign:"left",padding:"6px 8px",color:"var(--muted)",fontWeight:600}}>Etapa</th>
-              <th style={{textAlign:"right",padding:"6px 8px",color:"var(--muted)",fontWeight:600}}>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resumoFunil.map((r,i)=>(
-              <tr key={i} style={{borderBottom:i<resumoFunil.length-1?"1px solid var(--border)":"none"}}>
-                <td style={{padding:"6px 8px",color:"var(--fg)"}}>{r.etapa}</td>
-                <td style={{padding:"6px 8px",textAlign:"right",color:"var(--fg)",fontWeight:600}}>{r.total}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* 2026-07-23 (auditoria): "Resumo por etapa" (tabela) removida daqui — repetia os
+          mesmos números do funil de referência acima, só em formato de tabela. As taxas
+          etapa-a-etapa abaixo são informação nova (não estão nas barras acima), por isso
+          continuam. */}
+      {funilReferencia && <div className="card" style={{marginBottom:12,overflowX:"auto"}}>
+        <div className="card-title"><i className="ti ti-percentage"/> Taxas de conversão por etapa</div>
         {/* Taxas etapa-a-etapa (não % do total) — respondem "qual etapa específica está
             vazando", diferente das barras acima que mostram a perda acumulada. */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
@@ -407,17 +399,6 @@ function TabMetricas({ metricas, loading, erro }) {
           </div>
         </div>
       </div>}
-
-      <div className="card" style={{marginBottom:12}}>
-        <div className="card-title"><i className="ti ti-filter"/> Funil completo (estagio_funil)</div>
-        {funil.map((f,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <div style={{minWidth:110,fontSize:13,color:"var(--fg)"}}>{f.estagio}</div>
-            <div className="funnel-track" style={{flex:1}}><div className="funnel-bar" style={{width:`${Math.round(f.total/maxFunil*100)}%`}}/></div>
-            <div style={{fontSize:12,color:"var(--muted)",minWidth:24,textAlign:"right"}}>{f.total}</div>
-          </div>
-        ))}
-      </div>
 
       <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-alert-octagon"/> Gargalo — tempo parado no estágio atual</div>
