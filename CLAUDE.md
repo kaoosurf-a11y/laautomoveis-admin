@@ -1,12 +1,16 @@
 # LA Automóveis — Admin Panel
 
-React (Vite) SPA served at `admin.laautomoveis.com.br/admin/`. **This is the real deploy source** — `/etc/easypanel/projects/laautomoveis/laautomoveis-admin/code` is a stale, separate clone on a different branch; don't edit it. No CI/CD, manual deploy:
+React (Vite) SPA served at `admin.laautomoveis.com.br/admin/`.
 
-```
-cd /opt/la-admin
-docker build --no-cache -t easypanel/laautomoveis/laautomoveis-admin:latest .
-docker service update --force laautomoveis_laautomoveis-admin
-```
+**Fonte de verdade (2026-07-24):** GitHub `kaoosurf-a11y/laautomoveis-admin` branch **`main`**.
+
+**Caminho oficial de build na VPS:** `/etc/easypanel/projects/laautomoveis/laautomoveis-admin/code` (EasyPanel). Edite e commit aqui (ou no GitHub), não em `/opt/la-admin`.
+
+**Deprecated:** `/opt/la-admin` — clone legado; não usar como origem de edição. Docs antigos que apontavam esse path como “real deploy source” estão obsoletos.
+
+**Produção agora:** há features não commitadas em `Dashboard.jsx` / `api.js` (MANTER no disco até etapa dedicada). `ChatwootLink.jsx` entra no Git nesta consolidação.
+
+Deploy continua manual via EasyPanel/imagem já usada pelo serviço — não rode `docker build` / `docker service update` sem pedido explícito do operador.
 
 **After every deploy, verify the actual served bundle, not just "converged"** — fetch the live `index.html`, grab its `assets/index-*.js` filename, `curl` that file, and `grep` for a string unique to your change. This project got burned once by an Easypanel placeholder-deploy silently overwriting a different app's source+image (see backend `CLAUDE.md` §3) — cheap insurance against the same class of surprise here.
 
