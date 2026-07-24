@@ -58,13 +58,18 @@ export async function atualizarResponsavel(id,responsavel_atual) { return req(`/
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }
 // 2026-07-15: período "personalizado" (dia/mês/ano exatos escolhidos pelo usuário) manda
 // desde/ate também — ignorados pelo backend pros presets (semana/mes/trimestre).
-export async function getDashboard(p="mes",desde=null,ate=null){
+export async function getDashboard(p="mes",desde=null,ate=null,lojaId=null){
   const extra = p==="personalizado" && desde ? `&desde=${desde}&ate=${ate||""}` : "";
-  return req(`/api/dashboard?periodo=${p}${extra}`);
+  const loja = lojaId ? `&loja_id=${lojaId}` : "";
+  return req(`/api/dashboard?periodo=${p}${extra}${loja}`);
 }
-export async function getMetricasDashboard(periodo="mes",horas=24,desde=null,ate=null){
+export async function getMetricasDashboard(periodo="mes",horas=24,desde=null,ate=null,lojaId=null){
   const extra = periodo==="personalizado" && desde ? `&desde=${desde}&ate=${ate||""}` : "";
-  return req(`/api/metrics/dashboard?periodo=${periodo}&horas=${horas}${extra}`);
+  const loja = lojaId ? `&loja_id=${lojaId}` : "";
+  return req(`/api/metrics/dashboard?periodo=${periodo}&horas=${horas}${extra}${loja}`);
+}
+export async function updateInvestimentoAnuncios(investimento_mensal, loja_id){
+  return req("/api/dashboard/investimento",{method:"PATCH",body:JSON.stringify({investimento_mensal,loja_id})});
 }
 export async function getMetricasVendedor(id){ return req(`/api/metrics/vendedor/${id}`); }
 export async function getFollowups() {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDashboard, getMetricasDashboard } from "../api.js";
+import { getDashboard, getMetricasDashboard, updateInvestimentoAnuncios } from "../api.js";
 import { getUser } from "../auth.js";
 
 /* ─── helpers ─── */
@@ -20,8 +20,98 @@ const AV_CORES = ["#C8A84B","#7ba7e0","#4caf7d","#e07b7b","#a07be0"];
 
 /* ─── sub‑componentes ─── */
 
-function TabOportunidades({ data }) {
-  const { resumo, funil, vendedores, canais } = data;
+function MarketingMetrics({ midia, isAdminMaster, onSaved }) {
+  const lojas = midia?.lojas || [];
+  const [editLojaId, setEditLojaId] = useState(
+    midia?.loja_id || lojas[0]?.id || 1
+  );
+  const lojaAtual = lojas.find(l => l.id === editLojaId);
+  const [valor, setValor] = useState(
+    String(lojaAtual?.investimento_mensal ?? midia?.investimento_mensal ?? 0)
+  );
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => {
+    const base = lojas.find(l => l.id === editLojaId)?.investimento_mensal
+      ?? midia?.investimento_mensal ?? 0;
+    setValor(String(base));
+    setMsg(null);
+  }, [editLojaId, midia?.investimento_mensal, midia?.loja_id]);
+
+  if (!midia) return null;
+  const bm = midia.benchmark || { referencia: 38, min: 25, max: 55 };
+  const cpl = midia.cpl;
+  const cplOk = cpl != null && cpl >= bm.min && cpl <= bm.max;
+  const cplCor = cpl == null ? "var(--muted)" : (cplOk ? "#4caf7d" : (cpl < bm.min ? "#7ba7e0" : "#e07b7b"));
+
+  async function salvar() {
+    const n = Number(String(valor).replace(",", "."));
+    if (!Number.isFinite(n) || n < 0) { setMsg("Valor inválido"); return; }
+    const loja_id = midia.loja_id || editLojaId;
+    if (!loja_id) { setMsg("Selecione a loja"); return; }
+    setSaving(true); setMsg(null);
+    try {
+      await updateInvestimentoAnuncios(n, loja_id);
+      setMsg("Salvo");
+      onSaved?.();
+    } catch {
+      setMsg("Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{marginBottom:12}}>
+      <div className="card-title"><i className="ti ti-ad"/> Investimento em anúncios</div>
+      {isAdminMaster && lojas.length > 1 && (
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+          {lojas.map(l => (
+            <button key={l.id} type="button"
+              className={`btn ${editLojaId===l.id?"btn-primary":"btn-ghost"}`}
+              style={{padding:"6px 12px",fontSize:12}}
+              onClick={()=>setEditLojaId(l.id)}>
+              {l.nome}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="metrics-grid" style={{marginBottom:12}}>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-cash"/> Investimento mensal</div>
+          <div style={{display:"flex",gap:8,alignItems:"center",marginTop:6}}>
+            <input className="form-input" type="number" min="0" step="1"
+              value={valor} onChange={e=>setValor(e.target.value)}
+              style={{marginBottom:0,fontSize:16,fontWeight:700,maxWidth:140}}/>
+            <button className="btn btn-primary" style={{padding:"8px 14px"}} disabled={saving} onClick={salvar}>
+              {saving?"...":"Salvar"}
+            </button>
+          </div>
+          {msg && <div className="metric-delta" style={{marginTop:6}}>{msg}</div>}
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-calendar-stats"/> Gasto no período</div>
+          <div className="metric-value">{fmtR(midia.investimento_periodo)}</div>
+          <div className="metric-delta">proporcional ao filtro</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-coin"/> CPL</div>
+          <div className="metric-value" style={{color:cplCor}}>{cpl==null?"—":fmtR(cpl)}</div>
+          <div className="metric-delta">custo por lead real</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label"><i className="ti ti-chart-arrows"/> Benchmark mercado</div>
+          <div className="metric-value" style={{fontSize:18}}>ref {fmtR(bm.referencia)}</div>
+          <div className="metric-delta">faixa {fmtR(bm.min)} – {fmtR(bm.max)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabOportunidades({ data, isAdminMaster, onMidiaSaved }) {
+  const { resumo, funil, vendedores, canais, midia } = data;
   const metrics = [
     { icon:"ti-target",        label:"Total leads",  value:resumo.total_leads,           delta:`+${resumo.total_leads_delta} este mês`,  up:true },
     { icon:"ti-check",         label:"Vendas",       value:resumo.vendas,                delta:`meta: ${resumo.meta_vendas}`,             up:resumo.vendas>=resumo.meta_vendas },
@@ -41,6 +131,8 @@ function TabOportunidades({ data }) {
           </div>
         ))}
       </div>
+
+      <MarketingMetrics midia={midia} isAdminMaster={isAdminMaster} onSaved={onMidiaSaved}/>
 
       {/* Funil */}
       <div className="card" style={{marginBottom:12}}>
@@ -438,6 +530,7 @@ export default function Dashboard() {
   const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState("mes");
+  const [lojaFiltro, setLojaFiltro] = useState(null); // null=Todas | 1 | 2 (só admin_master)
   const [aba, setAba]       = useState("oportunidades");
   const [notif, setNotif]   = useState(null);
   const [erro, setErro]     = useState(null);
@@ -455,12 +548,14 @@ export default function Dashboard() {
   const [customAte, setCustomAte]     = useState("");
   const [seletorAberto, setSeletorAberto] = useState(false);
   const chavePeriodo = periodo==="personalizado" ? `personalizado:${customDesde}:${customAte}` : periodo;
+  const chaveLoja = lojaFiltro ?? "todas";
+  const isAdminMaster = user?.role === "admin_master";
 
   useEffect(() => {
     if (periodo==="personalizado" && !customDesde) return; // aguarda o usuário aplicar
     setLoading(true);
     setErro(null);
-    getDashboard(periodo, customDesde, customAte).then(d => {
+    getDashboard(periodo, customDesde, customAte, lojaFiltro).then(d => {
       setData(d);
       setLoading(false);
       // notificação de lead quente (mock: primeiro lead score>=80)
@@ -472,7 +567,7 @@ export default function Dashboard() {
       setErro("Erro ao carregar dados. Tente novamente.");
       setLoading(false);
     });
-  }, [chavePeriodo]);
+  }, [chavePeriodo, chaveLoja]);
 
   const roleLabel = { admin_master:"Administrador", gerente:"Gerente", vendedor:"Vendedor" }[user?.role] || "";
   const podeVerMetricas = user?.role==="admin_master"||user?.role==="gerente";
@@ -485,22 +580,28 @@ export default function Dashboard() {
   const [metricasPeriodo, setMetricasPeriodo] = useState(null);
   function carregarMetricas(){
     setLoadingMetricas(true);setErroMetricas(null);
-    getMetricasDashboard(periodo,24,customDesde,customAte).then(d=>{setMetricas(d);setMetricasPeriodo(chavePeriodo);setLoadingMetricas(false);})
+    getMetricasDashboard(periodo,24,customDesde,customAte,lojaFiltro).then(d=>{setMetricas(d);setMetricasPeriodo(`${chavePeriodo}|${chaveLoja}`);setLoadingMetricas(false);})
       .catch(()=>{setErroMetricas("Erro ao carregar métricas. Tente novamente.");setLoadingMetricas(false);});
+  }
+  function recarregarDashboard(){
+    setLoading(true); setErro(null);
+    getDashboard(periodo, customDesde, customAte, lojaFiltro).then(d => {
+      setData(d); setLoading(false);
+    }).catch(() => { setErro("Erro ao carregar dados. Tente novamente."); setLoading(false); });
   }
   function abrirMetricas(){
     setAba("metricas");
-    if(loadingMetricas || (metricas && metricasPeriodo===chavePeriodo))return;
+    if(loadingMetricas || (metricas && metricasPeriodo===`${chavePeriodo}|${chaveLoja}`))return;
     carregarMetricas();
   }
   // Se o período mudar enquanto a aba Métricas já está aberta, refaz a busca na hora (sem
   // isso, trocar de "Este mês" pra "7 dias" com a aba já aberta não atualizava nada).
   useEffect(() => {
-    if (aba === "metricas" && metricasPeriodo !== null && metricasPeriodo !== chavePeriodo) {
+    if (aba === "metricas" && metricasPeriodo !== null && metricasPeriodo !== `${chavePeriodo}|${chaveLoja}`) {
       if (periodo==="personalizado" && !customDesde) return;
       carregarMetricas();
     }
-  }, [chavePeriodo, aba]);
+  }, [chavePeriodo, chaveLoja, aba]);
 
   // Aplica o intervalo customizado — só dispara a busca quando o usuário confirma (não a
   // cada tecla/clique nos campos de data), e fecha o seletor.
@@ -546,7 +647,7 @@ export default function Dashboard() {
             pra escolher dia/mês/ano exatos, cobre inclusive um ano inteiro (ex:
             01/01/2026 até 31/12/2026), não só os 3 presets fixos. */}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {[{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"trimestre",l:"Trimestre"}].map(p=>(
+          {[{k:"hoje",l:"Hoje"},{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"trimestre",l:"Trimestre"}].map(p=>(
             <button key={p.k} className={`btn ${periodo===p.k?"btn-primary":"btn-ghost"}`}
               style={{padding:"10px 16px",fontSize:14,fontWeight:600}}
               onClick={()=>{setPeriodo(p.k);setSeletorAberto(false);}}>
@@ -560,6 +661,20 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      {isAdminMaster && (
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
+          <span style={{fontSize:12,color:"var(--muted)",marginRight:4}}>Loja:</span>
+          {[{id:null,l:"Todas"},{id:1,l:"Curitibanos"},{id:2,l:"Campos Novos"}].map(o=>(
+            <button key={String(o.id)} type="button"
+              className={`btn ${lojaFiltro===o.id?"btn-primary":"btn-ghost"}`}
+              style={{padding:"8px 14px",fontSize:13,fontWeight:600}}
+              onClick={()=>setLojaFiltro(o.id)}>
+              {o.l}
+            </button>
+          ))}
+        </div>
+      )}
 
       {seletorAberto && (
         <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap",padding:"14px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:10,marginBottom:16}}>
@@ -638,7 +753,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {aba==="oportunidades" && <TabOportunidades data={data}/>}
+      {aba==="oportunidades" && <TabOportunidades data={data} isAdminMaster={isAdminMaster} onMidiaSaved={recarregarDashboard}/>}
       {aba==="jornada"       && <TabJornada data={data}/>}
       {aba==="estoque"       && <TabEstoque data={data}/>}
       {aba==="metricas"      && <TabMetricas metricas={metricas} loading={loadingMetricas} erro={erroMetricas}/>}
