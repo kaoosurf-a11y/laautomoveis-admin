@@ -125,7 +125,7 @@ function AgendamentoItem({ag, readOnly, onAtualizado}){
           <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>Agendado pra {fmtData(ag.data_hora)}</div>
           {ag.lembrete_pausado&&<span className="badge" style={{fontSize:10,marginTop:4,background:"var(--warning)22",color:"var(--warning)",display:"inline-flex"}}><i className="ti ti-player-pause" style={{fontSize:11}}/> Lembrete pausado</span>}
         </div>
-        <ChatwootLink conv_id={ag.chatwoot_conv_id} compact/>
+        <ChatwootLink conv_id={ag.chatwoot_conv_id} inbox_id={ag.chatwoot_inbox_id} compact/>
       </div>
       <div style={{background:"var(--surface2)",borderRadius:8,padding:"8px 10px",marginTop:8}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -367,7 +367,7 @@ export default function FollowUps(){
   function AcoesLead(f){
     return (
       <div className="fu-actions">
-        <ChatwootLink conv_id={f.chatwoot_conv_id}> Chatwoot</ChatwootLink>
+        <ChatwootLink conv_id={f.chatwoot_conv_id} inbox_id={f.chatwoot_inbox_id}> Chatwoot</ChatwootLink>
         {!f.respondeu&&!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Marcar respondido</button>}
         {f.respondeu&&<span className="badge badge-success" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Respondeu</span>}
       </div>
@@ -476,7 +476,7 @@ export default function FollowUps(){
                 {a.status==="pendente_revisao"&&<span className="badge badge-warning" style={{fontSize:10,marginTop:4,display:"inline-flex"}}><i className="ti ti-alert-triangle" style={{fontSize:11}}/> Revisão manual</span>}
               </div>
               <div className="fu-actions">
-                <ChatwootLink conv_id={a.chatwoot_conv_id}> Chatwoot</ChatwootLink>
+                <ChatwootLink conv_id={a.chatwoot_conv_id} inbox_id={a.chatwoot_inbox_id}> Chatwoot</ChatwootLink>
                 {!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>concluirAgendado(a.id)} disabled={concluindo===a.id}>{concluindo===a.id?<span className="spinner"/>:<><i className="ti ti-check" style={{fontSize:14}}/> Concluir</>}</button>}
               </div>
             </div>

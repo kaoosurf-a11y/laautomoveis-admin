@@ -152,6 +152,30 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .form-grid{display:grid;grid-template-columns:1fr;gap:12px}
 @media(min-width:500px){.form-grid{grid-template-columns:1fr 1fr}}
 
+/* Checkbox + label longa (ex: "cliente antigo real") — empilha bem em ~375px */
+.form-check{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.form-check input[type="checkbox"]{flex-shrink:0;width:18px;height:18px;margin-top:2px;accent-color:var(--brand)}
+.form-check label{flex:1;min-width:0;font-size:13px;line-height:1.4;color:var(--fg);cursor:pointer;white-space:normal;text-transform:none;letter-spacing:0;font-weight:400}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+.modal-actions .btn{flex:1;min-width:120px}
+@media(max-width:414px){
+  .modal{padding:16px 14px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .modal .form-group{margin-bottom:12px}
+  .modal .form-input,.modal select.form-input,.modal textarea.form-input{font-size:16px;max-width:100%}
+  .modal .form-check label{font-size:12.5px;line-height:1.45}
+  .modal-actions{flex-direction:column-reverse}
+  .modal-actions .btn{flex:none;width:100%;min-width:0}
+}
+
+/* Campos de busca com teto de largura no desktop (evita esticar demais) mas
+   proporcionais à tela no mobile — antes usavam maxWidth fixo inline (220-320px),
+   que sobrava vazio do lado numa tela de ~360-414px. */
+.search-input{width:100%;max-width:320px}
+.search-input-sm{max-width:220px}
+@media(max-width:640px){
+  .search-input,.search-input-sm{max-width:100%}
+}
+
 /* ── Table ── */
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg)}
 table{width:100%;border-collapse:collapse;font-size:13px;min-width:500px}

@@ -202,7 +202,7 @@ export default function Disparador() {
         ))}
       </div>
 
-      <input className="form-input" style={{ marginBottom: 14, maxWidth: 320 }} placeholder="Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
+      <input className="form-input search-input" style={{ marginBottom: 14 }} placeholder="Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
 
       {/* Filtro de período — combinável com o filtro de status acima, não substitui. */}
       <div className="card" style={{ marginBottom: 16, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>

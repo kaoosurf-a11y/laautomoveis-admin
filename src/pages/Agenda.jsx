@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, pedirReagendamentoLara, getResumoMes, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { isManager, getUser, getRole } from "../auth.js";
+import { LeadPhoneChatwoot, ChatwootLink } from "../components/ChatwootLink.jsx";
 
 const ESTAGIOS_NAO_COMPROU=[
   {key:"sem_credito",label:"Sem crédito"},
@@ -300,9 +301,18 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
       <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:`${tipo.cor}22`,color:tipo.cor,display:"inline-block",marginBottom:8}}>{tipo.icon} {tipo.label}</span>
       <div style={{fontSize:15,fontWeight:600,color:"var(--fg)",marginBottom:2}}>{ag.cliente_nome}</div>
       <div style={{fontSize:13,color:"var(--muted)",marginBottom:8}}>{ag.veiculo}</div>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:ag.observacoes?8:10}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:ag.observacoes?8:10,flexWrap:"wrap"}}>
         <span style={{fontSize:13,color:"var(--muted)",whiteSpace:"nowrap"}}>📱 {ag.cliente_tel}</span>
-        <a href={`https://wa.me/55${ag.cliente_tel}`} target="_blank" rel="noopener noreferrer" className="btn-wa" style={{padding:"4px 10px"}}><i className="ti ti-brand-whatsapp" style={{fontSize:14}}/> WA</a>
+        {ag.lead_id?(
+          <LeadPhoneChatwoot
+            lead={{id:ag.lead_id,telefone:ag.cliente_tel,chatwoot_conv_id:ag.chatwoot_conv_id,chatwoot_inbox_id:ag.chatwoot_inbox_id}}
+            style={{padding:"4px 10px"}}
+          >
+            Chatwoot
+          </LeadPhoneChatwoot>
+        ):ag.chatwoot_conv_id?(
+          <ChatwootLink conv_id={ag.chatwoot_conv_id} inbox_id={ag.chatwoot_inbox_id} style={{padding:"4px 10px"}}>Chatwoot</ChatwootLink>
+        ):null}
       </div>
       {ag.observacoes&&<div style={{fontSize:12,color:"var(--muted)",fontStyle:"italic",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>{ag.observacoes}</div>}
       {status==="aguardando_reagendamento_lara"&&!pedidoLaraEnviado&&<div style={{fontSize:12,color:"var(--brand)",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>🤖 Aguardando a Lara remarcar com o cliente pelo WhatsApp...</div>}

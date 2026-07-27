@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getClientesValidados } from "../api.js";
+import { ChatwootLink } from "../components/ChatwootLink.jsx";
 
 // Tela "Clientes" (2026-07-16, só owner/manager) — clientes validados: quem já
 // comprou (origem_validacao='compra', marcado sozinho ao entrar em fechado_ganho)
@@ -42,7 +43,7 @@ export default function Clientes() {
       <div className="page-header">
         <h1 className="page-title"><i className="ti ti-users-group" /> Clientes ({dados.length})</h1>
       </div>
-      <input className="form-input" style={{ marginBottom: 16, maxWidth: 320 }} placeholder="Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
+      <input className="form-input search-input" style={{ marginBottom: 16 }} placeholder="Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
 
       {filtrados.length === 0 && <div className="empty-state"><i className="ti ti-users-group" /><p>Nenhum cliente validado ainda.</p></div>}
 
@@ -62,7 +63,7 @@ export default function Clientes() {
                       <td><span className="badge" style={{ background: `${cor}22`, color: cor, fontSize: 11 }}>{label}</span></td>
                       <td style={{ color: "var(--muted)" }}>{c.vendedor_nome || "—"}</td>
                       <td style={{ color: "var(--muted)" }}>{fmtData(c.validado_em)}</td>
-                      <td>{c.chatwoot_conv_id && <a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${c.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot"><i className="ti ti-message-2" /></a>}</td>
+                      <td>{c.chatwoot_conv_id && <ChatwootLink conv_id={c.chatwoot_conv_id} inbox_id={c.chatwoot_inbox_id} compact />}</td>
                     </tr>
                   );
                 })}
@@ -87,9 +88,9 @@ export default function Clientes() {
                 <span className="badge" style={{ background: `${cor}22`, color: cor, fontSize: 11, flexShrink: 0 }}>{label}</span>
               </div>
               {c.chatwoot_conv_id && (
-                <a href={`https://chat.laautomoveis.com.br/app/accounts/1/conversations/${c.chatwoot_conv_id}`} target="_blank" rel="noopener noreferrer" className="btn-chatwoot" style={{ marginTop: 10, display: "inline-flex" }}>
-                  <i className="ti ti-message-2" /> Chatwoot
-                </a>
+                <ChatwootLink conv_id={c.chatwoot_conv_id} inbox_id={c.chatwoot_inbox_id} style={{ marginTop: 10, display: "inline-flex" }}>
+                  {" "}Chatwoot
+                </ChatwootLink>
               )}
             </div>
           );

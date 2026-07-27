@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
-import { ChatwootLink } from "../components/ChatwootLink.jsx";
+import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
 // nao_achou_carro/parou_responder o rótulo é o mesmo da coluna do Kanban (o tipo
@@ -385,17 +385,9 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
           </div>
         }
         {lead.telefone&&<div style={{marginBottom:14}}>
-          {lead.chatwoot_conv_id?(
-            // Vai pro Chatwoot, não pro WhatsApp Web do vendedor — é lá que o vendedor
-            // e a Lara continuam a conversa/follow-up de verdade. Azul + ícone de chat
-            // pra não confundir com o botão verde de WhatsApp direto (usado só quando
-            // ainda não existe conversa no Chatwoot pra esse lead).
-            <ChatwootLink conv_id={lead.chatwoot_conv_id}>{lead.telefone}</ChatwootLink>
-          ):(
-            <a href={`https://wa.me/55${lead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="btn-wa">
-              <i className="ti ti-brand-whatsapp"/>{lead.telefone}
-            </a>
-          )}
+          {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. Se chatwoot_conv_id
+              ainda for NULL, LeadPhoneChatwoot resolve via GET /api/crm/leads/:id/chatwoot. */}
+          <LeadPhoneChatwoot lead={lead}>{lead.telefone}</LeadPhoneChatwoot>
         </div>}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
           {lead.troca&&<span className="badge badge-warning"><i className="ti ti-arrows-exchange" style={{fontSize:12}}/>Tem troca</span>}
@@ -541,14 +533,14 @@ function NovoModal({onClose,onCriado}){
         respondeu confirmando o número — o vendedor conferiu que é ele de verdade antes
         de marcar aqui. Vira "cliente validado" (tela Clientes) na hora, sem precisar
         esperar uma venda nova. */}
-        <div className="form-group" style={{display:"flex",alignItems:"center",gap:8}}>
+        <div className="form-group form-check">
           <input type="checkbox" id="validar_campanha" checked={form.validar_campanha||false} onChange={e=>set("validar_campanha",e.target.checked)}/>
-          <label htmlFor="validar_campanha" style={{fontSize:13,cursor:"pointer"}}>Confirmei que é um cliente antigo real (marcar como cliente validado)</label>
+          <label htmlFor="validar_campanha">Confirmei que é um cliente antigo real (marcar como cliente validado)</label>
         </div>
         {erro&&<div style={{color:"var(--danger)",fontSize:13,marginBottom:10}}>{erro}</div>}
-        <div style={{display:"flex",gap:8}}>
-          <button className="btn btn-ghost" onClick={onClose} style={{flex:1}}>Cancelar</button>
-          <button className="btn btn-primary" onClick={submit} disabled={loading} style={{flex:1}}>{loading?<span className="spinner"/>:"Adicionar"}</button>
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" onClick={submit} disabled={loading}>{loading?<span className="spinner"/>:"Adicionar"}</button>
         </div>
       </div>
     </div>
@@ -733,9 +725,9 @@ export default function CRM(){
         {!readOnly&&<button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus" style={{fontSize:16}}/> Novo lead</button>}
       </div>
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        <input className="form-input" style={{maxWidth:220,marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
+        <input className="form-input search-input-sm" style={{marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
         {role==="admin_master"&&lojas.length>1&&
-          <select className="form-input" style={{maxWidth:200,marginBottom:0,fontSize:13,padding:"7px 12px"}} value={lojaFiltro} onChange={e=>setLojaFiltro(e.target.value)}>
+          <select className="form-input search-input-sm" style={{marginBottom:0,fontSize:13,padding:"7px 12px"}} value={lojaFiltro} onChange={e=>setLojaFiltro(e.target.value)}>
             <option value="">Todas as lojas</option>
             {lojas.map(l=><option key={l.id} value={l.id}>{l.nome}</option>)}
           </select>
@@ -814,7 +806,7 @@ export default function CRM(){
                       <div className="kanban-card-footer">
                         <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}</div>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                          <ChatwootLink conv_id={lead.chatwoot_conv_id} compact onClick={e=>e.stopPropagation()}/>
+                          <LeadPhoneChatwoot lead={lead} compact onClick={e=>e.stopPropagation()}/>
                           <Score s={lead.score}/>
                           <div className="av" style={{width:24,height:24,fontSize:9,background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B"}}>{lead.vendedor_iniciais}</div>
                         </div>
