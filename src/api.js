@@ -36,10 +36,18 @@ export async function atualizarVeiculo(id,d){ return req(`/veiculos/${id}`,{meth
 export async function deletarVeiculo(id)    { return req(`/veiculos/${id}`,{method:"DELETE"}); }
 export async function getLeads()            { try { return await req("/leads"); } catch { return {contato:MOCK_LEADS,financiamento:[]}; } }
 export async function marcarLido(id,tipo)   { return req(`/leads/${id}/lido`,{method:"PATCH",body:JSON.stringify({tipo})}); }
-export async function getCRMKanban() {
-  const u=getUser(); const q=u?.role==="vendedor"?`?vendedor_id=${u.id}`:"";
-  return req(`/api/crm/kanban${q}`);
+export async function getCRMKanban(lojaId) {
+  const u=getUser();
+  const params=new URLSearchParams();
+  if(u?.role==="vendedor")params.set("vendedor_id",u.id);
+  // lojaId: filtro opcional só usado pelo admin_master (Felipe/Diana) — o backend
+  // ignora esse param pra qualquer outro papel, que já é filtrado server-side pela
+  // própria loja (ver crm.js).
+  if(lojaId)params.set("loja_id",lojaId);
+  const qs=params.toString();
+  return req(`/api/crm/kanban${qs?`?${qs}`:""}`);
 }
+export async function getLojas() { return req("/api/lojas"); }
 export async function moverLead(id,est,motivo,veiculo_vendido_id) { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est,motivo,veiculo_vendido_id})}); }
 export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method:"POST",body:JSON.stringify(d)}); }
 export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`,{method:"PATCH",body:JSON.stringify(d)}); }

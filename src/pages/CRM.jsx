@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
@@ -421,6 +421,20 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             </span>
           </div>
         }
+        {/* Dados adicionais (2026-07-27) — só aparece o que estiver preenchido, leads
+        antigos sem esses dados não mostram nada aqui (sem "—" repetido pra cada campo vazio). */}
+        {(lead.data_nascimento||lead.cidade||lead.email||lead.profissao||lead.observacoes)&&
+          <div style={{marginBottom:14,background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
+            <div style={{fontSize:10,color:"var(--muted)",marginBottom:6,textTransform:"uppercase"}}>Dados adicionais</div>
+            <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:13,color:"var(--fg)"}}>
+              {lead.data_nascimento&&<div><i className="ti ti-cake" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{new Date(lead.data_nascimento).toLocaleDateString("pt-BR",{timeZone:"UTC"})}</div>}
+              {lead.cidade&&<div><i className="ti ti-map-pin" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{lead.cidade}</div>}
+              {lead.email&&<div><i className="ti ti-mail" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{lead.email}</div>}
+              {lead.profissao&&<div><i className="ti ti-briefcase" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{lead.profissao}</div>}
+              {lead.observacoes&&<div style={{marginTop:2,paddingTop:6,borderTop:"1px solid var(--border)",whiteSpace:"pre-wrap"}}>{lead.observacoes}</div>}
+            </div>
+          </div>
+        }
         {!readOnly&&lead.vendedor_id&&(
           <div style={{marginBottom:14}}>
             {agendado?(
@@ -515,6 +529,14 @@ function NovoModal({onClose,onCriado}){
             <option value="particular">WhatsApp particular do vendedor</option>
           </select>
         </div>
+        {/* Campos adicionais (2026-07-27, todos opcionais) — cadastro mais completo
+        pro vendedor anotar na hora, sem travar a criação do lead se não tiver a
+        informação ainda. */}
+        <div className="form-group"><label className="form-label">Data de nascimento</label><input type="date" className="form-input" value={form.data_nascimento||""} onChange={e=>set("data_nascimento",e.target.value)}/></div>
+        <div className="form-group"><label className="form-label">Cidade</label><input className="form-input" value={form.cidade||""} onChange={e=>set("cidade",e.target.value)} placeholder="Ex: Curitibanos"/></div>
+        <div className="form-group"><label className="form-label">E-mail</label><input type="email" className="form-input" value={form.email||""} onChange={e=>set("email",e.target.value)} placeholder="cliente@email.com"/></div>
+        <div className="form-group"><label className="form-label">Profissão</label><input className="form-input" value={form.profissao||""} onChange={e=>set("profissao",e.target.value)} placeholder="Ex: Motorista"/></div>
+        <div className="form-group"><label className="form-label">Observações</label><textarea className="form-input" style={{minHeight:60}} value={form.observacoes||""} onChange={e=>set("observacoes",e.target.value)} placeholder="Qualquer detalhe relevante sobre o cliente"/></div>
         {/* Validação humana (2026-07-16): cliente antigo da campanha de reativação que
         respondeu confirmando o número — o vendedor conferiu que é ele de verdade antes
         de marcar aqui. Vira "cliente validado" (tela Clientes) na hora, sem precisar
@@ -599,6 +621,13 @@ export default function CRM(){
   const[colunaSobre,setColunaSobre]=useState(null);
   const boardRef=useRef(null);
 
+  // Filtro de loja (2026-07-27) — só admin_master (Felipe/Diana) vê as duas lojas por
+  // padrão, então só eles precisam de um jeito de restringir a uma só. Vendedor/gerente
+  // já são filtrados server-side pela própria loja (crm.js), sem precisar de UI nenhuma.
+  const[lojas,setLojas]=useState([]);
+  const[lojaFiltro,setLojaFiltro]=useState("");
+  useEffect(()=>{if(role==="admin_master")getLojas().then(setLojas).catch(()=>{});},[role]);
+
   useEffect(()=>{const fn=()=>setIsMobile(window.innerWidth<768);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
   // Sempre abre no início do board (coluna "Novo lead") — sem isso o scroll horizontal
   // podia ficar parado numa posição do carregamento anterior e dar a impressão de que
@@ -607,9 +636,9 @@ export default function CRM(){
   const load=useCallback((silent)=>{
     if(!silent) setLoading(true);
     setErro(null);
-    getCRMKanban().then(k=>{setKanban(k);setLoading(false);})
+    getCRMKanban(lojaFiltro||undefined).then(k=>{setKanban(k);setLoading(false);})
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
-  },[]);
+  },[lojaFiltro]);
   useEffect(()=>{load();},[load]);
 
   // silent=true nos refreshes pós-ação: evita desmontar a página (e fechar o modal
@@ -705,37 +734,22 @@ export default function CRM(){
       </div>
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         <input className="form-input" style={{maxWidth:220,marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
+        {role==="admin_master"&&lojas.length>1&&
+          <select className="form-input" style={{maxWidth:200,marginBottom:0,fontSize:13,padding:"7px 12px"}} value={lojaFiltro} onChange={e=>setLojaFiltro(e.target.value)}>
+            <option value="">Todas as lojas</option>
+            {lojas.map(l=><option key={l.id} value={l.id}>{l.nome}</option>)}
+          </select>
+        }
       </div>
       <div style={{fontSize:13,color:"var(--muted)",marginBottom:12}}>{todos.length} leads · {filtrados.length} exibidos{!readOnly&&!isMobile&&" · arraste o card pra mudar o estágio"}</div>
 
-      {isMobile?(
-        <div className="crm-list">
-          {filtrados.length===0&&<div className="empty-state"><i className="ti ti-inbox"/><p>Nenhum lead</p></div>}
-          {filtrados.map(lead=>{
-            const est=colunaVisual(estagios,lead.estagio);
-            return(
-              <div key={lead.id} className="crm-list-item" style={{borderLeft:`3px solid ${est?.cor||"var(--border)"}`}} onClick={()=>setLeadSel(lead)}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div className="crm-list-nome">{lead.nome}</div>
-                  <div className="crm-list-sub">{lead.veiculo_interesse} · {est?.label}</div>
-                  <div style={{display:"flex",gap:6,marginTop:4,alignItems:"center"}}><Temp t={lead.temperatura}/><Score s={lead.score}/>{lead.origem&&<Orig o={lead.origem}/>}<Resp r={lead.responsavel_atual}/></div>
-                  {lead.followup_tipo&&
-                    <div style={{fontSize:10,color:followupAtrasado(lead)?"var(--danger)":"var(--warning)",marginTop:4,display:"flex",alignItems:"center",gap:3}}>
-                      <i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}
-                      {followupAtrasado(lead)&&<span style={{width:6,height:6,borderRadius:"50%",background:"var(--danger)",display:"inline-block"}}/>}
-                      {followupSemContato(lead)&&<i className="ti ti-phone-off" style={{fontSize:11,color:"var(--danger)"}} title="Sem telefone — follow-up manual"/>}
-                    </div>
-                  }
-                </div>
-                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-                  <ChatwootLink conv_id={lead.chatwoot_conv_id} compact onClick={e=>e.stopPropagation()}/>
-                  <div className="av" style={{background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B",fontSize:10}}>{lead.vendedor_iniciais}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ):(
+      {/* 2026-07-27: board único (colunas lado a lado + scroll horizontal) em qualquer
+      viewport, mesmo padrão do Follow-ups (FollowUps.jsx .fu-kanban-board) — antes o
+      mobile trocava pra uma lista vertical (.crm-list, removida daqui) que abandonava
+      o board Kanban inteiro. .kanban-board já tinha overflow-x + touch-scroll nativo,
+      só faltava não trocar de componente no mobile. Drag nativo HTML5 (arrastar card/
+      coluna) segue exatamente igual ao desktop — mesma ressalva de suporte a touch que
+      já existia antes dessa mudança, não é regressão nova. */}
         <div
           className="kanban-board" ref={boardRef}
           onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
@@ -812,7 +826,6 @@ export default function CRM(){
             );
           })}
         </div>
-      )}
 
       {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}

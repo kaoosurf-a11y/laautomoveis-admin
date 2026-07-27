@@ -184,6 +184,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
    230px de desconto ≈ padding do main-content + cabeçalho da página + busca/contador
    acima do board (medido ao vivo, com folga). */
 .kanban-board{display:flex;gap:12px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2);cursor:grab;height:calc(100vh - 230px);min-height:320px}
+/* 2026-07-27: mobile (<1024px) sempre mostra o board agora (CRM.jsx não troca mais
+   pra lista vertical) — mas tem chrome extra que o desktop não tem (.topbar-mobile
+   fixo em cima + .bottom-nav fixo embaixo), então os mesmos 230px de desconto do
+   desktop deixariam o board alto demais, com o rodapé (inclusive a barra de scroll)
+   escondido atrás do bottom-nav. Desconta as mesmas variáveis já usadas por esse
+   chrome (--topbar-h/--bottom-h) em vez de cravar um número novo. */
+@media(max-width:1023px){.kanban-board{height:calc(100vh - 230px - var(--topbar-h) - var(--bottom-h) - env(safe-area-inset-bottom))}}
 .kanban-board.grabbing{cursor:grabbing;user-select:none;scroll-snap-type:none}
 .kanban-board::-webkit-scrollbar{height:14px}
 .kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
