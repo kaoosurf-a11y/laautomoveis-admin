@@ -139,10 +139,27 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .btn-danger{background:rgba(224,82,82,.15);color:var(--danger);border:1px solid rgba(224,82,82,.2)}
 .btn-icon{padding:8px;min-height:44px;min-width:44px}
 
-/* Botões de aba compactos (ex: Dashboard: Oportunidades/Jornada/Estoque/Métricas) — mais
-   estreitos que .btn normal (4 precisam caber numa linha só em tela de celular), mas com
-   altura de toque real (44px) em vez de depender só do padding. */
-.tab-pill{min-height:44px;-webkit-tap-highlight-color:transparent}
+/* Linha de botões-filtro (ex: Dashboard: período/loja) e abas (.tab-btn) — no
+   desktop continua flex-wrap simples (largura = tamanho do texto). Abaixo de
+   640px cada botão ganha flex:1 1 auto: a base ainda é o tamanho do próprio
+   texto (nunca corta/trunca), mas o espaço sobrando na linha é dividido entre
+   só quem está naquela linha — cada fileira (mesmo a última, incompleta)
+   preenche 100% da largura, sem sobrar vão torto do lado. */
+.filter-chip-row{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:640px){
+  /* max-width:70% evita que um item sozinho numa linha (ex: só "Métricas" sobrando
+     na 2ª linha) estique de ponta a ponta — ele cresce até 70% e o
+     justify-content:center do container centraliza o resto, em vez de colar na
+     borda esquerda. Linhas com 2-3 itens nunca chegam perto do teto de 70% cada,
+     então continuam preenchendo a largura toda normalmente. */
+  .filter-chip-row .btn,.tab-btn{flex:1 0 auto;max-width:70%;text-align:center}
+  .filter-chip-row{justify-content:center}
+  /* Abaixo de 640px as abas quebram linha em vez de rolar escondido — 4 pills
+     compridas (ex: "Oportunidades") não cabem numa linha só sem cortar texto,
+     e rolagem horizontal sem nenhum indício visual (a última pill some fora da
+     tela) confunde mais do que uma segunda linha, também preenchida. */
+  .tabs-wrap{flex-wrap:wrap;overflow-x:visible;justify-content:center}
+}
 
 /* ── Forms ── */
 .form-group{margin-bottom:14px}
@@ -252,7 +269,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
    resumo). Diferenciação visual proposital do Kanban do CRM: lá a cor do estágio
    contorna a coluna inteira; aqui é só um acento (barra no topo do cabeçalho + borda
    lateral do card) — mesma linguagem de cor, layout mais leve pro card mais alto. ── */
-.fu-kanban-board{display:flex;gap:14px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2);cursor:grab}
+/* align-items:flex-start (2026-07-27): sem isso o flexbox por padrão estica toda
+   coluna pra altura da vizinha mais cheia — numa tela mobile (só 1 coluna visível
+   por vez, rolando o board inteiro) uma coluna vazia virava um vão preto enorme.
+   Agora cada coluna tem só a altura do próprio conteúdo, e o "card" de fundo
+   (abaixo) deixa claro que é uma área vazia, não a tela quebrada. */
+.fu-kanban-board{display:flex;align-items:flex-start;gap:14px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:auto;scrollbar-color:var(--brand) var(--surface2);cursor:grab}
 .fu-kanban-board.grabbing{cursor:grabbing;user-select:none}
 .fu-kanban-board::-webkit-scrollbar{height:14px}
 .fu-kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
@@ -261,7 +283,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .fu-kanban-col{flex-shrink:0;width:320px;display:flex;flex-direction:column;min-height:0}
 .fu-kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-top:3px solid;margin-bottom:8px}
 .fu-kanban-col-title{font-size:13px;font-weight:700}
-.fu-kanban-cards{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 300px);overflow-y:auto;padding:2px 2px 4px;scrollbar-width:thin;scrollbar-color:var(--brand) var(--surface2)}
+.fu-kanban-cards{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;gap:10px;min-height:64px;max-height:calc(100vh - 300px);overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--brand) var(--surface2)}
 .fu-kanban-cards::-webkit-scrollbar{width:8px}
 .fu-kanban-cards::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
 .fu-kanban-cards::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
@@ -353,10 +375,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 /* ── Misc ── */
 .sec-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:18px 0 10px}
-.tabs-wrap{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+/* Abas em formato "chip" (2026-07-27, modernização): antes era só texto com
+   sublinhado — em touch (sem hover) não lia como botão. Agora toda aba, ativa ou
+   não, tem fundo/borda própria (afordância clara de que é clicável), a ativa
+   ganha destaque em dourado com leve sombra. Usado em Dashboard/Follow-ups/
+   Disparador — um componente visual só, sem duplicar estilo. */
+.tabs-wrap{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
 .tabs-wrap::-webkit-scrollbar{display:none}
-.tab-btn{padding:12px 18px;font-size:13px;font-weight:500;cursor:pointer;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;min-height:46px}
-.tab-btn.active{color:var(--brand);border-bottom-color:var(--brand)}
+.tab-btn{padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:99px;white-space:nowrap;min-height:44px;flex-shrink:0;transition:background .15s,color .15s,border-color .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.tab-btn:active{transform:scale(.97)}
+.tab-btn.active{color:#0c0c0a;background:linear-gradient(135deg,#C8A84B,#a88a35);border-color:transparent;box-shadow:0 2px 10px rgba(200,168,75,.35)}
 .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.2);border-top-color:#0c0c0a;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn-wa{color:#25D366;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.2);padding:8px 14px;border-radius:9px;cursor:pointer;text-decoration:none;white-space:nowrap;min-height:40px;-webkit-tap-highlight-color:transparent}

@@ -646,7 +646,7 @@ export default function Dashboard() {
             2026-07-15: ganhou "Personalizado" — abre um seletor de intervalo (De/Até)
             pra escolher dia/mês/ano exatos, cobre inclusive um ano inteiro (ex:
             01/01/2026 até 31/12/2026), não só os 3 presets fixos. */}
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <div className="filter-chip-row">
           {[{k:"hoje",l:"Hoje"},{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"trimestre",l:"Trimestre"}].map(p=>(
             <button key={p.k} className={`btn ${periodo===p.k?"btn-primary":"btn-ghost"}`}
               style={{padding:"10px 16px",fontSize:14,fontWeight:600}}
@@ -663,8 +663,9 @@ export default function Dashboard() {
       </div>
 
       {isAdminMaster && (
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
-          <span style={{fontSize:12,color:"var(--muted)",marginRight:4}}>Loja:</span>
+        <div style={{marginBottom:14}}>
+          <span style={{fontSize:12,color:"var(--muted)",display:"block",marginBottom:6}}>Loja:</span>
+          <div className="filter-chip-row">
           {[{id:null,l:"Todas"},{id:1,l:"Curitibanos"},{id:2,l:"Campos Novos"}].map(o=>(
             <button key={String(o.id)} type="button"
               className={`btn ${lojaFiltro===o.id?"btn-primary":"btn-ghost"}`}
@@ -673,6 +674,7 @@ export default function Dashboard() {
               {o.l}
             </button>
           ))}
+          </div>
         </div>
       )}
 
@@ -730,27 +732,17 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Tabs — 4 opções, precisam caber lado a lado sem rolar mesmo em telas
-          estreitas (2026-07-13): compactas de propósito (padding/fonte menores que
-          o filtro de período acima, que é usado com mais frequência).
-          2026-07-15 (auditoria mobile): flex:1 pra dividir a largura igualmente entre as 4
-          (antes cada uma só ocupava o tamanho do próprio texto) e altura de toque real
-          via .tab-pill (44px) — clicar/tocar numa aba errada por engano era fácil antes. */}
-      <div style={{marginBottom:16,paddingBottom:12,borderBottom:"1px solid var(--border)"}}>
-        <div style={{display:"flex",gap:4,flexWrap:"nowrap"}}>
-          {ABAS.map(a=>(
-            <button key={a.id} className="tab-pill" onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}
-              style={{padding:"0 6px",fontSize:11,fontWeight:aba===a.id?700:500,
-                color:aba===a.id?"#0c0c0a":"var(--muted)",
-                background:aba===a.id?"#C8A84B":"transparent",
-                border:"none",borderRadius:99,cursor:"pointer",
-                boxShadow:aba===a.id?"0 2px 10px rgba(200,168,75,.35)":"none",
-                transition:"all .2s",whiteSpace:"nowrap",flex:"1 1 0",minWidth:0,
-                overflow:"hidden",textOverflow:"ellipsis"}}>
-              {a.label}
-            </button>
-          ))}
-        </div>
+      {/* Tabs (2026-07-27: unificado com .tab-btn/.tabs-wrap — mesmo componente visual
+          usado em Follow-ups/Disparador). Antes forçava largura igual entre as 4 e
+          cortava "Oportunidades" com "...": agora cada aba tem a largura do próprio
+          texto e a faixa rola horizontalmente se não couber, sem nunca truncar. */}
+      <div className="tabs-wrap" style={{paddingBottom:12,borderBottom:"1px solid var(--border)"}}>
+        {ABAS.map(a=>(
+          <button key={a.id} className={`tab-btn ${aba===a.id?"active":""}`}
+            onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}>
+            {a.label}
+          </button>
+        ))}
       </div>
 
       {aba==="oportunidades" && <TabOportunidades data={data} isAdminMaster={isAdminMaster} onMidiaSaved={recarregarDashboard}/>}

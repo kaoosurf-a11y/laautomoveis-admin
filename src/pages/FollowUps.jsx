@@ -386,7 +386,7 @@ export default function FollowUps(){
       {aba==="estagio"&&(<>
           {/* Filtro de data — substitui as antigas abas "Agenda de hoje"/"Vencidos"
               (mesma tabela de "Por estágio", só um recorte por data). */}
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
+          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
             <button className={`tab-btn ${filtroData==="todos"?"active":""}`} onClick={()=>setFiltroData("todos")}>Todos ({totalEmFollowup})</button>
             <button className={`tab-btn ${filtroData==="hoje"?"active":""}`} onClick={()=>setFiltroData("hoje")}>Hoje ({totalHoje})</button>
             <button className={`tab-btn ${filtroData==="vencidos"?"active":""}`} onClick={()=>setFiltroData("vencidos")} style={{color:totalVencidos>0?"var(--danger)":undefined}}>
