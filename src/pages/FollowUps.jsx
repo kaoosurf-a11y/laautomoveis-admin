@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, concluirFollowupAgendado, atualizarLembreteAgendamento, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
+import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
 
@@ -94,65 +94,6 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
   );
 }
 
-// Lembrete de agendamento (visita/test-drive) — mesmo estilo visual de card das
-// outras colunas, mas ação mais simples (1 mensagem só, dispara 15-25min antes do
-// horário marcado): editar o texto (ou deixar em branco pro padrão automático) e
-// pausar/retomar o lembrete inteiro. Sem "fluxo de N mensagens" porque hoje só
-// existe 1 disparo por agendamento — decisão explícita 2026-07-12 pra não
-// reestruturar o mecanismo de envio (que já funciona ao vivo) só pra caber no
-// mesmo formato de sequência editável por mensagem.
-function AgendamentoItem({ag, readOnly, onAtualizado}){
-  const[editando,setEditando]=useState(false);
-  const[texto,setTexto]=useState(ag.lembrete_texto_cliente||"");
-  const[salvando,setSalvando]=useState(false);
-  async function salvarTexto(){
-    setSalvando(true);
-    try{await atualizarLembreteAgendamento(ag.id,{lembrete_texto_cliente:texto.trim()||null});onAtualizado();}
-    catch{alert("Erro ao salvar. Tente de novo.");}
-    setSalvando(false);setEditando(false);
-  }
-  async function alternarPausa(){
-    try{await atualizarLembreteAgendamento(ag.id,{lembrete_pausado:!ag.lembrete_pausado});onAtualizado();}
-    catch{alert("Erro ao atualizar o lembrete.");}
-  }
-  return(
-    <div className="fu-item" style={{flexDirection:"column",alignItems:"stretch"}}>
-      <div style={{display:"flex",alignItems:"flex-start",gap:10,width:"100%"}}>
-        <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{ag.vendedor_iniciais}</div>
-        <div className="fu-info">
-          <div className="fu-nome">{ag.cliente_nome}</div>
-          <div className="fu-sub">{ag.veiculo||"—"} · {ag.vendedor_nome||"sem vendedor"} · {ag.tipo}</div>
-          <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>Agendado pra {fmtData(ag.data_hora)}</div>
-          {ag.lembrete_pausado&&<span className="badge" style={{fontSize:10,marginTop:4,background:"var(--warning)22",color:"var(--warning)",display:"inline-flex"}}><i className="ti ti-player-pause" style={{fontSize:11}}/> Lembrete pausado</span>}
-        </div>
-        <ChatwootLink conv_id={ag.chatwoot_conv_id} inbox_id={ag.chatwoot_inbox_id} compact/>
-      </div>
-      <div style={{background:"var(--surface2)",borderRadius:8,padding:"8px 10px",marginTop:8}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <span style={{fontSize:10,color:"var(--muted)",textTransform:"uppercase"}}>Mensagem do lembrete</span>
-          {!readOnly&&<div style={{display:"flex",gap:4}}>
-            <button className="btn btn-ghost" style={{padding:"2px 8px",fontSize:11}} onClick={alternarPausa}>
-              {ag.lembrete_pausado?<><i className="ti ti-player-play" style={{fontSize:12}}/> Retomar</>:<><i className="ti ti-player-pause" style={{fontSize:12}}/> Pausar</>}
-            </button>
-          </div>}
-        </div>
-        {editando?(
-          <div style={{display:"flex",gap:4}}>
-            <textarea className="form-input" style={{marginBottom:0,fontSize:12,minHeight:50}} value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Deixe em branco pro texto padrão automático"/>
-            <button className="btn btn-primary" style={{padding:"4px 8px"}} onClick={salvarTexto} disabled={salvando}>{salvando?<span className="spinner"/>:<i className="ti ti-check"/>}</button>
-          </div>
-        ):(
-          <div style={{fontSize:12,color:ag.lembrete_texto_cliente?"var(--fg)":"var(--muted)",cursor:readOnly?"default":"pointer",fontStyle:ag.lembrete_texto_cliente?"normal":"italic"}}
-            onClick={()=>{if(readOnly)return;setTexto(ag.lembrete_texto_cliente||"");setEditando(true);}}
-            title={readOnly?"":"Clique pra editar"}>
-            {ag.lembrete_texto_cliente||"Texto padrão automático (clique pra personalizar)"} {!readOnly&&<i className="ti ti-pencil" style={{fontSize:11,color:"var(--muted)"}}/>}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 const TIPO_LABEL={
   sem_credito:"Sem crédito",vai_pensar:"Vai pensar",
   nao_achou_carro:"Não achou o carro",parou_responder:"Parou de responder",
@@ -175,19 +116,6 @@ const TIPO_COR={
   pos_venda_satisfacao:"#d1637a",
 };
 const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder","feirao","fecha_mes","pos_venda_satisfacao"];
-
-// la_followup_agendado.cenario — só "lembrete_visita" ainda gera linha nova (ver auditoria
-// 2026-07-16 no comentário da aba "agendados" mais abaixo); mapa cobre os cenários antigos
-// só pra não vazar o valor cru na tela caso alguma linha velha reapareça por engano.
-const CENARIO_LABEL={
-  lembrete_visita:"Visita mencionada",
-  pos_handoff_silencio:"Silêncio pós-handoff (legado)",
-  revisao_vai_pensar:"Vai pensar (legado)",
-  revisao_carro_nao_encontrado:"Carro não encontrado (legado)",
-  revisao_fechado_perdido:"Fechado perdido (legado)",
-  revisao_visita_agendada:"Visita agendada (legado)",
-  vou_pensar:"Vai pensar (legado)",
-};
 
 function fmtData(iso){
   if(!iso) return "—";
@@ -257,21 +185,10 @@ function LeadCardHeader({f,role,onAtualizado}){
 export default function FollowUps(){
   const role=getRole();
   const readOnly=role==="gerente";
-  // "Visitas mencionadas" (la_followup_agendado, cenário lembrete_visita — cliente citou
-  // uma data em conversa, ainda não confirmada na Agenda de verdade) é visão de
-  // administração — só owner/manager, nunca vendedor (2026-07-16). Os outros cenários que
-  // essa tabela guardava (pos_handoff_silencio, revisao_vai_pensar/carro_nao_encontrado/
-  // fechado_perdido/visita_agendada, vou_pensar) são mecanismo morto desde 2026-07-14,
-  // substituído pelo OBSERVADOR POS-HANDOFF atual (followups.parou_responder + mover_estagio
-  // direto) — 68 linhas órfãs canceladas em massa nessa auditoria.
-  const podeVerAgendados=role!=="vendedor";
-  // "Agendamentos" (lembrete de visita) é redundante pro vendedor — a página Agenda
-  // (menu lateral) já é a visão dedicada de compromissos, sincronizada com o Kanban
-  // dos dois lados. Só owner/manager continuam vendo aqui, útil pra auditoria cruzada
-  // de todos os vendedores num só lugar (2026-07-16).
-  const podeVerAgendamentos=role!=="vendedor";
+  // "Visitas mencionadas" e "Agendamentos" removidos como abas próprias (2026-07-28):
+  // Agenda (menu lateral) já é a visão dedicada de compromissos — manter os dois
+  // aqui era informação duplicada. Follow-ups agora é só "Por estágio".
   const[data,setData]=useState({porTipo:{}});
-  const[aba,setAba]=useState("estagio");
   // Filtro de data dentro de "Por estágio" — antes eram 2 abas próprias (Agenda de
   // hoje / Vencidos), mas liam a MESMA tabela (followups) que já aparece aqui, só
   // com um WHERE de data diferente. Virou filtro em vez de aba: menos lugar pra
@@ -343,13 +260,6 @@ export default function FollowUps(){
   }));
 
   async function marcarRespondeu(id){try{await marcarFollowupRespondeu(id);}catch{}upd(id,{respondeu:true});}
-  const[concluindo,setConcluindo]=useState(null);
-  async function concluirAgendado(id){
-    setConcluindo(id);
-    try{await concluirFollowupAgendado(id);setData(d=>({...d,agendados:d.agendados.filter(a=>a.id!==id)}));}
-    catch{alert("Erro ao concluir. Tente de novo.");}
-    setConcluindo(null);
-  }
 
   const hoje=new Date().toDateString();
   const ehHoje=f=>f.horario&&new Date(f.horario).toDateString()===hoje;
@@ -377,14 +287,7 @@ export default function FollowUps(){
   return(
     <div>
       <div className="page-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1></div>
-      <div className="tabs-wrap">
-        <button className={`tab-btn ${aba==="estagio"?"active":""}`} onClick={()=>setAba("estagio")}>Por estágio ({totalEmFollowup})</button>
-        {podeVerAgendados&&<button className={`tab-btn ${aba==="agendados"?"active":""}`} onClick={()=>setAba("agendados")}>Visitas mencionadas ({data.agendados?.length||0})</button>}
-        {podeVerAgendamentos&&<button className={`tab-btn ${aba==="agendamentos"?"active":""}`} onClick={()=>setAba("agendamentos")}>Agendamentos ({data.agendamentos?.length||0})</button>}
-      </div>
-
-      {aba==="estagio"&&(<>
-          {/* Filtro de data — substitui as antigas abas "Agenda de hoje"/"Vencidos"
+      {/* Filtro de data — substitui as antigas abas "Agenda de hoje"/"Vencidos"
               (mesma tabela de "Por estágio", só um recorte por data). */}
           <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
             <button className={`tab-btn ${filtroData==="todos"?"active":""}`} onClick={()=>setFiltroData("todos")}>Todos ({totalEmFollowup})</button>
@@ -454,46 +357,6 @@ export default function FollowUps(){
               );
             })}
           </div>
-      </>)}
-
-      {aba==="agendados"&&podeVerAgendados&&(
-        <div className="card fu-scroll-list">
-          {/* 2026-07-16: auditoria encontrou 68 linhas 100% órfãs aqui (la_followup_agendado)
-          — mecanismo antigo (pos_handoff_silencio, revisao_vai_pensar/carro_nao_encontrado/
-          fechado_perdido/visita_agendada, vou_pensar) substituído em 2026-07-14 pela lógica
-          nova do OBSERVADOR POS-HANDOFF (mover_estagio direto no backend + parou_responder
-          na tabela followups, já visível em "Por estágio"). Nenhuma linha nova desde
-          2026-07-11. Canceladas em massa. O único cenário ainda vivo aqui é "lembrete_visita"
-          (cliente mencionou uma data de visita em conversa, ainda não confirmada na Agenda de
-          verdade) — por isso a aba continua existindo, só vazia até isso disparar. */}
-          {(!data.agendados||data.agendados.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhuma visita mencionada pelo cliente aguardando confirmação</p></div>}
-          {data.agendados?.map(a=>(
-            <div key={a.id} className="fu-item">
-              <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{a.vendedor_iniciais}</div>
-              <div className="fu-info">
-                <div className="fu-nome">{a.cliente_nome||a.phone}</div>
-                <div className="fu-sub">{CENARIO_LABEL[a.cenario]||a.cenario} · {fmtData(a.agendado_para)}</div>
-                {a.status==="pendente_revisao"&&<span className="badge badge-warning" style={{fontSize:10,marginTop:4,display:"inline-flex"}}><i className="ti ti-alert-triangle" style={{fontSize:11}}/> Revisão manual</span>}
-              </div>
-              <div className="fu-actions">
-                <ChatwootLink conv_id={a.chatwoot_conv_id} inbox_id={a.chatwoot_inbox_id}> Chatwoot</ChatwootLink>
-                {!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>concluirAgendado(a.id)} disabled={concluindo===a.id}>{concluindo===a.id?<span className="spinner"/>:<><i className="ti ti-check" style={{fontSize:14}}/> Concluir</>}</button>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {aba==="agendamentos"&&podeVerAgendamentos&&(
-        <div className="card fu-scroll-list">
-          {(!data.agendamentos||data.agendamentos.length===0)&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum agendamento com lembrete pendente</p></div>}
-          {data.agendamentos?.map(ag=>(
-            <div key={ag.id} style={{marginBottom:8}}>
-              <AgendamentoItem ag={ag} readOnly={readOnly} onAtualizado={load}/>
-            </div>
-          ))}
-        </div>
-      )}
 
     </div>
   );

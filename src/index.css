@@ -289,15 +289,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .fu-kanban-cards::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
 .fu-kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 
-/* Listas verticais de "Agendados pela Lara"/"Agendamentos" — mesma barra de
-   rolagem com cor de marca do Kanban (.fu-kanban-cards/.kanban-cards) em vez de
-   deixar a página crescer sem fim conforme os itens acumulam. */
-.fu-scroll-list{max-height:calc(100vh - 260px);overflow-y:auto}
-.fu-scroll-list::-webkit-scrollbar{width:8px}
-.fu-scroll-list::-webkit-scrollbar-track{background:transparent}
-.fu-scroll-list::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
-.fu-scroll-list::-webkit-scrollbar-thumb:hover{background:#dbb95a}
-
 /* ── Follow-ups ── */
 .fu-item{display:flex;align-items:flex-start;gap:10px;padding:14px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .fu-item:last-child{border-bottom:none}
@@ -431,7 +422,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .cal-mes-wrap{margin-bottom:16px}
 @media(max-width:639px){.cal-mes-wrap{margin-left:-6px;margin-right:-6px;padding:0 6px}}
 
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:100%}
+/* minmax(0,1fr), não só 1fr (2026-07-28, bug real): coluna do grid tem largura
+   mínima automática = min-content do item mais largo dela por padrão. Um chip de
+   evento com nome comprido (ex: "23:09 Dirceu Fernandes", white-space:nowrap pro
+   text-overflow:ellipsis funcionar) virava o min-content daquela coluna inteira —
+   o grid de 7 colunas ficava mais largo que a tela e os dias saíam "amontoados"/
+   cortados pra fora no mobile. minmax(0,1fr) zera esse mínimo automático, deixando
+   o ellipsis realmente cortar o texto em vez do grid inteiro esticar. */
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;width:100%}
 @media(max-width:639px){.cal-grid{gap:3px}}
 
 .cal-dow{text-align:center;color:var(--muted);font-weight:600;padding:4px 0;font-size:11px}
@@ -443,12 +441,20 @@ tr:hover td{background:rgba(255,255,255,.02)}
 @media(max-width:639px){.cal-cel-num{font-size:11px}.cal-cel-badge{font-size:9px;padding:0 5px}}
 
 /* Visão mês com prévia dos compromissos (estilo Google Agenda) — célula deixa de
-   ser quadrada fixa (precisa de espaço vertical pra caber os "chips"). */
-.cal-cel-mes{aspect-ratio:auto;min-height:76px;align-items:stretch;justify-content:flex-start;padding:4px 3px;gap:3px}
+   ser quadrada fixa (precisa de espaço vertical pra caber os "chips").
+   2026-07-28 (bug real, mobile): min-height na célula sozinho não bastava — o grid
+   calcula a altura de cada linha (grid-auto-rows:auto) a partir do maior item
+   dela, e a combinação com aspect-ratio:1/1 herdado de .cal-cel fazia semanas sem
+   nenhum evento (nenhuma célula "alta" por conteúdo) colapsarem quase pra 0px,
+   enquanto só as semanas com chip ficavam com a altura certa. Fixar a altura
+   mínima direto no grid (.cal-grid-dias, abaixo) resolve na raiz — não depende
+   mais do navegador inferir a altura da linha a partir do conteúdo de cada célula. */
+.cal-cel-mes{aspect-ratio:auto;align-items:stretch;justify-content:flex-start;padding:4px 3px;gap:3px}
+.cal-grid-dias{grid-auto-rows:minmax(76px,auto)}
 .cal-cel-chips{display:flex;flex-direction:column;gap:2px;width:100%;overflow:hidden}
 .cal-chip{font-size:9px;line-height:1.5;padding:1px 4px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;font-weight:600}
 .cal-chip-mais{background:var(--surface);color:var(--muted);font-weight:600}
-@media(max-width:639px){.cal-cel-mes{min-height:54px}.cal-chip{font-size:8px}}
+@media(max-width:639px){.cal-grid-dias{grid-auto-rows:minmax(54px,auto)}.cal-chip{font-size:8px}}
 
 /* ── Grade de horários (visão dia/semana, estilo Google Agenda) ── */
 .time-grid-wrap{overflow-x:auto;margin-bottom:16px}

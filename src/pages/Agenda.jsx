@@ -422,7 +422,7 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
       <div className="cal-grid" style={{marginBottom:4}}>
         {DIAS_SEMANA_CURTO.map(n=><div key={n} className="cal-dow"><span className="xs-inline">{n[0]}</span><span className="sm-inline">{n}</span></div>)}
       </div>
-      <div className="cal-grid">
+      <div className="cal-grid cal-grid-dias">
         {celulas.map((d,i)=>{
           if(!d) return <div key={i}/>;
           const{total=0,eventos=[]}=previaPorDia[iso(d)]||{};
@@ -503,10 +503,13 @@ export default function Agenda(){
     <div>
       <div className="page-header">
         <h1 className="page-title"><i className="ti ti-calendar-event"/> Agenda</h1>
+        {/* 2026-07-28: antes o texto sumia inteiro abaixo de 640px (só ícone), e
+            ícone sozinho de relógio/cadeado não é óbvio o que faz. Agora sempre tem
+            um rótulo — curto no mobile, completo no desktop — em vez de esconder. */}
         {!readOnly&&<div className="agenda-hdr-actions">
-          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setHorariosModal(true)}><i className="ti ti-clock"/> <span className="sm-inline">Meus horários</span></button>
-          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setBloqueioModal(true)}><i className="ti ti-lock"/> <span className="sm-inline">Bloquear horário</span></button>
-          <button className="btn btn-primary agenda-hdr-btn" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> <span className="sm-inline">Agendar</span></button>
+          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setHorariosModal(true)}><i className="ti ti-clock"/> <span className="xs-inline">Horários</span><span className="sm-inline">Meus horários</span></button>
+          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setBloqueioModal(true)}><i className="ti ti-lock"/> <span className="xs-inline">Bloquear</span><span className="sm-inline">Bloquear horário</span></button>
+          <button className="btn btn-primary agenda-hdr-btn" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> Agendar</button>
         </div>}
       </div>
       <div className="agenda-visao-toggle">

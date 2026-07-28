@@ -65,18 +65,12 @@ function MarketingMetrics({ midia, isAdminMaster, onSaved }) {
   return (
     <div className="card" style={{marginBottom:12}}>
       <div className="card-title"><i className="ti ti-ad"/> Investimento em anúncios</div>
-      {isAdminMaster && lojas.length > 1 && (
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-          {lojas.map(l => (
-            <button key={l.id} type="button"
-              className={`btn ${editLojaId===l.id?"btn-primary":"btn-ghost"}`}
-              style={{padding:"6px 12px",fontSize:12}}
-              onClick={()=>setEditLojaId(l.id)}>
-              {l.nome}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* 2026-07-28: removido o seletor de loja próprio deste card — já existe o
+          filtro "Loja:" no topo do Dashboard, e ter dois seletores parecidos (um
+          em cima escolhendo o que é exibido, outro aqui escolhendo o que é
+          editado) lia como duplicado. Editar o investimento de uma loja específica
+          agora é: trocar o filtro de loja lá em cima pra ela. Enquanto o filtro de
+          cima estiver em "Todas", este card edita a primeira loja da lista. */}
       <div className="metrics-grid" style={{marginBottom:12}}>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-cash"/> Investimento mensal</div>
