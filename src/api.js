@@ -3,7 +3,18 @@ const API = import.meta.env.VITE_API_URL || "https://api.laautomoveis.com.br";
 
 async function req(path, opts={}) {
   const res = await fetch(`${API}${path}`, { ...opts, headers:{...authHeaders(),...(opts.headers||{})} });
-  if (!res.ok) throw new Error(`${res.status}`);
+  if (!res.ok) {
+    // Antes descartava o corpo da resposta (erro virava só "409"/"500" sem
+    // explicação nenhuma pro usuário) — agora o texto real do backend
+    // (ex: "Esse horário está bloqueado") chega em e.message, e campos extras
+    // (ex: fora_horario) ficam em e.body pra quem precisa reagir a eles.
+    let body = null;
+    try { body = await res.json(); } catch {}
+    const err = new Error(body?.error || `${res.status}`);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
   return res.json();
 }
 
@@ -97,7 +108,7 @@ export async function getAgenda(data) {
 }
 export async function criarAgendamento(d)             { return req("/api/agenda",{method:"POST",body:JSON.stringify(d)}); }
 export async function atualizarStatusAgendamento(id,s,estagio){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify(estagio?{status:s,estagio}:{status:s})}); }
-export async function reagendarAgendamento(id,data_hora){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({data_hora})}); }
+export async function reagendarAgendamento(id,data_hora,ignorar_horario){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({data_hora,...(ignorar_horario?{ignorar_horario}:{})})}); }
 export async function pedirReagendamentoLara(id){ return req(`/api/agenda/${id}/reagendar-lara`,{method:"POST"}); }
 export async function getResumoMes(ano,mes){ return req(`/api/agenda/resumo-mes?ano=${ano}&mes=${mes}`); }
 export async function getHorarios()        { return req("/api/agenda/horarios"); }

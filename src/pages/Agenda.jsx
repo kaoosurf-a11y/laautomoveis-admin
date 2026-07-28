@@ -272,9 +272,18 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
   const iso=new Date(ag.data_hora);
   const[novaData,setNovaData]=useState(dataLocalISO(iso));
   const[novoHorario,setNovoHorario]=useState(`${String(iso.getHours()).padStart(2,"0")}:${String(iso.getMinutes()).padStart(2,"0")}`);
-  function confirmarReagendar(){
-    onReagendar(ag.id,`${novaData}T${novoHorario}:00`);
-    setReagendando(false);
+  const[erroReagendar,setErroReagendar]=useState("");
+  const[foraHorarioReagendar,setForaHorarioReagendar]=useState(false);
+  const[confirmarForaHorario,setConfirmarForaHorario]=useState(false);
+  async function confirmarReagendar(){
+    setErroReagendar("");
+    try{
+      await onReagendar(ag.id,`${novaData}T${novoHorario}:00`,confirmarForaHorario);
+      setReagendando(false);setForaHorarioReagendar(false);setConfirmarForaHorario(false);
+    }catch(e){
+      if(e.body?.fora_horario){setForaHorarioReagendar(true);setErroReagendar(e.message);}
+      else setErroReagendar(e.message||"Erro ao reagendar. Tente de novo.");
+    }
   }
   function pedirLara(){
     onReagendarLara(ag.id);
@@ -298,7 +307,16 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
         </span>
         <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{ag.vendedor_iniciais}</div>
       </div>
-      <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:`${tipo.cor}22`,color:tipo.cor,display:"inline-block",marginBottom:8}}>{tipo.icon} {tipo.label}</span>
+      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:8}}>
+        <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:`${tipo.cor}22`,color:tipo.cor,display:"inline-block"}}>{tipo.icon} {tipo.label}</span>
+        {/* 2026-07-28: quem agendou — vendedor no painel vs Lara/Larissa durante a
+            conversa de WhatsApp (agenda.origem, ver backend). */}
+        {ag.origem==="ia"?(
+          <span style={{fontSize:11,color:"var(--muted)",display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-robot" style={{fontSize:12}}/> Agendado pela IA no WhatsApp</span>
+        ):ag.origem==="manual"&&ag.vendedor_nome?(
+          <span style={{fontSize:11,color:"var(--muted)"}}>Agendado por {ag.vendedor_nome}</span>
+        ):null}
+      </div>
       <div style={{fontSize:15,fontWeight:600,color:"var(--fg)",marginBottom:2}}>{ag.cliente_nome}</div>
       <div style={{fontSize:13,color:"var(--muted)",marginBottom:8}}>{ag.veiculo}</div>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:ag.observacoes?8:10,flexWrap:"wrap"}}>
@@ -328,11 +346,18 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
         </div>
       )}
       {reagendando&&(
-        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6,flexWrap:"wrap"}}>
-          <input className="form-input" type="date" style={{marginBottom:0,fontSize:12,flex:1,minWidth:120}} value={novaData} onChange={e=>setNovaData(e.target.value)}/>
-          <input className="form-input" type="time" style={{marginBottom:0,fontSize:12,flex:1,minWidth:90}} value={novoHorario} onChange={e=>setNovoHorario(e.target.value)}/>
-          <button className="btn btn-primary" style={{fontSize:12,padding:"6px 10px"}} onClick={confirmarReagendar}>Confirmar</button>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>setReagendando(false)}>Cancelar</button>
+        <div style={{marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6}}>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+            <input className="form-input" type="date" style={{marginBottom:0,fontSize:12,flex:1,minWidth:120}} value={novaData} onChange={e=>{setNovaData(e.target.value);setForaHorarioReagendar(false);setConfirmarForaHorario(false);}}/>
+            <input className="form-input" type="time" style={{marginBottom:0,fontSize:12,flex:1,minWidth:90}} value={novoHorario} onChange={e=>{setNovoHorario(e.target.value);setForaHorarioReagendar(false);setConfirmarForaHorario(false);}}/>
+            <button className="btn btn-primary" style={{fontSize:12,padding:"6px 10px"}} onClick={confirmarReagendar} disabled={foraHorarioReagendar&&!confirmarForaHorario}>Confirmar</button>
+            <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>{setReagendando(false);setErroReagendar("");setForaHorarioReagendar(false);}}>Cancelar</button>
+          </div>
+          {erroReagendar&&<div style={{color:foraHorarioReagendar?"var(--warning)":"var(--danger)",fontSize:12,marginTop:8}}><i className="ti ti-alert-triangle" style={{fontSize:13}}/> {erroReagendar}</div>}
+          {foraHorarioReagendar&&<label style={{display:"flex",alignItems:"flex-start",gap:6,marginTop:6,fontSize:12,color:"var(--fg)",cursor:"pointer"}}>
+            <input type="checkbox" checked={confirmarForaHorario} onChange={e=>setConfirmarForaHorario(e.target.checked)} style={{marginTop:2}}/>
+            Reagendar mesmo assim, fora do horário padrão
+          </label>}
         </div>
       )}
       {escolhendoMotivo&&(
@@ -367,10 +392,37 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
 
 function NovoModal({onClose,onCriado}){
   const user=getUser();
-  const[form,setForm]=useState({cliente_nome:"",cliente_tel:"",veiculo:"",tipo:"test_drive",data:dataLocalISO(new Date()),horario:"09:00",duracao_min:45,vendedor_nome:isManager()?"":user?.nome,observacoes:""});
+  // 2026-07-28: antes o dropdown de vendedor era uma lista fixa de 3 nomes (só loja 1)
+  // e mandava vendedor_nome pro backend — que só lê vendedor_id (agenda.js:304), então
+  // pra loja 2 (Guilherme/Matheus/Daniel) o vendedor nem aparecia na lista, e mesmo pra
+  // loja 1 o agendamento criado por um gerente/admin ficava sem vendedor_id de verdade.
+  // Agora busca a lista real de vendedores (mesma rota já loja-scoped que Equipe/
+  // Disparador usam) e manda o id.
+  const[vendedores,setVendedores]=useState([]);
+  useEffect(()=>{if(isManager())veiculosApi.getUsers().then(u=>setVendedores((u||[]).filter(x=>x.role==="vendedor"))).catch(()=>{});},[]);
+  const[form,setForm]=useState({cliente_nome:"",cliente_tel:"",veiculo:"",tipo:"test_drive",data:dataLocalISO(new Date()),horario:"09:00",duracao_min:45,vendedor_id:isManager()?"":user?.id,observacoes:""});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   function slots(){const d=new Date(form.data+"T12:00:00");const dow=d.getDay();if(dow===0)return[];const fim=dow===6?12:18;const s=[];for(let h=8;h<fim;h++){s.push(`${String(h).padStart(2,"0")}:00`);s.push(`${String(h).padStart(2,"0")}:30`);}return s;}
-  async function submit(){if(!form.cliente_nome||!form.veiculo)return;const data_hora=`${form.data}T${form.horario}:00`;try{await criarAgendamento({...form,data_hora});}catch{}onCriado();onClose();}
+  const[erro,setErro]=useState("");
+  const[foraHorario,setForaHorario]=useState(false);
+  const[confirmarMesmoAssim,setConfirmarMesmoAssim]=useState(false);
+  const[salvando,setSalvando]=useState(false);
+  async function submit(){
+    if(!form.cliente_nome||!form.veiculo)return;
+    setErro("");setSalvando(true);
+    const data_hora=`${form.data}T${form.horario}:00`;
+    try{
+      await criarAgendamento({...form,data_hora,ignorar_horario:confirmarMesmoAssim});
+      onCriado();onClose();
+    }catch(e){
+      // fora_horario (409): almoço/fora do expediente — mostra o motivo real e oferece
+      // "agendar mesmo assim" em vez de falhar calado (comportamento antigo engolia
+      // qualquer erro e fechava o modal como se tivesse dado certo).
+      if(e.body?.fora_horario){setForaHorario(true);setErro(e.message);}
+      else setErro(e.message||"Erro ao criar agendamento. Tente de novo.");
+    }
+    setSalvando(false);
+  }
   return(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -382,12 +434,24 @@ function NovoModal({onClose,onCriado}){
         <div className="form-grid">
           <div className="form-group"><label className="form-label">Tipo</label><select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>{Object.entries(TIPOS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}</select></div>
           <div className="form-group"><label className="form-label">Duração</label><select className="form-input" value={form.duracao_min} onChange={e=>set("duracao_min",+e.target.value)}><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 hora</option><option value={90}>1h30</option></select></div>
-          <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>set("data",e.target.value)} min={dataLocalISO(new Date())}/></div>
-          <div className="form-group"><label className="form-label">Horário</label><select className="form-input" value={form.horario} onChange={e=>set("horario",e.target.value)}>{slots().map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+          <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>{set("data",e.target.value);setForaHorario(false);setConfirmarMesmoAssim(false);}} min={dataLocalISO(new Date())}/></div>
+          <div className="form-group"><label className="form-label">Horário</label><select className="form-input" value={form.horario} onChange={e=>{set("horario",e.target.value);setForaHorario(false);setConfirmarMesmoAssim(false);}}>{slots().map(s=><option key={s} value={s}>{s}</option>)}</select></div>
         </div>
-        {isManager()&&<div className="form-group"><label className="form-label">Vendedor</label><select className="form-input" value={form.vendedor_nome} onChange={e=>set("vendedor_nome",e.target.value)}><option value="">Selecionar...</option>{["Dariana","Alex","Wolni"].map(n=><option key={n} value={n}>{n}</option>)}</select></div>}
+        {isManager()&&<div className="form-group"><label className="form-label">Vendedor</label><select className="form-input" value={form.vendedor_id} onChange={e=>set("vendedor_id",e.target.value?Number(e.target.value):"")}><option value="">Selecionar...</option>{vendedores.map(v=><option key={v.id} value={v.id}>{v.nome}</option>)}</select></div>}
         <div className="form-group"><label className="form-label">Observações</label><textarea className="form-input" value={form.observacoes} onChange={e=>set("observacoes",e.target.value)} rows={2} style={{resize:"vertical"}}/></div>
-        <div style={{display:"flex",gap:8}}><button className="btn btn-ghost" onClick={onClose} style={{flex:1}}>Cancelar</button><button className="btn btn-primary" onClick={submit} style={{flex:1}}><i className="ti ti-calendar-plus"/> Agendar</button></div>
+        {erro&&<div style={{color:foraHorario?"var(--warning)":"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:foraHorario?"rgba(230,168,23,.1)":"rgba(224,82,82,.1)",borderRadius:8}}>
+          <i className="ti ti-alert-triangle" style={{fontSize:14}}/> {erro}
+        </div>}
+        {foraHorario&&<div className="form-group form-check">
+          <input type="checkbox" id="confirmar_fora_horario" checked={confirmarMesmoAssim} onChange={e=>setConfirmarMesmoAssim(e.target.checked)}/>
+          <label htmlFor="confirmar_fora_horario">Agendar mesmo assim, fora do horário padrão (o vendedor está liberando esse horário)</label>
+        </div>}
+        <div style={{display:"flex",gap:8,marginTop:foraHorario?12:0}}>
+          <button className="btn btn-ghost" onClick={onClose} style={{flex:1}}>Cancelar</button>
+          <button className="btn btn-primary" onClick={submit} disabled={salvando||(foraHorario&&!confirmarMesmoAssim)} style={{flex:1}}>
+            {salvando?<span className="spinner"/>:<><i className="ti ti-calendar-plus"/> Agendar</>}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -438,7 +502,7 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
               <div className="cal-cel-chips">
                 {eventos.map(ev=>{
                   const tipo=TIPOS[ev.tipo]||{icon:"📅",cor:"var(--muted)"};
-                  return <span key={ev.id} className="cal-chip" style={{background:`${tipo.cor}22`,color:tipo.cor}}>{ev.hora} {ev.cliente_nome||"—"}</span>;
+                  return <span key={ev.id} className="cal-chip" style={{background:`${tipo.cor}22`,color:tipo.cor}}>{tipo.icon} {ev.hora} {ev.cliente_nome||"—"}</span>;
                 })}
                 {sobrando>0&&<span className="cal-chip cal-chip-mais">+{sobrando} mais</span>}
               </div>
@@ -495,7 +559,10 @@ export default function Agenda(){
   const agAbertoAtual=agAberto?doDia.find(a=>a.id===agAberto):null;
 
   async function handleStatus(id,status,estagio){try{await atualizarStatusAgendamento(id,status,estagio);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
-  async function handleReagendar(id,data_hora){try{await reagendarAgendamento(id,data_hora);}catch{}load();}
+  // 2026-07-28: antes engolia qualquer erro (catch{} vazio) e recarregava como se
+  // tivesse funcionado — agora deixa o erro subir pro AgendaCard tratar (mostrar o
+  // motivo real e oferecer "mesmo assim" quando for fora de horário).
+  async function handleReagendar(id,data_hora,ignorar_horario){await reagendarAgendamento(id,data_hora,ignorar_horario);load();}
   async function handleReagendarLara(id){try{await pedirReagendamentoLara(id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status:"aguardando_reagendamento_lara"}:ag));}
   function handleVendaFeita(ag){setVendaFeitaAviso({ag,veiculo:acharVeiculo(veiculos,ag.veiculo)});setAgAberto(null);}
 
@@ -527,7 +594,17 @@ export default function Agenda(){
       {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
       {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
       {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {!erro&&!loading&&doDia.length>0&&<GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/>}
+      {/* 2026-07-28: grade horizontal (estilo Google Agenda) é ótima no desktop, mas
+          no celular obrigava rolar de lado pra ver o dia inteiro e o bloco ficava
+          pequeno demais pra ler direito — virava "abrir o resumo" em 2 toques (tocar
+          no dia, depois no bloco). No mobile agora é lista vertical com o card
+          completo direto na tela (mesmo card do modal), sem precisar tocar de novo. */}
+      {!erro&&!loading&&doDia.length>0&&<div className="d-desktop"><GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/></div>}
+      {!erro&&!loading&&<div className="d-mobile">
+        {doDia.filter(ag=>ag.status!=="cancelado"&&ag.tipo!=="bloqueio"&&!ag.ocupado).map(ag=>(
+          <AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>
+        ))}
+      </div>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={()=>load()}/>}
       {!readOnly&&horariosModal&&<HorariosModal onClose={()=>setHorariosModal(false)}/>}
