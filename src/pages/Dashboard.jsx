@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDashboard, getMetricasDashboard, updateInvestimentoAnuncios } from "../api.js";
+import { getDashboard, getMetricasDashboard, updateInvestimentoAnuncios, updateMetaVendas } from "../api.js";
 import { getUser } from "../auth.js";
 
 /* ─── helpers ─── */
@@ -104,6 +104,60 @@ function MarketingMetrics({ midia, isAdminMaster, onSaved }) {
   );
 }
 
+// "meta: 12" era fixo pra qualquer loja/período (achado 2026-07-31, auditoria
+// dashboard) — mesmo padrão de edição do investimento em anúncios, por loja.
+function MetaVendas({ midia, onSaved }) {
+  const lojas = midia?.lojas || [];
+  const [editLojaId, setEditLojaId] = useState(midia?.loja_id || lojas[0]?.id || 1);
+  const lojaAtual = lojas.find(l => l.id === editLojaId);
+  const [valor, setValor] = useState(
+    String(lojaAtual?.meta_vendas_mes ?? midia?.meta_vendas_mes ?? 0)
+  );
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => {
+    const base = lojas.find(l => l.id === editLojaId)?.meta_vendas_mes
+      ?? midia?.meta_vendas_mes ?? 0;
+    setValor(String(base));
+    setMsg(null);
+  }, [editLojaId, midia?.meta_vendas_mes, midia?.loja_id]);
+
+  if (!midia) return null;
+
+  async function salvar() {
+    const n = Number(valor);
+    if (!Number.isInteger(n) || n < 0) { setMsg("Valor inválido (número inteiro)"); return; }
+    const loja_id = midia.loja_id || editLojaId;
+    if (!loja_id) { setMsg("Selecione a loja"); return; }
+    setSaving(true); setMsg(null);
+    try {
+      await updateMetaVendas(n, loja_id);
+      setMsg("Salvo");
+      onSaved?.();
+    } catch {
+      setMsg("Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{marginBottom:12}}>
+      <div className="card-title"><i className="ti ti-target-arrow"/> Meta de vendas do mês</div>
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <input className="form-input" type="number" min="0" step="1"
+          value={valor} onChange={e=>setValor(e.target.value)}
+          style={{marginBottom:0,fontSize:16,fontWeight:700,maxWidth:100}}/>
+        <button className="btn btn-primary" style={{padding:"8px 14px"}} disabled={saving} onClick={salvar}>
+          {saving?"...":"Salvar"}
+        </button>
+        {msg && <span className="metric-delta" style={{marginLeft:0}}>{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
 function TabOportunidades({ data, isAdminMaster, onMidiaSaved }) {
   const { resumo, funil, vendedores, canais, midia } = data;
   const metrics = [
@@ -127,6 +181,7 @@ function TabOportunidades({ data, isAdminMaster, onMidiaSaved }) {
       </div>
 
       <MarketingMetrics midia={midia} isAdminMaster={isAdminMaster} onSaved={onMidiaSaved}/>
+      <MetaVendas midia={midia} onSaved={onMidiaSaved}/>
 
       {/* Funil */}
       <div className="card" style={{marginBottom:12}}>
@@ -237,7 +292,6 @@ function TabJornada({ data }) {
           { label:"LEADS QUENTES",  value:agente_ia.leads_quentes,  sub:"temperatura" },
           { label:"SCORE QUENTE",   value:agente_ia.score_quente,   sub:"≥60 pts" },
           { label:"MORNOS",         value:agente_ia.mornos_reat,    sub:"nutrição" },
-          { label:"TAXA RESPOSTA",  value:agente_ia.taxa_resposta!==null?`${agente_ia.taxa_resposta}%`:"sem dados", sub:"follow-ups respondidos" },
           { label:"HANDOFFS",       value:agente_ia.handoffs,       sub:"para vendedor" },
           { label:"FOLLOW-UPS",     value:agente_ia.followups,      sub:"enviados" },
         ].map((m,i)=>(
@@ -464,7 +518,9 @@ function TabMetricas({ metricas, loading, erro }) {
       {/* 2026-07-23 (auditoria): "Resumo por etapa" (tabela) removida daqui — repetia os
           mesmos números do funil de referência acima, só em formato de tabela. As taxas
           etapa-a-etapa abaixo são informação nova (não estão nas barras acima), por isso
-          continuam. */}
+          continuam. 2026-08-01: "Fechamento por follow-up" removido daqui também — não é
+          uma taxa etapa-a-etapa, é o mesmo card que já aparece no grid de cima
+          (funilReferencia.fechamentoPorFollowup), duplicado sem motivo. */}
       {funilReferencia && <div className="card" style={{marginBottom:12,overflowX:"auto"}}>
         <div className="card-title"><i className="ti ti-percentage"/> Taxas de conversão por etapa</div>
         {/* Taxas etapa-a-etapa (não % do total) — respondem "qual etapa específica está
@@ -481,11 +537,6 @@ function TabMetricas({ metricas, loading, erro }) {
           <div>
             <div style={{fontSize:11,color:"var(--muted)"}}>% Fechou (de compareceu)</div>
             <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.fecharam.pctEtapaAnterior}%</div>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:"var(--muted)"}}>Fechamento por follow-up</div>
-            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.fechamentoPorFollowup.pct}%</div>
-            <div style={{fontSize:11,color:"var(--muted)"}}>{funilReferencia.fechamentoPorFollowup.comFollowup} de {funilReferencia.fechamentoPorFollowup.totalFechadas} vendas</div>
           </div>
         </div>
       </div>}

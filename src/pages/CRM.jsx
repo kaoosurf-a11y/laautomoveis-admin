@@ -161,7 +161,7 @@ const AGENDAMENTO_IA_INFO={
   desviou_assunto:{background:"#e0525222",color:"#e05252"},
 };
 
-function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
+function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,acaoInicial}){
   const[excluindo,setExcluindo]=useState(false);
   async function handleExcluir(){
     if(!confirm(`Excluir "${lead.nome}" do CRM? Isso remove o lead do Kanban (não aparece mais em nenhuma coluna). Use só pra lead de teste ou cadastrado por engano.`))return;
@@ -311,6 +311,12 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
     setConfirmandoAgendamento(false);
     setDataAgendamentoInput("");
   }
+  // Arrastar direto pra "Venda concluída"/"Agendados" no board (fora do modal) pulava
+  // esses dois pickers inteiramente — era o principal motivo de nenhuma venda real ter
+  // veiculo_vendido_id/valor preenchido (achado 2026-07-31). Quando o board intercepta
+  // esse drop, ele abre o modal já aqui com acaoInicial setado, reusando o mesmo fluxo
+  // do dropdown em vez de duplicar UI.
+  useEffect(()=>{if(acaoInicial)handleEstagio(acaoInicial);},[]); // eslint-disable-line react-hooks/exhaustive-deps
   return(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -641,6 +647,7 @@ export default function CRM(){
   const[loading,setLoading]=useState(true);
   const[busca,setBusca]=useState("");
   const[leadSel,setLeadSel]=useState(null);
+  const[acaoInicial,setAcaoInicial]=useState(null);
   const[novoModal,setNovoModal]=useState(false);
   const[isMobile,setIsMobile]=useState(window.innerWidth<768);
   const[erro,setErro]=useState(null);
@@ -736,6 +743,13 @@ export default function CRM(){
     e.preventDefault();
     if(colunaSobre!==estKey)setColunaSobre(estKey);
   }
+  function acharLeadPorId(id){
+    for(const k in kanban){
+      const f=(kanban[k]||[]).find(l=>String(l.id)===String(id));
+      if(f)return f;
+    }
+    return null;
+  }
   function onColDrop(e,estKey){
     e.preventDefault();
     setColunaSobre(null);
@@ -746,6 +760,15 @@ export default function CRM(){
     // volta pra ela manda pro último estagio do grupo (negociando).
     const alvo=estagios.find(e=>e.key===estKey);
     const realKey=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : estKey;
+    // "Venda concluída": arrastar direto pulava o picker de veículo/valor por completo
+    // (era o principal motivo do ticket médio do Dashboard ficar zerado — achado
+    // 2026-07-31). Em vez de mover na hora, abre o modal já com o picker aberto —
+    // mesmo fluxo do dropdown, só sem o clique extra de abrir o card primeiro.
+    if(realKey==="fechado_ganho"){
+      const lead=acharLeadPorId(leadId);
+      if(lead){setLeadSel(lead);setAcaoInicial("fechado_ganho");}
+      return;
+    }
     handleMover(leadId,realKey);
   }
 
@@ -819,7 +842,7 @@ export default function CRM(){
                       draggable={!readOnly}
                       onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
                       onDragEnd={readOnly?undefined:pararAutoScroll}
-                      onClick={()=>setLeadSel(lead)}
+                      onClick={()=>{setLeadSel(lead);setAcaoInicial(null);}}
                       style={{cursor:readOnly?"pointer":"grab",border:`2px solid ${est.cor}`,boxShadow:`0 0 8px ${est.cor}4d`}}
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
@@ -853,7 +876,7 @@ export default function CRM(){
           })}
         </div>
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId,dataHoraAgendamento)=>{handleMover(id,est,motivo,veiculoVendidoId,dataHoraAgendamento);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
+      {leadSel&&<LeadModal lead={leadSel} acaoInicial={acaoInicial} onClose={()=>{setLeadSel(null);setAcaoInicial(null);}} onMover={(id,est,motivo,veiculoVendidoId,dataHoraAgendamento)=>{handleMover(id,est,motivo,veiculoVendidoId,dataHoraAgendamento);setLeadSel(null);setAcaoInicial(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );

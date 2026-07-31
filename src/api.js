@@ -90,6 +90,9 @@ export async function getMetricasDashboard(periodo="mes",horas=24,desde=null,ate
 export async function updateInvestimentoAnuncios(investimento_mensal, loja_id){
   return req("/api/dashboard/investimento",{method:"PATCH",body:JSON.stringify({investimento_mensal,loja_id})});
 }
+export async function updateMetaVendas(meta_vendas_mes, loja_id){
+  return req("/api/dashboard/meta-vendas",{method:"PATCH",body:JSON.stringify({meta_vendas_mes,loja_id})});
+}
 export async function getMetricasVendedor(id){ return req(`/api/metrics/vendedor/${id}`); }
 export async function getFollowups() {
   const u=getUser(); const q=u?.role==="vendedor"?`?vendedor_id=${u.id}`:"";
@@ -107,7 +110,7 @@ export async function getAgenda(data) {
   return req(`/api/agenda?${q}`);
 }
 export async function criarAgendamento(d)             { return req("/api/agenda",{method:"POST",body:JSON.stringify(d)}); }
-export async function atualizarStatusAgendamento(id,s,estagio){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify(estagio?{status:s,estagio}:{status:s})}); }
+export async function atualizarStatusAgendamento(id,s,estagio,veiculo_vendido_id){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({status:s,...(estagio?{estagio}:{}),...(veiculo_vendido_id?{veiculo_vendido_id}:{})})}); }
 export async function reagendarAgendamento(id,data_hora,ignorar_horario){ return req(`/api/agenda/${id}`,{method:"PATCH",body:JSON.stringify({data_hora,...(ignorar_horario?{ignorar_horario}:{})})}); }
 export async function pedirReagendamentoLara(id){ return req(`/api/agenda/${id}/reagendar-lara`,{method:"POST"}); }
 export async function getResumoMes(ano,mes){ return req(`/api/agenda/resumo-mes?ano=${ano}&mes=${mes}`); }

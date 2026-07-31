@@ -268,6 +268,15 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
   const[escolhendoReagendar,setEscolhendoReagendar]=useState(false);
   const[reagendando,setReagendando]=useState(false);
   const[escolhendoMotivo,setEscolhendoMotivo]=useState(false);
+  // Veículo vendido (2026-07-31, auditoria dashboard): "Comprou" fechava a venda sem
+  // nunca pedir qual veículo — era o principal caminho real de fechamento (mais usado
+  // que o dropdown do CRM) e por isso o motivo de 100% das vendas reais estarem sem
+  // veiculo_vendido_id/valor, zerando o ticket médio do Dashboard. Backend
+  // (estagioLead.js) auto-preenche crm_leads.valor a partir do preço de tabela quando
+  // recebe esse id — opcional, "Confirmar sem vincular" ainda fecha a venda normalmente.
+  const[escolhendoVeiculoVenda,setEscolhendoVeiculoVenda]=useState(false);
+  const[veiculosEstoque,setVeiculosEstoque]=useState(null);
+  const[veiculoVendaId,setVeiculoVendaId]=useState("");
   const[pedidoLaraEnviado,setPedidoLaraEnviado]=useState(false);
   const iso=new Date(ag.data_hora);
   const[novaData,setNovaData]=useState(dataLocalISO(iso));
@@ -294,8 +303,13 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
     onStatus(ag.id,"realizado_nao_comprou",estagio);
     setEscolhendoMotivo(false);
   }
+  function abrirEscolhaVeiculoVenda(){
+    setEscolhendoVeiculoVenda(true);
+    if(!veiculosEstoque)veiculosApi.getVeiculos().then(setVeiculosEstoque).catch(()=>setVeiculosEstoque([]));
+  }
   function confirmarComprou(){
-    onStatus(ag.id,"realizado_comprou");
+    onStatus(ag.id,"realizado_comprou",undefined,veiculoVendaId||undefined);
+    setEscolhendoVeiculoVenda(false);
     onVendaFeita(ag);
   }
   return(
@@ -371,12 +385,29 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
           </div>
         </div>
       )}
+      {escolhendoVeiculoVenda&&(
+        <div style={{marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6}}>
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:6}}>Qual veículo do estoque foi vendido? (opcional, mas ajuda a fechar o histórico certo)</div>
+          {veiculosEstoque===null?(
+            <div style={{fontSize:12,color:"var(--muted)"}}><span className="spinner" style={{marginRight:6}}/>Carregando estoque...</div>
+          ):(
+            <select className="form-input" style={{marginBottom:6,fontSize:12}} value={veiculoVendaId} onChange={e=>setVeiculoVendaId(e.target.value)}>
+              <option value="">— não vincular a um veículo específico —</option>
+              {veiculosEstoque.map(v=><option key={v.id} value={v.id}>{v.marca} {v.modelo} {v.ano}</option>)}
+            </select>
+          )}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <button className="btn btn-primary" style={{fontSize:12,padding:"6px 10px"}} onClick={confirmarComprou}>Confirmar venda</button>
+            <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>{setEscolhendoVeiculoVenda(false);setVeiculoVendaId("");}}>Cancelar</button>
+          </div>
+        </div>
+      )}
       {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
-        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&!escolhendoReagendar&&<>
+        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&!escolhendoReagendar&&!escolhendoVeiculoVenda&&<>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setEscolhendoReagendar(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={confirmarComprou}><i className="ti ti-check"/> Veio e comprou</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={abrirEscolhaVeiculoVenda}><i className="ti ti-check"/> Veio e comprou</button>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>setEscolhendoMotivo(true)}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
           {/* 2026-07-15: "não veio" (no-show) tinha o MESMO status de "cancelado" (cancelamento
               prévio) — impossível medir taxa de comparecimento porque os dois casos ficavam
@@ -558,7 +589,7 @@ export default function Agenda(){
   // na hora qualquer mudança de status/reagendamento feita nele mesmo.
   const agAbertoAtual=agAberto?doDia.find(a=>a.id===agAberto):null;
 
-  async function handleStatus(id,status,estagio){try{await atualizarStatusAgendamento(id,status,estagio);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
+  async function handleStatus(id,status,estagio,veiculo_vendido_id){try{await atualizarStatusAgendamento(id,status,estagio,veiculo_vendido_id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
   // 2026-07-28: antes engolia qualquer erro (catch{} vazio) e recarregava como se
   // tivesse funcionado — agora deixa o erro subir pro AgendaCard tratar (mostrar o
   // motivo real e oferecer "mesmo assim" quando for fora de horário).
