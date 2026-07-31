@@ -263,10 +263,13 @@ export default function FollowUps(){
 
   const hoje=new Date().toDateString();
   const ehHoje=f=>f.horario&&new Date(f.horario).toDateString()===hoje;
+  // followups.enviado é uma coluna morta (achado 2026-08-01, auditoria Cursor confirmada
+  // no banco: 0 linhas com enviado=true, nenhum processo automático escreve nela) — usar
+  // ela aqui sempre dava vencido=true pra QUALQUER card com horario no passado, mesmo os
+  // que já foram enviados de verdade (o envio real só fica registrado em
+  // followup_mensagens.status/la_followup_envios_log). ehVencido fica só de fallback pros
+  // tipos sem sequência de mensagens populada — ver vencidosDoCard/mensagemVencida abaixo.
   const ehVencido=f=>f.horario&&new Date(f.horario)<new Date()&&!f.enviado&&!ehHoje(f);
-  const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&ehVencido(f));
-  const totalEmFollowup=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.length,0);
-  const totalHoje=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehHoje).length,0);
   // Auditoria 2026-07-30/31: o badge de "Vencidos" contava 1 por card (followups.horario,
   // um timestamp único por lead) mas um card pode ter várias mensagens agendadas em
   // sequência (followup_mensagens) — cada uma vencida conta separado pra quem processa
@@ -276,6 +279,13 @@ export default function FollowUps(){
   // pros tipos que não têm sequência de mensagens populada (ex: match_estoque).
   const mensagemVencida=m=>m.status==="agendada"&&m.agendado_para&&new Date(m.agendado_para)<new Date();
   const vencidosDoCard=f=>(f.mensagens&&f.mensagens.length)?f.mensagens.filter(mensagemVencida).length:(ehVencido(f)?1:0);
+  // 2026-08-01: a LISTA (aba "Vencidos") ainda filtrava só com ehVencido puro — mesmo bug
+  // do badge, só que na lista de cards em vez do número. Reusa vencidosDoCard aqui também,
+  // pra card com mensagens reais só aparecer como vencido quando tem mensagem
+  // genuinamente vencida (não card_horario-no-passado-mas-já-enviado).
+  const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&vencidosDoCard(f)>0);
+  const totalEmFollowup=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.length,0);
+  const totalHoje=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehHoje).length,0);
   const totalVencidos=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.reduce((s2,f)=>s2+vencidosDoCard(f),0),0);
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
