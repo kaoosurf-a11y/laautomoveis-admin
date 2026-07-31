@@ -416,9 +416,13 @@ function TabMetricas({ metricas, loading, erro }) {
           <div className="metric-delta" style={{color:"var(--muted)"}}>{iaVsHumano.precisouHumano} leads</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-clock-check"/> Follow-ups cumpridos</div>
+          {/* 2026-07-31 (auditoria de dashboard): rótulo antigo "cumpridos" media
+          respondeu=true (cliente respondeu ao follow-up), não "follow-up foi enviado
+          com sucesso" — nome ajustado pra bater com o que o número realmente mostra,
+          sem mudar o cálculo em si. */}
+          <div className="metric-label"><i className="ti ti-clock-check"/> Follow-ups respondidos</div>
           <div className="metric-value">{followups.pct}%</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>{followups.cumpridos} de {followups.total}</div>
+          <div className="metric-delta" style={{color:"var(--muted)"}}>{followups.cumpridos} de {followups.total} respondeu</div>
         </div>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-alert-triangle"/> Sem resposta {semResposta.horasParametro}h+</div>

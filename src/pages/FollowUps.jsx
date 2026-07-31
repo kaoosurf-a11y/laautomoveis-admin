@@ -267,7 +267,16 @@ export default function FollowUps(){
   const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&ehVencido(f));
   const totalEmFollowup=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.length,0);
   const totalHoje=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehHoje).length,0);
-  const totalVencidos=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehVencido).length,0);
+  // Auditoria 2026-07-30/31: o badge de "Vencidos" contava 1 por card (followups.horario,
+  // um timestamp único por lead) mas um card pode ter várias mensagens agendadas em
+  // sequência (followup_mensagens) — cada uma vencida conta separado pra quem processa
+  // o envio de verdade (Kanban Sender), então o badge mostrava menos do que o real
+  // (achado: contagem por card vs contagem por mensagem individual divergiam). Conta por
+  // mensagem quando o card tem `mensagens` carregado; cai pro card-level (ehVencido) só
+  // pros tipos que não têm sequência de mensagens populada (ex: match_estoque).
+  const mensagemVencida=m=>m.status==="agendada"&&m.agendado_para&&new Date(m.agendado_para)<new Date();
+  const vencidosDoCard=f=>(f.mensagens&&f.mensagens.length)?f.mensagens.filter(mensagemVencida).length:(ehVencido(f)?1:0);
+  const totalVencidos=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.reduce((s2,f)=>s2+vencidosDoCard(f),0),0);
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
