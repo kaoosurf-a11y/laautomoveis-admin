@@ -270,6 +270,15 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
   const[veiculosEstoque,setVeiculosEstoque]=useState(null);
   const[veiculoVendaId,setVeiculoVendaId]=useState("");
   const[confirmandoVenda,setConfirmandoVenda]=useState(false);
+  // "Agendados" (2026-07-31, auditoria Cursor/GPT): NUNCA supor um horário quando o
+  // vendedor não informa um. O campo de data começa vazio de propósito (sem default
+  // "amanhã") — o backend (crm.js) já espelha essa regra: sem data_hora_agendamento,
+  // o card só muda de coluna, nenhum registro de Agenda é criado (logo nenhum lembrete
+  // automático fictício sai pelo WhatsApp). "Mover sem marcar hora" é uma ação
+  // explícita do vendedor, não um fallback silencioso.
+  const[pedindoDataAgendamento,setPedindoDataAgendamento]=useState(false);
+  const[dataAgendamentoInput,setDataAgendamentoInput]=useState("");
+  const[confirmandoAgendamento,setConfirmandoAgendamento]=useState(false);
   function handleEstagio(novoKey){
     const alvo=estagios.find(e=>e.key===novoKey);
     // Coluna virtual ("Para atender"): manda pro último estagio real do grupo
@@ -278,6 +287,10 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
     if(real==="fechado_ganho"){
       setPedindoVeiculoVenda(true);
       if(!veiculosEstoque)veiculosApi.getVeiculos().then(setVeiculosEstoque).catch(()=>setVeiculosEstoque([]));
+      return;
+    }
+    if(real==="agendados"){
+      setPedindoDataAgendamento(true);
       return;
     }
     setEst(real);
@@ -289,6 +302,14 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
     onMover(lead.id,"fechado_ganho",null,veiculoVendaId||null);
     setPedindoVeiculoVenda(false);
     setConfirmandoVenda(false);
+  }
+  function confirmarMoveAgendados(){
+    setConfirmandoAgendamento(true);
+    setEst("agendados");
+    onMover(lead.id,"agendados",null,null,dataAgendamentoInput||undefined);
+    setPedindoDataAgendamento(false);
+    setConfirmandoAgendamento(false);
+    setDataAgendamentoInput("");
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
@@ -471,6 +492,19 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
                 </button>
               </div>
             </div>
+          ):pedindoDataAgendamento?(
+            <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
+              <div style={{fontSize:13,color:"var(--muted)",marginBottom:8}}>
+                Qual o horário real combinado com o cliente? Deixe em branco pra só mover o card, sem marcar um horário — nenhum lembrete automático sai sem uma data real aqui.
+              </div>
+              <input type="datetime-local" className="form-input" value={dataAgendamentoInput} onChange={e=>setDataAgendamentoInput(e.target.value)}/>
+              <div style={{display:"flex",gap:8,marginTop:8}}>
+                <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setPedindoDataAgendamento(false);setDataAgendamentoInput("");}}>Cancelar</button>
+                <button className="btn btn-primary" style={{flex:1}} onClick={confirmarMoveAgendados} disabled={confirmandoAgendamento}>
+                  {confirmandoAgendamento?<span className="spinner"/>:dataAgendamentoInput?"Confirmar agendamento":"Mover sem marcar hora"}
+                </button>
+              </div>
+            </div>
           ):(<>
             <select className="form-input" value={colAtual?.key||est} onChange={e=>handleEstagio(e.target.value)}>
               {estagios.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
@@ -638,7 +672,7 @@ export default function CRM(){
   // a cada clique. O follow-up automático (estágio-motivo) roda no backend, então
   // um PATCH de estágio já basta pra tudo — arrastar ou usar o dropdown têm o
   // mesmo efeito.
-  async function handleMover(id,est,motivo,veiculo_vendido_id){try{await moverLead(id,est,motivo,veiculo_vendido_id);}catch{}load(true);}
+  async function handleMover(id,est,motivo,veiculo_vendido_id,data_hora_agendamento){try{await moverLead(id,est,motivo,veiculo_vendido_id,data_hora_agendamento);}catch{}load(true);}
 
   const todos=estagios.flatMap(e=>leadsDaColuna(e,kanban));
   const filtrados=todos.filter(l=>leadBate(l,busca));
@@ -819,7 +853,7 @@ export default function CRM(){
           })}
         </div>
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId,dataHoraAgendamento)=>{handleMover(id,est,motivo,veiculoVendidoId,dataHoraAgendamento);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );
