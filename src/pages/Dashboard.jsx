@@ -541,6 +541,46 @@ function TabMetricas({ metricas, loading, erro }) {
         </div>
       </div>}
 
+      {/* 2026-08-04: qualidade de atendimento (pedido do usuário) — tempo de resposta da
+          IA e silêncio pós-handoff aparecem pra admin_master+gerente igual o resto dessa
+          aba; falhas técnicas é reforçado no backend pra só admin_master (o campo nem
+          vem na resposta pra gerente), aqui a checagem em cima disso é só reforço de UI. */}
+      {metricas.qualidade && (
+        <div className="metrics-grid" style={{marginBottom:12}}>
+          <div className="metric-card">
+            <div className="metric-label"><i className="ti ti-bolt"/> Resp. média da IA</div>
+            <div className="metric-value">{metricas.qualidade.tempoRespostaIaSeg!=null?`${metricas.qualidade.tempoRespostaIaSeg}s`:"sem dados"}</div>
+            <div className="metric-delta" style={{color:"var(--muted)"}}>até a 1ª resposta da Lara</div>
+          </div>
+          <div className="metric-card">
+            <div className="metric-label"><i className="ti ti-message-off"/> Silêncio pós-handoff</div>
+            <div className="metric-value" style={{color:metricas.qualidade.silencioPosHandoff.pct>20?"#e07b7b":undefined}}>{metricas.qualidade.silencioPosHandoff.pct}%</div>
+            <div className="metric-delta" style={{color:"var(--muted)"}}>{metricas.qualidade.silencioPosHandoff.semResposta} de {metricas.qualidade.silencioPosHandoff.total} sem 1ª resposta do vendedor</div>
+          </div>
+          {metricas.qualidade.falhaTecnica && (
+            <div className="metric-card">
+              <div className="metric-label"><i className="ti ti-alert-triangle"/> Falhas técnicas</div>
+              <div className="metric-value" style={{color:metricas.qualidade.falhaTecnica.total>0?"#e07b7b":undefined}}>{metricas.qualidade.falhaTecnica.total}</div>
+              <div className="metric-delta" style={{color:"var(--muted)"}}>neste período</div>
+            </div>
+          )}
+        </div>
+      )}
+      {metricas.qualidade?.falhaTecnica?.recentes?.length > 0 && (
+        <div className="card" style={{marginBottom:12,overflowX:"auto"}}>
+          <div className="card-title" style={{color:"#e07b7b"}}><i className="ti ti-alert-octagon"/> Falhas técnicas recentes</div>
+          {metricas.qualidade.falhaTecnica.recentes.map((f,i)=>(
+            <div key={i} style={{padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:10,fontSize:12,color:"var(--muted)"}}>
+                <span>{f.phone} · {f.agente||"—"}</span>
+                <span>{new Date(f.created_at).toLocaleString("pt-BR")}</span>
+              </div>
+              {f.texto_cliente && <div style={{fontSize:13,color:"var(--fg)",marginTop:2}}>"{f.texto_cliente}"</div>}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-alert-octagon"/> Gargalo — tempo parado no estágio atual</div>
         {tempoPorEstagio.gargaloAtual?.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Sem dados suficientes.</p>}
