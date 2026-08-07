@@ -260,8 +260,9 @@ function TabJornada({ data }) {
   const { jornada, agente_ia, followups_hoje } = data;
   const TIPO_LABEL = {
     sem_credito:"Sem crédito", vai_pensar:"Vai pensar",
-    nao_achou_carro:"Não achou o carro", parou_responder:"Parou de responder",
+    nao_achou_carro:"Não achou o carro", carros_baratos:"Carros baratos", parou_responder:"Parou de responder",
     pos_venda_satisfacao:"Pós-venda", match_estoque:"Veículo compatível chegou!",
+    match_carro_barato:"Carro barato chegou!",
   };
   return (
     <>

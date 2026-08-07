@@ -15,6 +15,10 @@ const FOLLOWUP_LABEL={
   parou_responder:"Parou de responder",
   pos_venda_satisfacao:"Pós-venda",
   match_estoque:"Veículo compatível chegou!",
+  // match_carro_barato (2026-08-07): mesmo padrão de match_estoque, avisa quando
+  // chega um veículo dentro da faixa de preço que o lead de "Carros baratos" procurava
+  // (ver backend lib/estoqueMatch.js::notificarMatchCarroBarato).
+  match_carro_barato:"Carro barato chegou!",
 };
 
 // Colunas do Kanban. Redesenho 2026-07: "Em contato"+"Negociando" viraram uma coluna
@@ -54,6 +58,13 @@ const ESTAGIOS_ADMIN=[
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#17A2B8"},
+  // carros_baratos (2026-08-07, pedido explícito): balde manual pra lead que queria
+  // carro até R$30mil (Gol, Celta etc.) e não tinha em estoque na hora — mesmo
+  // espírito de "Não achou o carro", mas por faixa de preço. Sem gatilho de
+  // follow-up automático ao entrar (backend não inclui em ESTAGIOS_GATILHO_FOLLOWUP,
+  // igual "Baú") — só dispara aviso quando chega carro dentro da faixa no estoque.
+  // Cor teal (#009688) escolhida por ser a única família ainda não usada.
+  {key:"carros_baratos",label:"Carros baratos",cor:"#009688"},
   {key:"parou_responder",label:"Parou de responder",cor:"#82C91E"},
   {key:"feirao",label:"Feirão",cor:"#FFD43B"},
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},
@@ -74,6 +85,7 @@ const ESTAGIOS_VENDEDOR=[
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#17A2B8"},
+  {key:"carros_baratos",label:"Carros baratos",cor:"#009688"},
   {key:"parou_responder",label:"Parou de responder",cor:"#82C91E"},
   {key:"feirao",label:"Feirão",cor:"#FFD43B"},
   {key:"fecha_mes",label:"Fecha mês",cor:"#E74C3C"},

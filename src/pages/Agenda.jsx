@@ -8,6 +8,7 @@ const ESTAGIOS_NAO_COMPROU=[
   {key:"sem_credito",label:"Sem crédito"},
   {key:"vai_pensar",label:"Vai pensar"},
   {key:"nao_achou_carro",label:"Não achou o carro"},
+  {key:"carros_baratos",label:"Carros baratos"},
   {key:"parou_responder",label:"Parou de responder"},
 ];
 
