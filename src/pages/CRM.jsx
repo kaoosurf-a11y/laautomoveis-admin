@@ -159,6 +159,25 @@ function followupAtrasado(lead){return lead.followup_tipo&&lead.followup_horario
 // depende de telefone), mas ninguém consegue contatar automaticamente — sinaliza pro
 // vendedor que esse acompanhamento precisa ser manual/presencial, não vai sair sozinho.
 function followupSemContato(lead){return lead.followup_tipo&&!lead.telefone;}
+// DATE input precisa YYYY-MM-DD; Postgres/JSON costuma devolver ISO com hora.
+function toDateInput(v){if(!v)return"";return String(v).slice(0,10);}
+const ORIGEM_OPTS=[
+  ["presencial","Presencial (loja)"],
+  ["organico","Orgânico"],
+  ["site","Site"],
+  ["anuncio","Anúncio"],
+  ["reativacao","Campanha de reativação"],
+  ["particular","WhatsApp particular do vendedor"],
+];
+// Botão ✓ do padrão Observações — só aparece quando o campo está dirty.
+function DirtySaveBtn({dirty,salvando,onSave,title}){
+  if(!dirty)return null;
+  return(
+    <button className="btn btn-primary" style={{padding:"6px 12px"}} onClick={onSave} disabled={salvando} title={title||"Salvar"}>
+      {salvando?<span className="spinner"/>:<i className="ti ti-check"/>}
+    </button>
+  );
+}
 // Status do agendamento assistido pela Lara (agendamento_ia_status, espelhado de
 // la_leads). "solicitado"/"em_andamento" = ela ainda tá tentando; os outros 3 são
 // desfechos finais (ver n8n "LA - Agente Agendamento Restrito").
@@ -173,7 +192,7 @@ const AGENDAMENTO_IA_INFO={
   desviou_assunto:{background:"#e0525222",color:"#e05252"},
 };
 
-function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,acaoInicial}){
+function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
   const[excluindo,setExcluindo]=useState(false);
   async function handleExcluir(){
     if(!confirm(`Excluir "${lead.nome}" do CRM? Isso remove o lead do Kanban (não aparece mais em nenhuma coluna). Use só pra lead de teste ou cadastrado por engano.`))return;
@@ -238,6 +257,113 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
     }
     setSalvandoVeiculo(false);
   }
+  // Observações — mesmo campo do "Novo lead" (crm_leads.observacoes). Sempre
+  // visível no modal pra anotar detalhes da conversa; grava via PATCH genérico
+  // (atualizarLeadCRM), igual nome/veículo. Vazio é permitido (limpa a nota).
+  // LA V1 20260809: se ainda não existe observação manual, o campo abre pré-preenchido
+  // com o resumo que a própria IA já gerou no handoff (resumo_handoff, mesmo texto
+  // mandado como nota privada no Chatwoot) — vendedor não precisa abrir a conversa
+  // inteira pra saber o essencial, e pode editar/aceitar direto aqui. obsAtual continua
+  // refletindo só o que já está REALMENTE salvo (vazio até o vendedor confirmar), então
+  // o botão de salvar (dirty) já aparece habilitado nesse caso — um clique grava o
+  // resumo da IA como observação de verdade, ou o vendedor edita antes de salvar.
+  const[obsAtual,setObsAtual]=useState(lead.observacoes||"");
+  const[obsInput,setObsInput]=useState(lead.observacoes||lead.resumo_handoff||"");
+  const[salvandoObs,setSalvandoObs]=useState(false);
+  async function salvarObs(){
+    const v=obsInput;
+    if(v===obsAtual)return;
+    setSalvandoObs(true);
+    try{
+      await atualizarLeadCRM(lead.id,{observacoes:v.trim()?v:null});
+      setObsAtual(v);
+      onAtualizado?.();
+    }catch{
+      alert("Erro ao atualizar as observações. Tente novamente.");
+    }
+    setSalvandoObs(false);
+  }
+  // Campos complementares do "Novo lead" — mesmo PATCH /api/crm/leads/:id e ACL
+  // (blockManagerEdit + podeEditar). Vazio grava NULL pra limpar. Origem salva no
+  // onChange (igual temperatura); demais usam dirty + ✓.
+  const[telAtual,setTelAtual]=useState(lead.telefone||"");
+  const[telInput,setTelInput]=useState(lead.telefone||"");
+  const[salvandoTel,setSalvandoTel]=useState(false);
+  async function salvarTel(){
+    if(telInput===telAtual)return;
+    setSalvandoTel(true);
+    try{
+      await atualizarLeadCRM(lead.id,{telefone:telInput.trim()?telInput.trim():null});
+      setTelAtual(telInput.trim());
+      onAtualizado?.();
+    }catch(e){
+      alert(e?.message?.includes("409")||e?.status===409
+        ?"Já existe um lead com esse telefone."
+        :"Erro ao atualizar o telefone. Tente novamente.");
+    }
+    setSalvandoTel(false);
+  }
+  const[origemAtual,setOrigemAtual]=useState(lead.origem||"presencial");
+  const[salvandoOrigem,setSalvandoOrigem]=useState(false);
+  async function mudarOrigem(v){
+    if(v===origemAtual)return;
+    setSalvandoOrigem(true);
+    try{await atualizarLeadCRM(lead.id,{origem:v});setOrigemAtual(v);onAtualizado?.();}
+    catch{alert("Erro ao atualizar a origem. Tente novamente.");}
+    setSalvandoOrigem(false);
+  }
+  const[nascAtual,setNascAtual]=useState(toDateInput(lead.data_nascimento));
+  const[nascInput,setNascInput]=useState(toDateInput(lead.data_nascimento));
+  const[salvandoNasc,setSalvandoNasc]=useState(false);
+  async function salvarNasc(){
+    if(nascInput===nascAtual)return;
+    setSalvandoNasc(true);
+    try{
+      await atualizarLeadCRM(lead.id,{data_nascimento:nascInput.trim()?nascInput:null});
+      setNascAtual(nascInput);
+      onAtualizado?.();
+    }catch{alert("Erro ao atualizar a data de nascimento. Tente novamente.");}
+    setSalvandoNasc(false);
+  }
+  const[cidadeAtual,setCidadeAtual]=useState(lead.cidade||"");
+  const[cidadeInput,setCidadeInput]=useState(lead.cidade||"");
+  const[salvandoCidade,setSalvandoCidade]=useState(false);
+  async function salvarCidade(){
+    if(cidadeInput===cidadeAtual)return;
+    setSalvandoCidade(true);
+    try{
+      await atualizarLeadCRM(lead.id,{cidade:cidadeInput.trim()?cidadeInput.trim():null});
+      setCidadeAtual(cidadeInput.trim());
+      onAtualizado?.();
+    }catch{alert("Erro ao atualizar a cidade. Tente novamente.");}
+    setSalvandoCidade(false);
+  }
+  const[emailAtual,setEmailAtual]=useState(lead.email||"");
+  const[emailInput,setEmailInput]=useState(lead.email||"");
+  const[salvandoEmail,setSalvandoEmail]=useState(false);
+  async function salvarEmail(){
+    if(emailInput===emailAtual)return;
+    setSalvandoEmail(true);
+    try{
+      await atualizarLeadCRM(lead.id,{email:emailInput.trim()?emailInput.trim():null});
+      setEmailAtual(emailInput.trim());
+      onAtualizado?.();
+    }catch{alert("Erro ao atualizar o e-mail. Tente novamente.");}
+    setSalvandoEmail(false);
+  }
+  const[profAtual,setProfAtual]=useState(lead.profissao||"");
+  const[profInput,setProfInput]=useState(lead.profissao||"");
+  const[salvandoProf,setSalvandoProf]=useState(false);
+  async function salvarProf(){
+    if(profInput===profAtual)return;
+    setSalvandoProf(true);
+    try{
+      await atualizarLeadCRM(lead.id,{profissao:profInput.trim()?profInput.trim():null});
+      setProfAtual(profInput.trim());
+      onAtualizado?.();
+    }catch{alert("Erro ao atualizar a profissão. Tente novamente.");}
+    setSalvandoProf(false);
+  }
   const[temperaturaAtual,setTemperaturaAtual]=useState(lead.temperatura||"frio");
   const[salvandoTemp,setSalvandoTemp]=useState(false);
   async function mudarTemperatura(v){
@@ -282,15 +408,6 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
   const[veiculosEstoque,setVeiculosEstoque]=useState(null);
   const[veiculoVendaId,setVeiculoVendaId]=useState("");
   const[confirmandoVenda,setConfirmandoVenda]=useState(false);
-  // "Agendados" (2026-07-31, auditoria Cursor/GPT): NUNCA supor um horário quando o
-  // vendedor não informa um. O campo de data começa vazio de propósito (sem default
-  // "amanhã") — o backend (crm.js) já espelha essa regra: sem data_hora_agendamento,
-  // o card só muda de coluna, nenhum registro de Agenda é criado (logo nenhum lembrete
-  // automático fictício sai pelo WhatsApp). "Mover sem marcar hora" é uma ação
-  // explícita do vendedor, não um fallback silencioso.
-  const[pedindoDataAgendamento,setPedindoDataAgendamento]=useState(false);
-  const[dataAgendamentoInput,setDataAgendamentoInput]=useState("");
-  const[confirmandoAgendamento,setConfirmandoAgendamento]=useState(false);
   function handleEstagio(novoKey){
     const alvo=estagios.find(e=>e.key===novoKey);
     // Coluna virtual ("Para atender"): manda pro último estagio real do grupo
@@ -299,10 +416,6 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
     if(real==="fechado_ganho"){
       setPedindoVeiculoVenda(true);
       if(!veiculosEstoque)veiculosApi.getVeiculos().then(setVeiculosEstoque).catch(()=>setVeiculosEstoque([]));
-      return;
-    }
-    if(real==="agendados"){
-      setPedindoDataAgendamento(true);
       return;
     }
     setEst(real);
@@ -315,20 +428,6 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
     setPedindoVeiculoVenda(false);
     setConfirmandoVenda(false);
   }
-  function confirmarMoveAgendados(){
-    setConfirmandoAgendamento(true);
-    setEst("agendados");
-    onMover(lead.id,"agendados",null,null,dataAgendamentoInput||undefined);
-    setPedindoDataAgendamento(false);
-    setConfirmandoAgendamento(false);
-    setDataAgendamentoInput("");
-  }
-  // Arrastar direto pra "Venda concluída"/"Agendados" no board (fora do modal) pulava
-  // esses dois pickers inteiramente — era o principal motivo de nenhuma venda real ter
-  // veiculo_vendido_id/valor preenchido (achado 2026-07-31). Quando o board intercepta
-  // esse drop, ele abre o modal já aqui com acaoInicial setado, reusando o mesmo fluxo
-  // do dropdown em vez de duplicar UI.
-  useEffect(()=>{if(acaoInicial)handleEstagio(acaoInicial);},[]); // eslint-disable-line react-hooks/exhaustive-deps
   return(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -423,22 +522,54 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
             </select>
           </div>
         }
-        {lead.telefone&&<div style={{marginBottom:14}}>
-          {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. Se chatwoot_conv_id
-              ainda for NULL, LeadPhoneChatwoot resolve via GET /api/crm/leads/:id/chatwoot. */}
-          <LeadPhoneChatwoot lead={lead}>{lead.telefone}</LeadPhoneChatwoot>
-        </div>}
+        {readOnly?(
+          telAtual&&
+            <div style={{marginBottom:14}}>
+              {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. */}
+              <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
+            </div>
+        ):(
+          <div className="form-group">
+            <label className="form-label">Telefone</label>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <input
+                className="form-input" style={{marginBottom:0,flex:1}}
+                value={telInput} onChange={e=>setTelInput(e.target.value)}
+                placeholder="(49) 9 9999-9999 — deixe em branco se não tiver ainda"
+                disabled={salvandoTel}
+              />
+              <DirtySaveBtn dirty={telInput!==telAtual} salvando={salvandoTel} onSave={salvarTel} title="Salvar telefone"/>
+            </div>
+            {telAtual&&
+              <div style={{marginTop:8}}>
+                <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
+              </div>
+            }
+          </div>
+        )}
+        {readOnly?(
+          origemAtual&&
+            <div style={{marginBottom:14,display:"flex",gap:6,flexWrap:"wrap"}}>
+              <Orig o={origemAtual}/>
+            </div>
+        ):(
+          <div className="form-group">
+            <label className="form-label">Origem</label>
+            <select className="form-input" value={origemAtual} disabled={salvandoOrigem} onChange={e=>mudarOrigem(e.target.value)}>
+              {ORIGEM_OPTS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+        )}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
           {lead.troca&&<span className="badge badge-warning"><i className="ti ti-arrows-exchange" style={{fontSize:12}}/>Tem troca</span>}
           {lead.financiamento&&<span className="badge badge-brand"><i className="ti ti-credit-card" style={{fontSize:12}}/>Financiamento</span>}
-          {lead.origem&&<Orig o={lead.origem}/>}
         </div>
         {lead.followup_tipo&&
           <div style={{marginBottom:14,display:"flex",gap:6,flexWrap:"wrap"}}>
             <div className="badge badge-warning" style={{display:"inline-flex"}}>
               <i className="ti ti-bell" style={{fontSize:12}}/>&nbsp;Follow-up ativo: {FOLLOWUP_LABEL[lead.followup_tipo]}
             </div>
-            {followupSemContato(lead)&&
+            {followupSemContato({...lead,telefone:telAtual})&&
               <div className="badge" style={{display:"inline-flex",background:"var(--danger)22",color:"var(--danger)"}} title="Sem telefone cadastrado — esse follow-up não sai automático, precisa ser feito manualmente">
                 <i className="ti ti-phone-off" style={{fontSize:12}}/>&nbsp;Sem contato
               </div>
@@ -452,20 +583,71 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
             </span>
           </div>
         }
-        {/* Dados adicionais (2026-07-27) — só aparece o que estiver preenchido, leads
-        antigos sem esses dados não mostram nada aqui (sem "—" repetido pra cada campo vazio). */}
-        {(lead.data_nascimento||lead.cidade||lead.email||lead.profissao||lead.observacoes)&&
-          <div style={{marginBottom:14,background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
-            <div style={{fontSize:10,color:"var(--muted)",marginBottom:6,textTransform:"uppercase"}}>Dados adicionais</div>
-            <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:13,color:"var(--fg)"}}>
-              {lead.data_nascimento&&<div><i className="ti ti-cake" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{new Date(lead.data_nascimento).toLocaleDateString("pt-BR",{timeZone:"UTC"})}</div>}
-              {lead.cidade&&<div><i className="ti ti-map-pin" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{lead.cidade}</div>}
-              {lead.email&&<div><i className="ti ti-mail" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{lead.email}</div>}
-              {lead.profissao&&<div><i className="ti ti-briefcase" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{lead.profissao}</div>}
-              {lead.observacoes&&<div style={{marginTop:2,paddingTop:6,borderTop:"1px solid var(--border)",whiteSpace:"pre-wrap"}}>{lead.observacoes}</div>}
+        {/* Dados complementares do "Novo lead" — editáveis (dirty+✓) pra completar
+        depois do cadastro. Gerente (readOnly) só vê o que estiver preenchido. */}
+        {readOnly?(
+          (nascAtual||cidadeAtual||emailAtual||profAtual)&&
+            <div style={{marginBottom:14,background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
+              <div style={{fontSize:10,color:"var(--muted)",marginBottom:6,textTransform:"uppercase"}}>Dados adicionais</div>
+              <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:13,color:"var(--fg)"}}>
+                {nascAtual&&<div><i className="ti ti-cake" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{new Date(nascAtual).toLocaleDateString("pt-BR",{timeZone:"UTC"})}</div>}
+                {cidadeAtual&&<div><i className="ti ti-map-pin" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{cidadeAtual}</div>}
+                {emailAtual&&<div><i className="ti ti-mail" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{emailAtual}</div>}
+                {profAtual&&<div><i className="ti ti-briefcase" style={{fontSize:13,color:"var(--muted)",marginRight:6}}/>{profAtual}</div>}
+              </div>
+            </div>
+        ):(<>
+          <div className="form-group">
+            <label className="form-label">Data de nascimento</label>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <input type="date" className="form-input" style={{marginBottom:0,flex:1}} value={nascInput} onChange={e=>setNascInput(e.target.value)} disabled={salvandoNasc}/>
+              <DirtySaveBtn dirty={nascInput!==nascAtual} salvando={salvandoNasc} onSave={salvarNasc} title="Salvar data de nascimento"/>
             </div>
           </div>
-        }
+          <div className="form-group">
+            <label className="form-label">Cidade</label>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <input className="form-input" style={{marginBottom:0,flex:1}} value={cidadeInput} onChange={e=>setCidadeInput(e.target.value)} placeholder="Ex: Curitibanos" disabled={salvandoCidade}/>
+              <DirtySaveBtn dirty={cidadeInput!==cidadeAtual} salvando={salvandoCidade} onSave={salvarCidade} title="Salvar cidade"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">E-mail</label>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <input type="email" className="form-input" style={{marginBottom:0,flex:1}} value={emailInput} onChange={e=>setEmailInput(e.target.value)} placeholder="cliente@email.com" disabled={salvandoEmail}/>
+              <DirtySaveBtn dirty={emailInput!==emailAtual} salvando={salvandoEmail} onSave={salvarEmail} title="Salvar e-mail"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Profissão</label>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <input className="form-input" style={{marginBottom:0,flex:1}} value={profInput} onChange={e=>setProfInput(e.target.value)} placeholder="Ex: Motorista" disabled={salvandoProf}/>
+              <DirtySaveBtn dirty={profInput!==profAtual} salvando={salvandoProf} onSave={salvarProf} title="Salvar profissão"/>
+            </div>
+          </div>
+        </>)}
+        {readOnly?(
+          (obsAtual||lead.resumo_handoff)&&
+            <div className="form-group">
+              <label className="form-label">Observações{!obsAtual&&lead.resumo_handoff?" (resumo da IA)":""}</label>
+              <div style={{fontSize:13,color:"var(--fg)",whiteSpace:"pre-wrap",background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>{obsAtual||lead.resumo_handoff}</div>
+            </div>
+        ):(
+          <div className="form-group">
+            <label className="form-label">Observações</label>
+            <div style={{display:"flex",gap:6,alignItems:"flex-start"}}>
+              <textarea
+                className="form-input"
+                style={{minHeight:60,resize:"vertical",marginBottom:0,flex:1}}
+                value={obsInput}
+                onChange={e=>setObsInput(e.target.value)}
+                placeholder="Qualquer detalhe relevante sobre o cliente"
+                disabled={salvandoObs}
+              />
+              <DirtySaveBtn dirty={obsInput!==obsAtual} salvando={salvandoObs} onSave={salvarObs} title="Salvar observações"/>
+            </div>
+          </div>
+        )}
         {!readOnly&&lead.vendedor_id&&(
           <div style={{marginBottom:14}}>
             {agendado?(
@@ -478,7 +660,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
               </div>
             ):(
               <div style={{display:"flex",gap:6}}>
-                <button className="btn btn-ghost" style={{flex:1}} onClick={handleAgendar} disabled={agendando||!lead.telefone} title={!lead.telefone?"Lead sem telefone":""}>
+                <button className="btn btn-ghost" style={{flex:1}} onClick={handleAgendar} disabled={agendando||!telAtual} title={!telAtual?"Lead sem telefone":""}>
                   {agendando?<span className="spinner"/>:<><i className="ti ti-calendar-plus"/> Lara tenta agendar</>}
                 </button>
                 <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setManualAberto(true)}>
@@ -507,19 +689,6 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role,aca
                 <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setPedindoVeiculoVenda(false);setVeiculoVendaId("");}}>Cancelar</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={confirmarVenda} disabled={confirmandoVenda}>
                   {confirmandoVenda?<span className="spinner"/>:"Confirmar venda"}
-                </button>
-              </div>
-            </div>
-          ):pedindoDataAgendamento?(
-            <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
-              <div style={{fontSize:13,color:"var(--muted)",marginBottom:8}}>
-                Qual o horário real combinado com o cliente? Deixe em branco pra só mover o card, sem marcar um horário — nenhum lembrete automático sai sem uma data real aqui.
-              </div>
-              <input type="datetime-local" className="form-input" value={dataAgendamentoInput} onChange={e=>setDataAgendamentoInput(e.target.value)}/>
-              <div style={{display:"flex",gap:8,marginTop:8}}>
-                <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setPedindoDataAgendamento(false);setDataAgendamentoInput("");}}>Cancelar</button>
-                <button className="btn btn-primary" style={{flex:1}} onClick={confirmarMoveAgendados} disabled={confirmandoAgendamento}>
-                  {confirmandoAgendamento?<span className="spinner"/>:dataAgendamentoInput?"Confirmar agendamento":"Mover sem marcar hora"}
                 </button>
               </div>
             </div>
@@ -659,7 +828,6 @@ export default function CRM(){
   const[loading,setLoading]=useState(true);
   const[busca,setBusca]=useState("");
   const[leadSel,setLeadSel]=useState(null);
-  const[acaoInicial,setAcaoInicial]=useState(null);
   const[novoModal,setNovoModal]=useState(false);
   const[isMobile,setIsMobile]=useState(window.innerWidth<768);
   const[erro,setErro]=useState(null);
@@ -691,7 +859,7 @@ export default function CRM(){
   // a cada clique. O follow-up automático (estágio-motivo) roda no backend, então
   // um PATCH de estágio já basta pra tudo — arrastar ou usar o dropdown têm o
   // mesmo efeito.
-  async function handleMover(id,est,motivo,veiculo_vendido_id,data_hora_agendamento){try{await moverLead(id,est,motivo,veiculo_vendido_id,data_hora_agendamento);}catch{}load(true);}
+  async function handleMover(id,est,motivo,veiculo_vendido_id){try{await moverLead(id,est,motivo,veiculo_vendido_id);}catch{}load(true);}
 
   const todos=estagios.flatMap(e=>leadsDaColuna(e,kanban));
   const filtrados=todos.filter(l=>leadBate(l,busca));
@@ -755,13 +923,6 @@ export default function CRM(){
     e.preventDefault();
     if(colunaSobre!==estKey)setColunaSobre(estKey);
   }
-  function acharLeadPorId(id){
-    for(const k in kanban){
-      const f=(kanban[k]||[]).find(l=>String(l.id)===String(id));
-      if(f)return f;
-    }
-    return null;
-  }
   function onColDrop(e,estKey){
     e.preventDefault();
     setColunaSobre(null);
@@ -772,15 +933,6 @@ export default function CRM(){
     // volta pra ela manda pro último estagio do grupo (negociando).
     const alvo=estagios.find(e=>e.key===estKey);
     const realKey=alvo?.estagiosDb ? alvo.estagiosDb[alvo.estagiosDb.length-1] : estKey;
-    // "Venda concluída": arrastar direto pulava o picker de veículo/valor por completo
-    // (era o principal motivo do ticket médio do Dashboard ficar zerado — achado
-    // 2026-07-31). Em vez de mover na hora, abre o modal já com o picker aberto —
-    // mesmo fluxo do dropdown, só sem o clique extra de abrir o card primeiro.
-    if(realKey==="fechado_ganho"){
-      const lead=acharLeadPorId(leadId);
-      if(lead){setLeadSel(lead);setAcaoInicial("fechado_ganho");}
-      return;
-    }
     handleMover(leadId,realKey);
   }
 
@@ -794,9 +946,9 @@ export default function CRM(){
         {!readOnly&&<button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus" style={{fontSize:16}}/> Novo lead</button>}
       </div>
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        <input className="form-input search-input-sm" style={{marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
+        <input className="form-input" style={{maxWidth:220,marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
         {role==="admin_master"&&lojas.length>1&&
-          <select className="form-input search-input-sm" style={{marginBottom:0,fontSize:13,padding:"7px 12px"}} value={lojaFiltro} onChange={e=>setLojaFiltro(e.target.value)}>
+          <select className="form-input" style={{maxWidth:200,marginBottom:0,fontSize:13,padding:"7px 12px"}} value={lojaFiltro} onChange={e=>setLojaFiltro(e.target.value)}>
             <option value="">Todas as lojas</option>
             {lojas.map(l=><option key={l.id} value={l.id}>{l.nome}</option>)}
           </select>
@@ -854,7 +1006,7 @@ export default function CRM(){
                       draggable={!readOnly}
                       onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
                       onDragEnd={readOnly?undefined:pararAutoScroll}
-                      onClick={()=>{setLeadSel(lead);setAcaoInicial(null);}}
+                      onClick={()=>setLeadSel(lead)}
                       style={{cursor:readOnly?"pointer":"grab",border:`2px solid ${est.cor}`,boxShadow:`0 0 8px ${est.cor}4d`}}
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
@@ -888,7 +1040,7 @@ export default function CRM(){
           })}
         </div>
 
-      {leadSel&&<LeadModal lead={leadSel} acaoInicial={acaoInicial} onClose={()=>{setLeadSel(null);setAcaoInicial(null);}} onMover={(id,est,motivo,veiculoVendidoId,dataHoraAgendamento)=>{handleMover(id,est,motivo,veiculoVendidoId,dataHoraAgendamento);setLeadSel(null);setAcaoInicial(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
       {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );

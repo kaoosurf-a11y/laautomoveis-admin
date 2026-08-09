@@ -773,7 +773,19 @@ export default function Dashboard() {
           <div style={{flex:"1 1 140px",minWidth:140}}>
             <label style={{display:"block",fontSize:11,color:"var(--muted)",marginBottom:4}}>De</label>
             <input type="date" className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
-              value={customDesde} onChange={e=>setCustomDesde(e.target.value)}
+              value={customDesde}
+              onChange={e=>{
+                const novaDesde = e.target.value;
+                setCustomDesde(novaDesde);
+                // LA V1 20260809 (mesma pendência da Diana, achado real: o auto-apply de
+                // 2026-07-23 só existia no campo "Até" -- se ela preenchesse "Até" PRIMEIRO
+                // e "De" depois (ordem invertida, comum quando já tinha um intervalo anterior
+                // e só ajusta o início), o clique em "De" nunca aplicava sozinho, ficava preso
+                // esperando um "Aplicar" que não era óbvio que ainda faltava). Espelha a mesma
+                // regra do campo "Até": aplica assim que os dois lados estiverem preenchidos,
+                // não importa qual foi preenchido primeiro.
+                if (novaDesde && customAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
+              }}
               max={customAte||undefined}/>
           </div>
           <div style={{flex:"1 1 140px",minWidth:140}}>
