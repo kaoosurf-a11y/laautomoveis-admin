@@ -615,6 +615,21 @@ function TabMetricas({ metricas, loading, erro }) {
   );
 }
 
+// LA V1 20260809 (bug real, achado ao vivo — caso Diana): colar uma data no campo
+// nativo <input type="date"> pode corromper o ano (ex: colar "05/08/2026" e o widget
+// gravar "0002" no lugar de "2026" — o input HTML aceita ano de 1 a 4 dígitos, então
+// "0002" é tecnicamente válido pro navegador, mas sem sentido pro filtro). Sem
+// validação, esse valor corrompido entrava direto no estado, disparava a busca com
+// uma data absurda, e a troca pra tela de "Carregando..." (que substitui a página
+// inteira, ver `if (loading) return` mais abaixo) parecia "a página voltar pro
+// início". Rejeita silenciosamente qualquer ano fora de uma faixa razoável antes de
+// aceitar o valor — o campo simplesmente ignora o paste corrompido, sem quebrar nada.
+function anoRazoavel(isoDate) {
+  if (!isoDate) return true; // campo vazio (limpar) sempre é válido
+  const ano = Number(isoDate.slice(0, 4));
+  return ano >= 2000 && ano <= new Date().getFullYear() + 1;
+}
+
 /* ─── componente principal ─── */
 export default function Dashboard() {
   const [data, setData]     = useState(null);
@@ -776,6 +791,7 @@ export default function Dashboard() {
               value={customDesde}
               onChange={e=>{
                 const novaDesde = e.target.value;
+                if (!anoRazoavel(novaDesde)) return; // paste/digitação corrompida (ano tipo "0002") -- ignora
                 setCustomDesde(novaDesde);
                 // LA V1 20260809 (mesma pendência da Diana, achado real: o auto-apply de
                 // 2026-07-23 só existia no campo "Até" -- se ela preenchesse "Até" PRIMEIRO
@@ -794,6 +810,7 @@ export default function Dashboard() {
               value={customAte}
               onChange={e=>{
                 const novaAte = e.target.value;
+                if (!anoRazoavel(novaAte)) return; // paste/digitação corrompida (ano tipo "0002") -- ignora
                 setCustomAte(novaAte);
                 // 2026-07-23 (pendência real, Diana): os outros botões de período aplicam
                 // direto no clique — "Personalizado" exigia abrir o painel E clicar em
