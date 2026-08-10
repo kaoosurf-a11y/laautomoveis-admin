@@ -630,17 +630,14 @@ function anoRazoavel(isoDate) {
   return ano >= 2000 && ano <= new Date().getFullYear() + 1;
 }
 
-// LA V1 20260809 (fix 2, mesmo caso Diana/Felipe): a validação de ano acima impede o
-// valor CORROMPIDO de entrar no estado, mas não resolve a causa raiz -- colar texto
-// formatado (ex: "05/08/2026") direto num <input type="date"> nativo não funciona de
-// forma confiável em vários navegadores: o widget tenta encaixar o texto colado
-// segmento por segmento (dia/mês/ano) em vez de entender a data inteira, e some com o
-// valor inteiro (campo fica vazio, "dd/mm/aaaa") em vez de preencher. Em vez de confiar
-// no comportamento nativo de paste, intercepta e interpreta a data colada nós mesmos
-// (aceita DD/MM/AAAA -- o formato usado no resto do painel -- e AAAA-MM-DD/ISO), convertendo
-// pro formato que o input espera (YYYY-MM-DD) e aplicando via estado. Se o texto colado
-// não bater em nenhum formato reconhecido, deixa o comportamento nativo tentar por conta
-// própria (não piora nada, só não ajuda nesse caso raro).
+// LA V1 20260809 (fix 3, mesmo caso Diana/Felipe -- 2 rodadas de tentativa de consertar
+// o <input type="date"> nativo não resolveram: primeiro corrompia o ano no paste ("0002"),
+// depois passou a simplesmente ignorar/ficar vazio. O comportamento de paste em inputs de
+// data nativos é inconsistente entre navegadores por natureza -- em vez de continuar
+// remendando caso a caso, os campos De/Até deixam de ser <input type="date"> e viram texto
+// livre no formato DD/MM/AAAA, com parsing 100% nosso (digitar OU colar passam pela MESMA
+// lógica, sem depender do navegador interpretar nada). Aceita separador /, -, . e também
+// AAAA-MM-DD (ISO, caso alguém cole de outro sistema).
 function parseDataColada(texto) {
   if (!texto) return null;
   const t = texto.trim();
@@ -655,6 +652,11 @@ function parseDataColada(texto) {
     return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
   return null;
+}
+function isoParaBr(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
 }
 
 /* ─── componente principal ─── */
@@ -678,6 +680,12 @@ export default function Dashboard() {
   // (preset OU intervalo customizado) pra saber quando precisa refazer a busca.
   const [customDesde, setCustomDesde] = useState("");
   const [customAte, setCustomAte]     = useState("");
+  // LA V1 20260809: texto livre exibido nos campos (DD/MM/AAAA) — fonte separada do
+  // valor ISO (customDesde/customAte) porque o usuário pode estar no meio de digitar
+  // uma data incompleta; só vira ISO real (e só então aplica o filtro) quando o texto
+  // bate com um formato de data completo e válido (ver parseDataColada).
+  const [desdeTexto, setDesdeTexto] = useState(()=>isoParaBr(customDesde));
+  const [ateTexto, setAteTexto]     = useState(()=>isoParaBr(customAte));
   const [seletorAberto, setSeletorAberto] = useState(false);
   const chavePeriodo = periodo==="personalizado" ? `personalizado:${customDesde}:${customAte}` : periodo;
   const chaveLoja = lojaFiltro ?? "todas";
@@ -814,56 +822,45 @@ export default function Dashboard() {
         <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap",padding:"14px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:10,marginBottom:16}}>
           <div style={{flex:"1 1 140px",minWidth:140}}>
             <label style={{display:"block",fontSize:11,color:"var(--muted)",marginBottom:4}}>De</label>
-            <input type="date" className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
-              value={customDesde}
+            <input type="text" inputMode="numeric" autoComplete="off" placeholder="DD/MM/AAAA"
+              className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
+              value={desdeTexto}
               onChange={e=>{
-                const novaDesde = e.target.value;
-                if (!anoRazoavel(novaDesde)) return; // paste/digitação corrompida (ano tipo "0002") -- ignora
-                setCustomDesde(novaDesde);
-                // LA V1 20260809 (mesma pendência da Diana, achado real: o auto-apply de
-                // 2026-07-23 só existia no campo "Até" -- se ela preenchesse "Até" PRIMEIRO
-                // e "De" depois (ordem invertida, comum quando já tinha um intervalo anterior
-                // e só ajusta o início), o clique em "De" nunca aplicava sozinho, ficava preso
-                // esperando um "Aplicar" que não era óbvio que ainda faltava). Espelha a mesma
-                // regra do campo "Até": aplica assim que os dois lados estiverem preenchidos,
-                // não importa qual foi preenchido primeiro.
-                if (novaDesde && customAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
-              }}
-              onPaste={e=>{
-                const iso = parseDataColada(e.clipboardData.getData("text"));
+                const texto = e.target.value;
+                setDesdeTexto(texto);
+                const iso = parseDataColada(texto);
                 if (iso && anoRazoavel(iso)) {
-                  e.preventDefault();
                   setCustomDesde(iso);
+                  // LA V1 20260809 (mesma pendência da Diana, achado real: o auto-apply de
+                  // 2026-07-23 só existia no campo "Até" -- se ela preenchesse "Até" PRIMEIRO
+                  // e "De" depois (ordem invertida, comum quando já tinha um intervalo anterior
+                  // e só ajusta o início), o clique em "De" nunca aplicava sozinho). Espelha a
+                  // mesma regra do campo "Até": aplica assim que os dois lados estiverem
+                  // preenchidos com data válida completa, não importa qual veio primeiro.
                   if (iso && customAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
                 }
-              }}
-              max={customAte||undefined}/>
+              }}/>
           </div>
           <div style={{flex:"1 1 140px",minWidth:140}}>
             <label style={{display:"block",fontSize:11,color:"var(--muted)",marginBottom:4}}>Até</label>
-            <input type="date" className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
-              value={customAte}
+            <input type="text" inputMode="numeric" autoComplete="off" placeholder="DD/MM/AAAA"
+              className="form-input" style={{marginBottom:0,fontSize:14,padding:"9px 12px"}}
+              value={ateTexto}
               onChange={e=>{
-                const novaAte = e.target.value;
-                if (!anoRazoavel(novaAte)) return; // paste/digitação corrompida (ano tipo "0002") -- ignora
-                setCustomAte(novaAte);
-                // 2026-07-23 (pendência real, Diana): os outros botões de período aplicam
-                // direto no clique — "Personalizado" exigia abrir o painel E clicar em
-                // "Aplicar" à parte, um passo a mais que confundia. Assim que "De" já
-                // estava preenchido e o usuário escolhe "Até", aplica na hora, sem esperar
-                // um clique extra — "Aplicar" continua existindo pra quem só preenche "De"
-                // (período em aberto até hoje) e quer confirmar sem escolher "Até".
-                if (customDesde && novaAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
-              }}
-              onPaste={e=>{
-                const iso = parseDataColada(e.clipboardData.getData("text"));
+                const texto = e.target.value;
+                setAteTexto(texto);
+                const iso = parseDataColada(texto);
                 if (iso && anoRazoavel(iso)) {
-                  e.preventDefault();
                   setCustomAte(iso);
+                  // 2026-07-23 (pendência real, Diana): os outros botões de período aplicam
+                  // direto no clique — "Personalizado" exigia abrir o painel E clicar em
+                  // "Aplicar" à parte, um passo a mais que confundia. Assim que "De" já
+                  // estava preenchido e o usuário completa "Até" com uma data válida, aplica
+                  // na hora, sem esperar um clique extra — "Aplicar" continua existindo pra
+                  // quem só preenche "De" (período em aberto até hoje).
                   if (customDesde && iso) { setPeriodo("personalizado"); setSeletorAberto(false); }
                 }
-              }}
-              min={customDesde||undefined} max={new Date().toISOString().slice(0,10)}/>
+              }}/>
           </div>
           <button className="btn btn-primary" style={{minHeight:44}} disabled={!customDesde} onClick={aplicarPersonalizado}>
             <i className="ti ti-check"/> Aplicar
