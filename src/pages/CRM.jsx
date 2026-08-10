@@ -22,6 +22,22 @@ const FOLLOWUP_LABEL={
   match_carro_barato:"Carro barato chegou!",
 };
 
+// 2026-08-10 (pedido explicito do usuario, apos auditoria sem_credito/Priscila): rótulo
+// pro selinho "sugestão da IA" no card — mesmos 5 estágios-motivo que o Observador
+// pós-handoff pode sugerir (n8n workflow OBSERVADOR POS-HANDOFF, node "Decidir Acao").
+// A IA nunca move esses estágios sozinha na hora mais — só sugere (grava
+// sugestao_estagio/sugestao_estagio_em em crm_leads + nota privada no Chatwoot) e espera
+// até 14 dias o vendedor mexer no card antes de promover automaticamente. Esse selinho é
+// a mesma informação, só que visível direto no board (antes só aparecia na nota do
+// Chatwoot — gap achado numa auditoria de sinergia estoque/agente/CRM/dashboard).
+const SUGESTAO_LABEL={
+  sem_credito:"Sem crédito",
+  vai_pensar:"Vai pensar",
+  nao_achou_carro:"Não achou o carro",
+  negociando:"Em negociação",
+  fechado_perdido:"Venda Perdida",
+};
+
 // Colunas do Kanban. Redesenho 2026-07: "Em contato"+"Negociando" viraram uma coluna
 // só ("negociando"/"Em negociação" — eram só fases sequenciais sem gatilho). sem_credito/
 // vai_pensar/nao_achou_carro/parou_responder são os "motivos pós-atendimento": arrastar
@@ -1012,6 +1028,14 @@ export default function CRM(){
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
                       <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
+                      {lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio&&
+                        <div
+                          style={{fontSize:10,color:"#7ba7e0",marginBottom:4,display:"flex",alignItems:"center",gap:3}}
+                          title={`IA sugeriu mover pra "${SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio}" — move sozinha em 14 dias corridos se ninguém mexer nesse card antes disso`}
+                        >
+                          <i className="ti ti-bulb" style={{fontSize:11}}/> Sugestão: {SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio} (há {tempoDesde(lead.sugestao_estagio_em)})
+                        </div>
+                      }
                       {lead.followup_tipo&&
                         <div style={{fontSize:10,color:followupAtrasado(lead)?"var(--danger)":"var(--warning)",marginBottom:4,display:"flex",alignItems:"center",gap:3}}>
                           <i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}
