@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getLeadChatwoot } from "../api.js";
+import { alertDialog } from "./Dialog.jsx";
 
 // Botão/link de acesso rápido pra conversa no Chatwoot — extraído em 2026-07-17 de 6
 // cópias inline (CRM.jsx, Clientes.jsx, FollowUps.jsx x3) pra virar um componente único
@@ -81,7 +82,7 @@ export function LeadPhoneChatwoot({ lead, children, compact, style, onClick, onR
       const url = chatwootConversationUrl(r.conversation_id, r.inbox_id);
       if (url) window.open(url, "_blank", "noopener,noreferrer");
     } catch {
-      alert("Não foi possível abrir a conversa no Chatwoot. Tente de novo.");
+      await alertDialog("Não foi possível abrir a conversa no Chatwoot. Tente de novo.");
     }
     setAbrindo(false);
   }

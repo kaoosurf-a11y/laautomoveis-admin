@@ -3,6 +3,7 @@ import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM,
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
+import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
 // nao_achou_carro/parou_responder o rótulo é o mesmo da coluna do Kanban (o tipo
@@ -143,7 +144,7 @@ function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],
 // pra fins de indicador visual. Não controla de fato quem responde no WhatsApp (isso
 // é la_leads.human_takeover_at, lido só pelo n8n) — ver aviso no seletor do modal.
 const RESP_INFO={ia:["#25D366","IA"],humano:["#7ba7e0","Humano"],pausado:["#e05252","Pausado"]};
-function Resp({r}){const[c,l]=RESP_INFO[r]||RESP_INFO.ia;return <span className="badge" style={{background:`${c}22`,color:c,fontSize:9}}>{l}</span>;}
+function Resp({r}){const[c,l]=RESP_INFO[r]||RESP_INFO.ia;return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 // Tempo desde a última mudança no lead — proxy pro "tempo no estágio atual" (não existe
 // histórico granular de transição por estágio ainda, ver achado da Fase 1).
 function tempoDesde(iso){
@@ -195,14 +196,14 @@ const AGENDAMENTO_IA_INFO={
 function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
   const[excluindo,setExcluindo]=useState(false);
   async function handleExcluir(){
-    if(!confirm(`Excluir "${lead.nome}" do CRM? Isso remove o lead do Kanban (não aparece mais em nenhuma coluna). Use só pra lead de teste ou cadastrado por engano.`))return;
+    if(!await confirmDialog(`Excluir "${lead.nome}" do CRM? Isso remove o lead do Kanban (não aparece mais em nenhuma coluna). Use só pra lead de teste ou cadastrado por engano.`,{title:"Excluir lead?",confirmLabel:"Excluir"}))return;
     setExcluindo(true);
     try{
       await excluirLeadCRM(lead.id);
       onAtualizado?.();
       onClose();
     }catch{
-      alert("Erro ao excluir o lead. Tente novamente.");
+      await alertDialog("Erro ao excluir o lead. Tente novamente.");
       setExcluindo(false);
     }
   }
@@ -230,7 +231,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       setEditandoNome(false);
       onAtualizado?.();
     }catch{
-      alert("Erro ao atualizar o nome. Tente novamente.");
+      await alertDialog("Erro ao atualizar o nome. Tente novamente.");
     }
     setSalvandoNome(false);
   }
@@ -253,7 +254,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       setEditandoVeiculo(false);
       onAtualizado?.();
     }catch{
-      alert("Erro ao atualizar o veículo. Tente novamente.");
+      await alertDialog("Erro ao atualizar o veículo. Tente novamente.");
     }
     setSalvandoVeiculo(false);
   }
@@ -279,7 +280,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       setObsAtual(v);
       onAtualizado?.();
     }catch{
-      alert("Erro ao atualizar as observações. Tente novamente.");
+      await alertDialog("Erro ao atualizar as observações. Tente novamente.");
     }
     setSalvandoObs(false);
   }
@@ -297,7 +298,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       setTelAtual(telInput.trim());
       onAtualizado?.();
     }catch(e){
-      alert(e?.message?.includes("409")||e?.status===409
+      await alertDialog(e?.message?.includes("409")||e?.status===409
         ?"Já existe um lead com esse telefone."
         :"Erro ao atualizar o telefone. Tente novamente.");
     }
@@ -309,7 +310,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
     if(v===origemAtual)return;
     setSalvandoOrigem(true);
     try{await atualizarLeadCRM(lead.id,{origem:v});setOrigemAtual(v);onAtualizado?.();}
-    catch{alert("Erro ao atualizar a origem. Tente novamente.");}
+    catch{await alertDialog("Erro ao atualizar a origem. Tente novamente.");}
     setSalvandoOrigem(false);
   }
   const[nascAtual,setNascAtual]=useState(toDateInput(lead.data_nascimento));
@@ -322,7 +323,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       await atualizarLeadCRM(lead.id,{data_nascimento:nascInput.trim()?nascInput:null});
       setNascAtual(nascInput);
       onAtualizado?.();
-    }catch{alert("Erro ao atualizar a data de nascimento. Tente novamente.");}
+    }catch{await alertDialog("Erro ao atualizar a data de nascimento. Tente novamente.");}
     setSalvandoNasc(false);
   }
   const[cidadeAtual,setCidadeAtual]=useState(lead.cidade||"");
@@ -335,7 +336,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       await atualizarLeadCRM(lead.id,{cidade:cidadeInput.trim()?cidadeInput.trim():null});
       setCidadeAtual(cidadeInput.trim());
       onAtualizado?.();
-    }catch{alert("Erro ao atualizar a cidade. Tente novamente.");}
+    }catch{await alertDialog("Erro ao atualizar a cidade. Tente novamente.");}
     setSalvandoCidade(false);
   }
   const[emailAtual,setEmailAtual]=useState(lead.email||"");
@@ -348,7 +349,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       await atualizarLeadCRM(lead.id,{email:emailInput.trim()?emailInput.trim():null});
       setEmailAtual(emailInput.trim());
       onAtualizado?.();
-    }catch{alert("Erro ao atualizar o e-mail. Tente novamente.");}
+    }catch{await alertDialog("Erro ao atualizar o e-mail. Tente novamente.");}
     setSalvandoEmail(false);
   }
   const[profAtual,setProfAtual]=useState(lead.profissao||"");
@@ -361,7 +362,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       await atualizarLeadCRM(lead.id,{profissao:profInput.trim()?profInput.trim():null});
       setProfAtual(profInput.trim());
       onAtualizado?.();
-    }catch{alert("Erro ao atualizar a profissão. Tente novamente.");}
+    }catch{await alertDialog("Erro ao atualizar a profissão. Tente novamente.");}
     setSalvandoProf(false);
   }
   const[temperaturaAtual,setTemperaturaAtual]=useState(lead.temperatura||"frio");
@@ -370,7 +371,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
     if(v===temperaturaAtual)return;
     setSalvandoTemp(true);
     try{await atualizarTemperatura(lead.id,v);setTemperaturaAtual(v);onAtualizado?.();}
-    catch{alert("Erro ao atualizar temperatura. Tente novamente.");}
+    catch{await alertDialog("Erro ao atualizar temperatura. Tente novamente.");}
     setSalvandoTemp(false);
   }
   const[responsavelAtual,setResponsavelAtual]=useState(lead.responsavel_atual||"ia");
@@ -379,13 +380,13 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
     if(v===responsavelAtual)return;
     setSalvandoResp(true);
     try{await atualizarResponsavel(lead.id,v);setResponsavelAtual(v);onAtualizado?.();}
-    catch{alert("Erro ao atualizar responsável. Tente novamente.");}
+    catch{await alertDialog("Erro ao atualizar responsável. Tente novamente.");}
     setSalvandoResp(false);
   }
   async function handleAgendar(){
-    if(!confirm(`A Lara vai tentar marcar um horário com ${nomeAtual} pelo WhatsApp (só pra agendar — não é uma retomada geral do atendimento). Confirma?`))return;
+    if(!await confirmDialog(`A Lara vai tentar marcar um horário com ${nomeAtual} pelo WhatsApp (só pra agendar — não é uma retomada geral do atendimento). Confirma?`,{title:"Agendar via Lara",danger:false,confirmLabel:"Confirmar"}))return;
     setAgendando(true);
-    try{await agendarVisita(lead.id);setAgendado(true);}catch{alert("Erro ao iniciar agendamento. Tente de novo.");}
+    try{await agendarVisita(lead.id);setAgendado(true);}catch{await alertDialog("Erro ao iniciar agendamento. Tente de novo.");}
     setAgendando(false);
   }
   const[manualAberto,setManualAberto]=useState(false);
@@ -398,7 +399,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
       await criarAgendamento({lead_id:lead.id,veiculo:veiculoAtual,tipo:"visita_patio",data_hora:`${dataManual}:00`});
       setManualAberto(false);
       onAtualizado?.();
-    }catch{alert("Erro ao marcar agendamento. Tente de novo.");}
+    }catch{await alertDialog("Erro ao marcar agendamento. Tente de novo.");}
     setSalvandoManual(false);
   }
   // Fechado ganho pede o veículo específico do estoque (não só o texto livre de
@@ -1020,7 +1021,7 @@ export default function CRM(){
                       }
                       <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:4}}>
                         <Resp r={lead.responsavel_atual}/>
-                        <span style={{fontSize:9,color:"var(--muted)"}}><i className="ti ti-clock" style={{fontSize:10}}/> {tempoDesde(lead.atualizado_em)}</span>
+                        <span style={{fontSize:10,color:"var(--muted)"}}><i className="ti ti-clock" style={{fontSize:11}}/> {tempoDesde(lead.atualizado_em)}</span>
                         {lead.agendamento_ia_status&&(lead.agendamento_ia_status==="solicitado"||lead.agendamento_ia_status==="em_andamento")&&
                           <i className="ti ti-calendar-time" style={{fontSize:11,color:"#7ba7e0"}} title="Lara tentando agendar"/>}
                       </div>

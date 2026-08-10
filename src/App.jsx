@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { isLoggedIn, isManager } from "./auth.js";
 import Layout from "./components/Layout.jsx";
+import DialogHost from "./components/Dialog.jsx";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import CRM from "./pages/CRM.jsx";
@@ -36,6 +37,10 @@ function AdminMasterOnly({ children }) {
 
 export default function App() {
   return (
+    <>
+    {/* Host único do confirmDialog()/alertDialog() (ver components/Dialog.jsx) — fora
+        das <Routes> pra ficar disponível em qualquer página, montado uma vez só. */}
+    <DialogHost/>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/" element={isLoggedIn() ? (isManager() ? <Navigate to="/dashboard" replace /> : <Navigate to="/crm" replace />) : <Navigate to="/login" replace />} />
@@ -52,5 +57,6 @@ export default function App() {
       <Route path="/contatos-perdidos" element={<AdminMasterOnly><ContatosPerdidos /></AdminMasterOnly>} />
       <Route path="*"          element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

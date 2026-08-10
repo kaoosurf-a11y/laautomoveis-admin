@@ -8,6 +8,12 @@ export default function Equipe(){
   const[equipe,setEquipe]=useState([]);
   const[loading,setLoading]=useState(true);
   const[erro,setErro]=useState(null);
+  // LA V1 20260810 (achado em auditoria): a senha padrão compartilhada ficava em texto
+  // puro, sempre visível, na tela — mesmo essa página sendo só do Proprietário, deixar
+  // uma credencial em claro por padrão é má prática (print de tela, alguém olhando por
+  // cima do ombro, etc.). Mascarada por padrão agora, com o mesmo padrão "olho" já usado
+  // no modal de trocar senha (Layout.jsx).
+  const[mostrarSenha,setMostrarSenha]=useState(false);
 
   useEffect(()=>{
     api.getUsers().then(u=>{setEquipe(u);setLoading(false);})
@@ -36,7 +42,15 @@ export default function Equipe(){
       <div className="card" style={{marginTop:20}}>
         <div className="card-title"><i className="ti ti-key"/> Credenciais</div>
         <div style={{background:"var(--surface2)",borderRadius:8,padding:"12px 14px",fontSize:13,color:"var(--muted)"}}>
-          <div>Senha padrão: <code style={{color:"var(--brand)",background:"rgba(200,168,75,.1)",padding:"2px 8px",borderRadius:4}}>LA@2025</code></div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            Senha padrão:
+            <code style={{color:"var(--brand)",background:"rgba(200,168,75,.1)",padding:"2px 8px",borderRadius:4,letterSpacing:mostrarSenha?"normal":2}}>
+              {mostrarSenha?"LA@2025":"••••••••"}
+            </code>
+            <button type="button" onClick={()=>setMostrarSenha(v=>!v)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:15,padding:2,display:"flex",alignItems:"center"}} title={mostrarSenha?"Ocultar":"Mostrar"}>
+              <i className={`ti ti-eye${mostrarSenha?"-off":""}`}/>
+            </button>
+          </div>
           <div style={{marginTop:6}}>URL: <code style={{color:"var(--brand)"}}>admin.laautomoveis.com.br/admin</code></div>
         </div>
       </div>

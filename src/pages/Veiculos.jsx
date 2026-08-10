@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { getUser } from "../auth.js";
+import { alertDialog } from "../components/Dialog.jsx";
 
 // Editor inline de preço (2026-07-17) + exibição condicional de histórico: reaproveita
 // PUT /api/veiculos/:id (mesma rota do modal, enviando o veículo inteiro com só o
@@ -21,7 +22,7 @@ function PrecoInline({ v, brl, onSalvo }) {
       await api.editarVeiculo(v.id, { ...v, preco: novo });
       await onSalvo();
       setEditando(false);
-    } catch (e) { alert("Erro ao salvar preço: " + e.message); }
+    } catch (e) { await alertDialog("Erro ao salvar preço: " + e.message); }
     finally { setSalvando(false); }
   }
 
@@ -104,7 +105,7 @@ export default function Veiculos() {
       [...files].forEach(f => fd.append("fotos", f));
       const { urls } = await api.uploadFotos(fd);
       set("fotos", [...form.fotos, ...urls]);
-    } catch(e) { alert("Erro no upload: " + e.message); }
+    } catch(e) { await alertDialog("Erro no upload: " + e.message); }
     finally { setUploading(false); }
   }
 
@@ -155,7 +156,7 @@ export default function Veiculos() {
   async function restaurar(v) {
     setRestaurando(v.id);
     try { await api.restaurarVeiculo(v.id); await load(); }
-    catch (e) { alert("Erro ao restaurar: " + e.message); }
+    catch (e) { await alertDialog("Erro ao restaurar: " + e.message); }
     finally { setRestaurando(null); }
   }
 
@@ -169,7 +170,7 @@ export default function Veiculos() {
   async function mover(v, direcao) {
     setMovendo(v.id);
     try { await api.moverVeiculo(v.id, direcao, meuSite); await load(); }
-    catch (e) { alert("Erro ao reordenar: " + e.message); }
+    catch (e) { await alertDialog("Erro ao reordenar: " + e.message); }
     finally { setMovendo(null); }
   }
   function diasRestantes(v) {
@@ -356,7 +357,7 @@ export default function Veiculos() {
                   {form.fotos.map((url,i) => (
                     <div key={i} className="foto-item">
                       <img src={url} alt=""/>
-                      {i===0 && <div style={{position:"absolute",bottom:4,left:4,background:"var(--brand)",color:"#0c0c0a",fontSize:9,padding:"2px 6px",borderRadius:4,fontWeight:700}}>CAPA</div>}
+                      {i===0 && <div style={{position:"absolute",bottom:4,left:4,background:"var(--brand)",color:"#0c0c0a",fontSize:10,padding:"2px 6px",borderRadius:4,fontWeight:700}}>CAPA</div>}
                       <button className="foto-remove" onClick={()=>removerFoto(i)}>×</button>
                     </div>
                   ))}

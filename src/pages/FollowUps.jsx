@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
+import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 
 // Ordem das colunas — só preferência visual (mesmo padrão do CRM Kanban em CRM.jsx),
 // localStorage já basta. Uma chave só (não por role): as 7 colunas são as mesmas pra
@@ -36,16 +37,16 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
   async function salvarTexto(msgId) {
     setSalvando(true);
     try { await atualizarMensagemFollowup(msgId, { conteudo: textoEdit }); onAtualizado(); }
-    catch { alert("Erro ao salvar. Tente de novo."); }
+    catch { await alertDialog("Erro ao salvar. Tente de novo."); }
     setSalvando(false); setEditandoId(null);
   }
   async function mudarStatusMsg(msgId, status) {
     try { await atualizarMensagemFollowup(msgId, { status }); onAtualizado(); }
-    catch { alert("Erro ao atualizar mensagem."); }
+    catch { await alertDialog("Erro ao atualizar mensagem."); }
   }
   async function mudarFluxo(status_fluxo) {
     try { await atualizarFluxoFollowup(followup.id, status_fluxo); onAtualizado(); }
-    catch { alert("Erro ao atualizar fluxo."); }
+    catch { await alertDialog("Erro ao atualizar fluxo."); }
   }
 
   return (
@@ -59,7 +60,7 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
               : followup.status_fluxo === "pausado"
               ? <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => mudarFluxo("ativo")}><i className="ti ti-player-play" style={{ fontSize: 12 }} /> Retomar</button>
               : <span className="badge" style={{ fontSize: 10, background: "var(--danger)22", color: "var(--danger)" }}>Cancelado</span>}
-            {followup.status_fluxo !== "cancelado" && <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11, color: "var(--danger)" }} onClick={() => { if (confirm("Cancelar todo o fluxo de mensagens desse follow-up?")) mudarFluxo("cancelado"); }}><i className="ti ti-x" style={{ fontSize: 12 }} /></button>}
+            {followup.status_fluxo !== "cancelado" && <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11, color: "var(--danger)" }} onClick={async () => { if (await confirmDialog("Cancelar todo o fluxo de mensagens desse follow-up?",{title:"Cancelar fluxo?",confirmLabel:"Cancelar fluxo"})) mudarFluxo("cancelado"); }}><i className="ti ti-x" style={{ fontSize: 12 }} /></button>}
           </div>
         )}
       </div>
@@ -68,7 +69,7 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
         const editavel = !readOnly && m.status !== "enviada";
         return (
           <div key={m.id} style={{ display: "flex", gap: 6, alignItems: "flex-start", padding: "4px 0", borderTop: "1px solid var(--border)" }}>
-            <span className="badge" style={{ fontSize: 9, background: `${cor}22`, color: cor, flexShrink: 0, marginTop: 2 }}>{label}</span>
+            <span className="badge" style={{ fontSize: 10, background: `${cor}22`, color: cor, flexShrink: 0, marginTop: 2 }}>{label}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10, color: "var(--muted)" }}>{fmtData(m.agendado_para)}</div>
               {editandoId === m.id ? (
@@ -150,13 +151,13 @@ function LeadCardHeader({f,role,onAtualizado}){
     if(!nome.trim())return;
     setSalvando(true);
     try{await atualizarLeadCRM(f.lead_id,{nome:nome.trim(),veiculo_interesse:veiculo.trim()});onAtualizado();setEditando(false);}
-    catch{alert("Erro ao salvar. Tente de novo (talvez esse lead não seja seu).");}
+    catch{await alertDialog("Erro ao salvar. Tente de novo (talvez esse lead não seja seu).");}
     setSalvando(false);
   }
   async function remover(){
-    if(!confirm(`Remover ${f.cliente_nome} do CRM? Use só pra lead de teste ou cadastro errado.`))return;
+    if(!await confirmDialog(`Remover ${f.cliente_nome} do CRM? Use só pra lead de teste ou cadastro errado.`,{title:"Remover lead?",confirmLabel:"Remover"}))return;
     try{await excluirLeadCRM(f.lead_id);onAtualizado();}
-    catch{alert("Erro ao remover.");}
+    catch{await alertDialog("Erro ao remover.");}
   }
   if(editando){
     return(
