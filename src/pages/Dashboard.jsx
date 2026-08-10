@@ -481,7 +481,13 @@ function TabMetricas({ metricas, loading, erro }) {
         </div>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-alert-triangle"/> Sem resposta {semResposta.horasParametro}h+</div>
-          <div className="metric-value" style={{color:semResposta.leads.length>0?"#e07b7b":undefined}}>{semResposta.leads.length}</div>
+          {/* 2026-08-10 (bug real, achado ao vivo — Felipe): a lista `leads` vem cortada em
+              LIMIT 50 no backend (proteção de payload); usar `.length` dela como contagem
+              fazia o card mostrar sempre "50" com mais de 50 parados, mascarando a
+              diferença real entre "Todas"/"Curitibanos"/"Campos Novos" — parecia que o
+              filtro de loja não tinha efeito nessa métrica. `total` vem de uma contagem
+              separada, sem LIMIT. */}
+          <div className="metric-value" style={{color:semResposta.total>0?"#e07b7b":undefined}}>{semResposta.total}</div>
           <div className="metric-delta" style={{color:"var(--muted)"}}>leads parados</div>
         </div>
       </div>
@@ -751,13 +757,22 @@ export default function Dashboard() {
     setSeletorAberto(false);
   }
 
-  if (erro) return (
+  if (erro && !data) return (
     <div className="empty-state">
       <i className="ti ti-alert-triangle"/>
       <p>{erro}</p>
     </div>
   );
-  if (loading) return (
+  // LA V1 20260810 (bug real, achado ao vivo — Felipe, "os números da segunda data
+  // somem quando digito"): antes, QUALQUER refetch (trocar loja, clicar preset, ou
+  // completar o período personalizado) caía nesse `if(loading)` e substituía a página
+  // inteira por "Carregando..." — inclusive o painel De/Até que o usuário acabara de
+  // preencher, que estava logo ali na tela até o instante anterior. Parecia que os
+  // números digitados tinham "sumido", quando na verdade era a página inteira trocando
+  // de conteúdo. Agora só bloqueia a tela inteira na primeira carga (ainda sem `data`);
+  // com dado em cache, o conteúdo antigo continua visível (indicador discreto abaixo,
+  // ver `filter-chip-row`) até o novo período chegar.
+  if (loading && !data) return (
     <div className="empty-state">
       <i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/>
       <p>Carregando...</p>
@@ -778,6 +793,10 @@ export default function Dashboard() {
         <div>
           <h1 className="page-title"><i className="ti ti-layout-dashboard"/> Dashboard</h1>
           {roleLabel && <span style={{fontSize:12,color:"var(--muted)",marginLeft:2}}>· {roleLabel}</span>}
+          {/* Refetch em segundo plano (ver comentário no `if(loading && !data)` acima) —
+              indicador discreto de que o filtro foi aplicado e está atualizando, sem
+              esconder a tela inteira. */}
+          {loading && <span style={{fontSize:12,color:"var(--muted)",marginLeft:8}}><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/> atualizando...</span>}
         </div>
         {/* Poucos botões, usados com frequência — maiores e mais confortáveis de tocar
             (2026-07-13: antes rolava horizontal; agora sempre cabem numa linha, ver
