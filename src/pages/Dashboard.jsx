@@ -630,6 +630,33 @@ function anoRazoavel(isoDate) {
   return ano >= 2000 && ano <= new Date().getFullYear() + 1;
 }
 
+// LA V1 20260809 (fix 2, mesmo caso Diana/Felipe): a validação de ano acima impede o
+// valor CORROMPIDO de entrar no estado, mas não resolve a causa raiz -- colar texto
+// formatado (ex: "05/08/2026") direto num <input type="date"> nativo não funciona de
+// forma confiável em vários navegadores: o widget tenta encaixar o texto colado
+// segmento por segmento (dia/mês/ano) em vez de entender a data inteira, e some com o
+// valor inteiro (campo fica vazio, "dd/mm/aaaa") em vez de preencher. Em vez de confiar
+// no comportamento nativo de paste, intercepta e interpreta a data colada nós mesmos
+// (aceita DD/MM/AAAA -- o formato usado no resto do painel -- e AAAA-MM-DD/ISO), convertendo
+// pro formato que o input espera (YYYY-MM-DD) e aplicando via estado. Se o texto colado
+// não bater em nenhum formato reconhecido, deixa o comportamento nativo tentar por conta
+// própria (não piora nada, só não ajuda nesse caso raro).
+function parseDataColada(texto) {
+  if (!texto) return null;
+  const t = texto.trim();
+  let m = t.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/); // DD/MM/AAAA, DD-MM-AAAA, DD.MM.AAAA
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); // AAAA-MM-DD (ISO)
+  if (m) {
+    const [, y, mo, d] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  return null;
+}
+
 /* ─── componente principal ─── */
 export default function Dashboard() {
   const [data, setData]     = useState(null);
@@ -802,6 +829,14 @@ export default function Dashboard() {
                 // não importa qual foi preenchido primeiro.
                 if (novaDesde && customAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
               }}
+              onPaste={e=>{
+                const iso = parseDataColada(e.clipboardData.getData("text"));
+                if (iso && anoRazoavel(iso)) {
+                  e.preventDefault();
+                  setCustomDesde(iso);
+                  if (iso && customAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
+                }
+              }}
               max={customAte||undefined}/>
           </div>
           <div style={{flex:"1 1 140px",minWidth:140}}>
@@ -819,6 +854,14 @@ export default function Dashboard() {
                 // um clique extra — "Aplicar" continua existindo pra quem só preenche "De"
                 // (período em aberto até hoje) e quer confirmar sem escolher "Até".
                 if (customDesde && novaAte) { setPeriodo("personalizado"); setSeletorAberto(false); }
+              }}
+              onPaste={e=>{
+                const iso = parseDataColada(e.clipboardData.getData("text"));
+                if (iso && anoRazoavel(iso)) {
+                  e.preventDefault();
+                  setCustomAte(iso);
+                  if (customDesde && iso) { setPeriodo("personalizado"); setSeletorAberto(false); }
+                }
               }}
               min={customDesde||undefined} max={new Date().toISOString().slice(0,10)}/>
           </div>
