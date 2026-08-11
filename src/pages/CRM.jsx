@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
+import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, agendarRetomada, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
@@ -418,6 +418,24 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
     }catch{await alertDialog("Erro ao marcar agendamento. Tente de novo.");}
     setSalvandoManual(false);
   }
+  // 2026-08-11: "retomar contato" — diferente de "Marcar manualmente" acima (que é
+  // visita física na loja, com checagem de horário/agenda do vendedor) — aqui é só
+  // "me lembra de chamar esse cliente de novo nesse dia", sem checagem de horário
+  // (não consome vaga de agenda física). Move o lead pro estágio "Agendados" e
+  // dispara 1 mensagem automática pro cliente no dia marcado.
+  const[retomadaAberto,setRetomadaAberto]=useState(false);
+  const[dataRetomada,setDataRetomada]=useState("");
+  const[salvandoRetomada,setSalvandoRetomada]=useState(false);
+  async function handleAgendarRetomada(){
+    if(!dataRetomada)return;
+    setSalvandoRetomada(true);
+    try{
+      await agendarRetomada(lead.id,`${dataRetomada}:00`);
+      setRetomadaAberto(false);
+      onAtualizado?.();
+    }catch{await alertDialog("Erro ao agendar retomada de contato. Tente de novo.");}
+    setSalvandoRetomada(false);
+  }
   // Fechado ganho pede o veículo específico do estoque (não só o texto livre de
   // veiculo_interesse) — pra saber exatamente qual carro saiu e pra qual cliente,
   // mesmo depois do veículo sair do painel (Veiculos.jsx marca ativo=false).
@@ -684,6 +702,21 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
                   <i className="ti ti-calendar-event"/> Marcar manualmente
                 </button>
               </div>
+            )}
+          </div>
+        )}
+        {!readOnly&&lead.vendedor_id&&!agendado&&!manualAberto&&(
+          <div style={{marginBottom:14}}>
+            {retomadaAberto?(
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <input type="datetime-local" className="form-input" style={{marginBottom:0,flex:1}} value={dataRetomada} onChange={e=>setDataRetomada(e.target.value)}/>
+                <button className="btn btn-primary" style={{padding:"6px 12px"}} onClick={handleAgendarRetomada} disabled={!dataRetomada||salvandoRetomada}>{salvandoRetomada?<span className="spinner"/>:<i className="ti ti-check"/>}</button>
+                <button className="btn btn-ghost" style={{padding:"6px 12px"}} onClick={()=>setRetomadaAberto(false)}><i className="ti ti-x"/></button>
+              </div>
+            ):(
+              <button className="btn btn-ghost" style={{width:"100%"}} onClick={()=>setRetomadaAberto(true)} disabled={!telAtual} title={!telAtual?"Lead sem telefone":"Cliente vai pensar/falar com a família — marca um dia pra retomar contato, o sistema manda uma mensagem sozinho nesse dia"}>
+                <i className="ti ti-clock-pause"/> Retomar contato depois
+              </button>
             )}
           </div>
         )}

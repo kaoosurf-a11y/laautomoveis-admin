@@ -75,6 +75,7 @@ export async function getStatusLaraFila()             { return req("/api/status-
 export async function atualizarTemperatura(id,temperatura) { return req(`/api/crm/leads/${id}/temperatura`,{method:"PATCH",body:JSON.stringify({temperatura})}); }
 export async function atualizarResponsavel(id,responsavel_atual) { return req(`/api/crm/leads/${id}/responsavel`,{method:"PATCH",body:JSON.stringify({responsavel_atual})}); }
 export async function agendarVisita(id)    { return req(`/api/crm/leads/${id}/agendar`,{method:"POST"}); }
+export async function agendarRetomada(id,data_hora,observacoes) { return req(`/api/crm/leads/${id}/agendar-retomada`,{method:"POST",body:JSON.stringify({data_hora,observacoes})}); }
 // 2026-07-15: período "personalizado" (dia/mês/ano exatos escolhidos pelo usuário) manda
 // desde/ate também — ignorados pelo backend pros presets (semana/mes/trimestre).
 export async function getDashboard(p="mes",desde=null,ate=null,lojaId=null){
