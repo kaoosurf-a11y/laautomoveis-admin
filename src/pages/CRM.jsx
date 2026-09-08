@@ -73,6 +73,11 @@ const ESTAGIOS_ADMIN=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
   {key:"lista_vip",label:"Lista Vip",cor:"#E6B422"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
+  // nao_qualificado (2026-09-08): lead que a IA conversou mas não conseguiu qualificar
+  // nem transferir. Só aparece pro admin/gerente (fora do ESTAGIOS_VENDEDOR) — é métrica
+  // de gestão da perda de leads desqualificados, não fila de trabalho pro vendedor.
+  // Cinza neutro de propósito: coluna "estacionada", sem ação esperada.
+  {key:"nao_qualificado",label:"Não qualificado",cor:"#6B7280"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
   {key:"nao_achou_carro",label:"Não achou o carro",cor:"#17A2B8"},
