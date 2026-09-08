@@ -258,3 +258,21 @@ const MOCK_FU={
   ],
   vencidos:[],
 };
+
+export async function getCampanha(lojaId) {
+  const q = lojaId ? `?loja_id=${lojaId}` : "";
+  return req(`/api/campanha${q}`);
+}
+export async function salvarCampanha(d) {
+  return req("/api/campanha", { method: "PUT", body: JSON.stringify(d) });
+}
+export async function uploadFotoCampanha(file) {
+  const headers = { ...authHeaders() };
+  delete headers["Content-Type"];
+  delete headers["content-type"];
+  const fd = new FormData();
+  fd.append("foto", file);
+  const res = await fetch(`${API}/api/upload/foto`, { method: "POST", headers, body: fd });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}

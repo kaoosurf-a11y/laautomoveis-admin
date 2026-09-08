@@ -71,6 +71,7 @@ const SUGESTAO_LABEL={
 // migrados pra fechado_ganho (backend routes/crm.js ALIAS cobre qualquer resquício).
 const ESTAGIOS_ADMIN=[
   {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
+  {key:"lista_vip",label:"Lista Vip",cor:"#E6B422"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
@@ -98,6 +99,7 @@ const ESTAGIOS_ADMIN=[
 // de verdade, e pro vendedor poder mover manualmente também.
 const ESTAGIOS_VENDEDOR=[
   {key:"para_atender",label:"Para atender",cor:"#7ba7e0",estagiosDb:["novo_lead"]},
+  {key:"lista_vip",label:"Lista Vip",cor:"#E6B422"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   {key:"sem_credito",label:"Sem crédito",cor:"#e67e22"},
   {key:"vai_pensar",label:"Vai pensar",cor:"#8E44AD"},
@@ -759,18 +761,33 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
   );
 }
 
-function NovoModal({onClose,onCriado}){
+function NovoModal({onClose,onCriado,campanhaVipAtiva}){
   // Default "presencial": o botão "Novo lead" existe justamente pro vendedor cadastrar
   // quem chega na loja — o telefone pode não existir ainda, sem WhatsApp coletado.
-  const[form,setForm]=useState({nome:"",telefone:"",veiculo_interesse:"",origem:"presencial"});
+  const[form,setForm]=useState({nome:"",telefone:"",veiculo_interesse:"",origem:"presencial",email:"",lista_vip:false});
   const[loading,setLoading]=useState(false);
   const[erro,setErro]=useState(null);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   async function submit(){
-    if(!form.nome||!form.veiculo_interesse)return;
+    if(!form.nome)return;
+    if(form.lista_vip){
+      if(!form.email||!String(form.email).includes("@")){setErro("Lista VIP precisa de um e-mail. Cada e-mail entra uma vez.");return;}
+    }else if(!form.veiculo_interesse){
+      return;
+    }
     setLoading(true);setErro(null);
-    try{await criarLeadCRM(form);onCriado();onClose();}
-    catch{setErro("Erro ao criar lead. Tente novamente.");}
+    try{
+      await criarLeadCRM({
+        ...form,
+        estagio: form.lista_vip ? "lista_vip" : undefined,
+        veiculo_interesse: form.lista_vip ? (form.veiculo_interesse || "Operação L.A. 35") : form.veiculo_interesse,
+      });
+      onCriado();onClose();
+    }
+    catch(e){
+      const s=String(e?.message||"");
+      setErro(s==="409"?"Não foi possível incluir na Lista VIP. Confira o e-mail ou se esta loja tem campanha ativa.":"Erro ao criar lead. Tente novamente.");
+    }
     setLoading(false);
   }
   return(
@@ -781,9 +798,15 @@ function NovoModal({onClose,onCriado}){
           <h2 className="modal-title">Novo lead</h2>
           <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button>
         </div>
+        {campanhaVipAtiva!==false && (
+        <div className="form-group form-check">
+          <input type="checkbox" id="lista_vip_novo" checked={!!form.lista_vip} onChange={e=>set("lista_vip",e.target.checked)}/>
+          <label htmlFor="lista_vip_novo">Lista VIP — Operação L.A. 35 (sem vendedor; o grupo informa o evento)</label>
+        </div>
+        )}
         <div className="form-group"><label className="form-label">Nome *</label><input className="form-input" value={form.nome} onChange={e=>set("nome",e.target.value)} placeholder="Nome do cliente"/></div>
         <div className="form-group"><label className="form-label">Telefone (opcional)</label><input className="form-input" value={form.telefone} onChange={e=>set("telefone",e.target.value)} placeholder="(49) 9 9999-9999 — deixe em branco se não tiver ainda"/></div>
-        <div className="form-group"><label className="form-label">Veículo *</label><input className="form-input" value={form.veiculo_interesse} onChange={e=>set("veiculo_interesse",e.target.value)} placeholder="Ex: HB20 2022"/></div>
+        <div className="form-group"><label className="form-label">{form.lista_vip?"Veículo (opcional)":"Veículo *"}</label><input className="form-input" value={form.veiculo_interesse} onChange={e=>set("veiculo_interesse",e.target.value)} placeholder={form.lista_vip?"Operação L.A. 35":"Ex: HB20 2022"}/></div>
         <div className="form-group"><label className="form-label">Origem</label>
           <select className="form-input" value={form.origem} onChange={e=>set("origem",e.target.value)}>
             <option value="presencial">Presencial (loja)</option>
@@ -797,7 +820,7 @@ function NovoModal({onClose,onCriado}){
         informação ainda. */}
         <div className="form-group"><label className="form-label">Data de nascimento</label><input type="date" className="form-input" value={form.data_nascimento||""} onChange={e=>set("data_nascimento",e.target.value)}/></div>
         <div className="form-group"><label className="form-label">Cidade</label><input className="form-input" value={form.cidade||""} onChange={e=>set("cidade",e.target.value)} placeholder="Ex: Curitibanos"/></div>
-        <div className="form-group"><label className="form-label">E-mail</label><input type="email" className="form-input" value={form.email||""} onChange={e=>set("email",e.target.value)} placeholder="cliente@email.com"/></div>
+        <div className="form-group"><label className="form-label">{form.lista_vip?"E-mail *":"E-mail"}</label><input type="email" className="form-input" value={form.email||""} onChange={e=>set("email",e.target.value)} placeholder="cliente@email.com"/></div>
         <div className="form-group"><label className="form-label">Profissão</label><input className="form-input" value={form.profissao||""} onChange={e=>set("profissao",e.target.value)} placeholder="Ex: Motorista"/></div>
         <div className="form-group"><label className="form-label">Observações</label><textarea className="form-input" style={{minHeight:60}} value={form.observacoes||""} onChange={e=>set("observacoes",e.target.value)} placeholder="Qualquer detalhe relevante sobre o cliente"/></div>
         {/* Validação humana (2026-07-16): cliente antigo da campanha de reativação que
@@ -875,6 +898,8 @@ export default function CRM(){
     boardRef.current?.classList.remove("grabbing");
   }
   const[kanban,setKanban]=useState({});
+  const campanhaVipAtiva=kanban.__campanha_vip_ativa!==false;
+  const estagiosKanban=campanhaVipAtiva?estagios:estagios.filter(e=>e.key!=="lista_vip");
   const[loading,setLoading]=useState(true);
   const[busca,setBusca]=useState("");
   const[leadSel,setLeadSel]=useState(null);
@@ -1018,7 +1043,7 @@ export default function CRM(){
           onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
           onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}
         >
-          {estagios.map(est=>{
+          {estagiosKanban.map(est=>{
             const leads=leadsDaColuna(est,kanban).filter(l=>leadBate(l,busca));
             return(
               <div key={est.key} className="kanban-col">
@@ -1060,6 +1085,9 @@ export default function CRM(){
                       style={{cursor:readOnly?"pointer":"grab",border:`2px solid ${est.cor}`,boxShadow:`0 0 8px ${est.cor}4d`}}
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
+                      {lead.codigo_vip!=null&&
+                        <div style={{fontSize:11,color:"#E6B422",fontWeight:700,marginBottom:4,letterSpacing:".04em"}}>VIP #{lead.codigo_vip}</div>
+                      }
                       <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
                       {lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio&&
                         <div
@@ -1098,8 +1126,8 @@ export default function CRM(){
           })}
         </div>
 
-      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagios} role={role}/>}
-      {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
+      {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagiosKanban} role={role}/>}
+      {!readOnly&&novoModal&&<NovoModal campanhaVipAtiva={campanhaVipAtiva} onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );
 }

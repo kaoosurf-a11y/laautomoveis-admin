@@ -14,6 +14,7 @@ import Clientes from "./pages/Clientes.jsx";
 import Disparador from "./pages/Disparador.jsx";
 import Status from "./pages/Status.jsx";
 import Lojas from "./pages/Lojas.jsx";
+import Campanha from "./pages/Campanha.jsx";
 
 function Priv({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
@@ -50,6 +51,7 @@ export default function App() {
       <Route path="/agenda"    element={<Priv><Agenda /></Priv>} />
       <Route path="/veiculos"  element={<Priv><Veiculos /></Priv>} />
       <Route path="/clientes"  element={<AdminMasterOnly><Clientes /></AdminMasterOnly>} />
+      <Route path="/campanha"    element={<OwnerOnly><Campanha /></OwnerOnly>} />
       <Route path="/disparador" element={<OwnerOnly><Disparador /></OwnerOnly>} />
       <Route path="/status"     element={<OwnerOnly><Status /></OwnerOnly>} />
       <Route path="/equipe"    element={<OwnerOnly><Equipe /></OwnerOnly>} />

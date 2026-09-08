@@ -51,6 +51,7 @@ export default function Layout({ children }) {
     // Disparador (2026-07-16): contatos AINDA na campanha de reativação, antes de
     // validação — aba separada de Clientes por pedido explícito (fases diferentes
     // da jornada, mesmo par de permissão).
+    ...(isManager() ? [{ to:"/campanha", icon:"ti-speakerphone", label:"Promoções", section:"ADMIN" }] : []),
     ...(isManager() ? [{ to:"/disparador", icon:"ti-send", label:"Disparador", section:"ADMIN" }] : []),
     // Status (2026-07-18, removida do menu 2026-07-19): Status/Stories automático da
     // Lara no WhatsApp — pausada e removida da navegação após incidente real de
