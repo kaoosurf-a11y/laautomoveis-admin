@@ -70,7 +70,10 @@ const SUGESTAO_LABEL={
 // parte pra isso, só duplicava o conceito. Leads que estavam em pos_venda foram
 // migrados pra fechado_ganho (backend routes/crm.js ALIAS cobre qualquer resquício).
 const ESTAGIOS_ADMIN=[
-  {key:"novo_lead",label:"Novo lead",cor:"#7ba7e0"},
+  // 2026-09-14 (pedido Felipe, decisão 2 da auditoria de colunas): rótulo unificado
+  // com ESTAGIOS_VENDEDOR — era "Novo lead" aqui e "Para atender" no painel do
+  // vendedor pro MESMO estagio_db (novo_lead), confundindo quem olha os dois painéis.
+  {key:"novo_lead",label:"Para atender",cor:"#7ba7e0"},
   {key:"lista_vip",label:"Lista Vip",cor:"#E6B422"},
   {key:"negociando",label:"Em negociação",cor:"#C8A84B"},
   // nao_qualificado (2026-09-08): lead que a IA conversou mas não conseguiu qualificar
@@ -97,7 +100,8 @@ const ESTAGIOS_ADMIN=[
   {key:"bau",label:"Baú",cor:"#8d6e63"},
 ];
 // Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou, cai em
-// "Para atender" (= estagio novo_lead, só com rótulo mais claro pro vendedor).
+// "Para atender" (= estagio novo_lead). Rótulo unificado com ESTAGIOS_ADMIN em
+// 2026-09-14 — antes só existia aqui, agora é o mesmo nos dois painéis.
 // 2026-07-16: "Em negociação" deixou de ser fundida em "Para atender" — agora é
 // coluna própria também pro vendedor (igual já era pro admin), pra ficar visível
 // quando a Lara ou o Observador identificam que o atendimento avançou pra negociação
