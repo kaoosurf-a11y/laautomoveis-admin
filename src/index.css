@@ -2,7 +2,7 @@
 :root{
   --bg:#0c0c0a;--surface:#161614;--surface2:#1e1e1c;--border:rgba(255,255,255,0.07);
   --brand:#C8A84B;--brand2:#a88a35;--danger:#e05252;--success:#4caf7d;--warning:#e6a817;
-  --fg:#f0ede6;--muted:#6b6b66;--radius:10px;--radius-sm:6px;--radius-lg:14px;
+  --fg:#f0ede6;--muted:#8a8a84;--radius:10px;--radius-sm:6px;--radius-lg:14px;
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI","SF Pro Display",sans-serif;
   --topbar-h:56px;--bottom-h:64px;
 }
