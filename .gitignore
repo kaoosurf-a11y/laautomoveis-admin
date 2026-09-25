@@ -3,3 +3,7 @@ dist/
 package-lock.json
 .env
 .env.local
+
+# copias de seguranca feitas antes de editar no servidor (ex: CRM.jsx.bak.<motivo>-<data>)
+*.bak.*
+*.bak
