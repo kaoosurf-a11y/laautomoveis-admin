@@ -46,7 +46,6 @@ export default function Layout({ children }) {
     ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dashboard", section:"VISÃO GERAL" }] : []),
     { to:"/crm",       icon:"ti-target",        label:"CRM Pipeline", section:"COMERCIAL" },
     { to:"/followups", icon:"ti-clock",          label:"Follow-ups",   section:null },
-    { to:"/envios",    icon:"ti-calendar-time",  label:"Envios",       section:null },
     { to:"/agenda",    icon:"ti-calendar-event", label:"Agenda",       badge:agendaHoje||null, section:null },
     { to:"/veiculos",  icon:"ti-car",            label:"Veículos",     section:"ESTOQUE" },
     // Disparador (2026-07-16): contatos AINDA na campanha de reativação, antes de
@@ -65,6 +64,8 @@ export default function Layout({ children }) {
     ...(isOwner() ? [{ to:"/clientes", icon:"ti-users-group", label:"Clientes", section:"ADMIN" }] : []),
     ...(isOwner() ? [{ to:"/equipe", icon:"ti-users", label:"Equipe", section:"ADMIN" }] : []),
     ...(isOwner() ? [{ to:"/lojas", icon:"ti-building-store", label:"Lojas", section:"ADMIN" }] : []),
+    // Envios (2026-09-24): central de envios proativos, somente leitura, so admin_master (decisao do Felipe).
+    ...(isOwner() ? [{ to:"/envios", icon:"ti-calendar-time", label:"Envios", section:"ADMIN" }] : []),
     // Contatos perdidos: 2026-07-20 restrito a admin_master (mesmo motivo de Clientes acima).
     ...(isOwner() ? [{ to:"/contatos-perdidos", icon:"ti-alert-triangle", label:"Contatos perdidos", section:null }] : []),
   ];
