@@ -176,7 +176,7 @@ function BloqueioModal({onClose,onCriado}){
   );
 }
 
-const TIPOS={test_drive:{label:"Test drive",icon:"🚗",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"🏢",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"📋",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"🤝",cor:"#8E44AD"},visita_mencionada:{label:"Visita mencionada",icon:"💬",cor:"#16A085"}};
+const TIPOS={test_drive:{label:"Test drive",icon:"ti-car",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"ti-building-store",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"ti-clipboard-list",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"ti-heart-handshake",cor:"#8E44AD"},visita_mencionada:{label:"Visita mencionada",icon:"ti-message-circle",cor:"#16A085"}};
 const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)",nao_compareceu:"#e67e22",aguardando_reagendamento_lara:"var(--brand)",intencao:"#16A085"};
 
 function fmtH(iso){const d=new Date(iso);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
@@ -246,13 +246,13 @@ function GradeHorarios({doDia,onAbrirAg}){
                 <i className={`ti ${ag.recorrente?"ti-repeat":"ti-lock"}`} style={{fontSize:11}}/> {ag.observacoes||"Bloqueado"}
               </div>;
             }
-            const tipo=TIPOS[ag.tipo]||{icon:"📅",cor:"var(--muted)"};
+            const tipo=TIPOS[ag.tipo]||{icon:"ti-calendar",cor:"var(--muted)"};
             const status=getStatus(ag);
             return(
               <button key={ag.id} className="time-grid-block ag" onClick={()=>onAbrirAg(ag)}
                 style={{top:_ini,height:altura,left:esquerda,width:largura,borderLeftColor:SBORDA[status]||tipo.cor,background:`${tipo.cor}1c`}}>
                 <span className="time-grid-block-hora">{fmtH(ag.data_hora)}</span>
-                <span className="time-grid-block-nome">{tipo.icon} {ag.cliente_nome}</span>
+                <span className="time-grid-block-nome"><i className={`ti ${tipo.icon}`}/> {ag.cliente_nome}</span>
               </button>
             );
           })}
@@ -264,7 +264,7 @@ function GradeHorarios({doDia,onAbrirAg}){
 
 function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOnly}){
   const status=getStatus(ag);
-  const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"📅",cor:"var(--muted)"};
+  const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"ti-calendar",cor:"var(--muted)"};
   const min=minAte(ag.data_hora);
   const[escolhendoReagendar,setEscolhendoReagendar]=useState(false);
   const[reagendando,setReagendando]=useState(false);
@@ -318,12 +318,12 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <span style={{fontSize:16,fontWeight:700,color:"var(--fg)"}}>
           {fmtH(ag.data_hora)} — {fmtHF(ag.data_hora,ag.duracao_min)}
-          {status==="em_breve"&&<span style={{fontSize:11,color:"var(--brand)",marginLeft:8}}>⚠️ EM {min} MIN</span>}
+          {status==="em_breve"&&<span style={{fontSize:11,color:"var(--brand)",marginLeft:8}}><i className="ti ti-alert-triangle"/> EM {min} MIN</span>}
         </span>
         <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{ag.vendedor_iniciais}</div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:8}}>
-        <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:`${tipo.cor}22`,color:tipo.cor,display:"inline-block"}}>{tipo.icon} {tipo.label}</span>
+        <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:`${tipo.cor}22`,color:tipo.cor,display:"inline-block"}}><i className={`ti ${tipo.icon}`}/> {tipo.label}</span>
         {/* 2026-07-28: quem agendou — vendedor no painel vs Lara/Larissa durante a
             conversa de WhatsApp (agenda.origem, ver backend). */}
         {ag.origem==="ia"?(
@@ -335,7 +335,7 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
       <div style={{fontSize:15,fontWeight:600,color:"var(--fg)",marginBottom:2}}>{ag.cliente_nome}</div>
       <div style={{fontSize:13,color:"var(--muted)",marginBottom:8}}>{ag.veiculo}</div>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:ag.observacoes?8:10,flexWrap:"wrap"}}>
-        <span style={{fontSize:13,color:"var(--muted)",whiteSpace:"nowrap"}}>📱 {ag.cliente_tel}</span>
+        <span style={{fontSize:13,color:"var(--muted)",whiteSpace:"nowrap"}}><i className="ti ti-device-mobile"/> {ag.cliente_tel}</span>
         {ag.lead_id?(
           <LeadPhoneChatwoot
             lead={{id:ag.lead_id,telefone:ag.cliente_tel,chatwoot_conv_id:ag.chatwoot_conv_id,chatwoot_inbox_id:ag.chatwoot_inbox_id}}
@@ -348,8 +348,8 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
         ):null}
       </div>
       {ag.observacoes&&<div style={{fontSize:12,color:"var(--muted)",fontStyle:"italic",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>{ag.observacoes}</div>}
-      {status==="aguardando_reagendamento_lara"&&!pedidoLaraEnviado&&<div style={{fontSize:12,color:"var(--brand)",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>🤖 Aguardando a Lara remarcar com o cliente pelo WhatsApp...</div>}
-      {pedidoLaraEnviado&&<div style={{fontSize:12,color:"var(--brand)",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}>🤖 Pedido enviado! A Lara vai negociar um novo horário com o cliente.</div>}
+      {status==="aguardando_reagendamento_lara"&&!pedidoLaraEnviado&&<div style={{fontSize:12,color:"var(--brand)",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}><i className="ti ti-robot"/> Aguardando a Lara remarcar com o cliente pelo WhatsApp...</div>}
+      {pedidoLaraEnviado&&<div style={{fontSize:12,color:"var(--brand)",marginBottom:10,padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}><i className="ti ti-robot"/> Pedido enviado! A Lara vai negociar um novo horário com o cliente.</div>}
       {escolhendoReagendar&&(
         <div style={{marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6}}>
           <div style={{fontSize:12,color:"var(--muted)",marginBottom:6}}>Como reagendar?</div>
@@ -464,7 +464,7 @@ function NovoModal({onClose,onCriado}){
         <div className="form-group"><label className="form-label">Telefone</label><input className="form-input" value={form.cliente_tel} onChange={e=>set("cliente_tel",e.target.value)} placeholder="49999999999"/></div>
         <div className="form-group"><label className="form-label">Veículo *</label><input className="form-input" value={form.veiculo} onChange={e=>set("veiculo",e.target.value)} placeholder="Ex: HB20 2022"/></div>
         <div className="form-grid">
-          <div className="form-group"><label className="form-label">Tipo</label><select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>{Object.entries(TIPOS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}</select></div>
+          <div className="form-group"><label className="form-label">Tipo</label><select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>{Object.entries(TIPOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
           <div className="form-group"><label className="form-label">Duração</label><select className="form-input" value={form.duracao_min} onChange={e=>set("duracao_min",+e.target.value)}><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 hora</option><option value={90}>1h30</option></select></div>
           <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>{set("data",e.target.value);setForaHorario(false);setConfirmarMesmoAssim(false);}} min={dataLocalISO(new Date())}/></div>
           <div className="form-group"><label className="form-label">Horário</label><select className="form-input" value={form.horario} onChange={e=>{set("horario",e.target.value);setForaHorario(false);setConfirmarMesmoAssim(false);}}>{slots().map(s=><option key={s} value={s}>{s}</option>)}</select></div>
@@ -533,8 +533,8 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
               <span className="cal-cel-num" style={{fontWeight:isHoje?700:500}}>{d.getDate()}</span>
               <div className="cal-cel-chips">
                 {eventos.map(ev=>{
-                  const tipo=TIPOS[ev.tipo]||{icon:"📅",cor:"var(--muted)"};
-                  return <span key={ev.id} className="cal-chip" style={{background:`${tipo.cor}22`,color:tipo.cor}}>{tipo.icon} {ev.hora} {ev.cliente_nome||"—"}</span>;
+                  const tipo=TIPOS[ev.tipo]||{icon:"ti-calendar",cor:"var(--muted)"};
+                  return <span key={ev.id} className="cal-chip" style={{background:`${tipo.cor}22`,color:tipo.cor}}><i className={`ti ${tipo.icon}`}/> {ev.hora} {ev.cliente_nome||"—"}</span>;
                 })}
                 {sobrando>0&&<span className="cal-chip cal-chip-mais">+{sobrando} mais</span>}
               </div>

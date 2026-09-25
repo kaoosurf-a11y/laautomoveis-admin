@@ -91,10 +91,10 @@ export default function Layout({ children }) {
   // Só agendamentos reais de cliente disparam a notificação — "bloqueio" é horário
   // pessoal do vendedor (almoço, indisponibilidade) e nunca deve aparecer aqui.
   const TIPOS_NOTIF = {
-    test_drive:        { label: "Test drive",         icon: "🚗" },
-    visita_patio:       { label: "Visita ao pátio",     icon: "🏢" },
-    apresentacao:       { label: "Apresentação",        icon: "📋" },
-    reuniao_fechamento: { label: "Reunião de fechamento", icon: "🤝" },
+    test_drive:        { label: "Test drive",         icon: "ti-car" },
+    visita_patio:       { label: "Visita ao pátio",     icon: "ti-building-store" },
+    apresentacao:       { label: "Apresentação",        icon: "ti-clipboard-list" },
+    reuniao_fechamento: { label: "Reunião de fechamento", icon: "ti-heart-handshake" },
   };
 
   return (
@@ -157,7 +157,7 @@ export default function Layout({ children }) {
         <div className="notif-banner">
           <div className="notif-icon"><i className="ti ti-calendar-event"/></div>
           <div className="notif-body">
-            <div className="notif-title">{TIPOS_NOTIF[notif.tipo]?.icon || "⚠️"} {TIPOS_NOTIF[notif.tipo]?.label || "Agendamento"} em {minAte(notif.data_hora)} min!</div>
+            <div className="notif-title"><i className={`ti ${TIPOS_NOTIF[notif.tipo]?.icon || "ti-alert-triangle"}`}/> {TIPOS_NOTIF[notif.tipo]?.label || "Agendamento"} em {minAte(notif.data_hora)} min!</div>
             <div className="notif-sub">
               {notif.cliente_nome}{notif.veiculo ? ` · ${notif.veiculo}` : ""}
               {notif.lead_estagio === "negociando" && <span className="badge" style={{marginLeft:6,fontSize:10,background:"#C8A84B22",color:"#C8A84B"}}>Em negociação</span>}

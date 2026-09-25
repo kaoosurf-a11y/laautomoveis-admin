@@ -16,12 +16,12 @@ function fmtPreco(v) {
 }
 
 const TIPO_INFO = {
-  manha_especial: ["#C8A84B", "☀️ Especial da manhã"],
-  texto_link: ["#7ba7e0", "🔗 Texto com link"],
+  manha_especial: ["#C8A84B", "Especial da manhã", "ti-sun"],
+  texto_link: ["#7ba7e0", "Texto com link", "ti-link"],
 };
 function TipoBadge({ tipo }) {
-  const [cor, label] = TIPO_INFO[tipo] || ["var(--muted)", "Normal"];
-  return <span className="badge" style={{ background: `${cor}22`, color: cor, fontSize: 11 }}>{label}</span>;
+  const [cor, label, icone] = TIPO_INFO[tipo] || ["var(--muted)", "Normal"];
+  return <span className="badge" style={{ background: `${cor}22`, color: cor, fontSize: 11 }}>{icone && <i className={`ti ${icone}`} />} {label}</span>;
 }
 
 function FilaItem({ item }) {
