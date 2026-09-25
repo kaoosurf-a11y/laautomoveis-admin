@@ -46,6 +46,7 @@ export default function Layout({ children }) {
     ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dashboard", section:"VISÃO GERAL" }] : []),
     { to:"/crm",       icon:"ti-target",        label:"CRM Pipeline", section:"COMERCIAL" },
     { to:"/followups", icon:"ti-clock",          label:"Follow-ups",   section:null },
+    { to:"/envios",    icon:"ti-calendar-time",  label:"Envios",       section:null },
     { to:"/agenda",    icon:"ti-calendar-event", label:"Agenda",       badge:agendaHoje||null, section:null },
     { to:"/veiculos",  icon:"ti-car",            label:"Veículos",     section:"ESTOQUE" },
     // Disparador (2026-07-16): contatos AINDA na campanha de reativação, antes de
