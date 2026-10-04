@@ -166,7 +166,7 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 @media(max-width:640px){
   .page-header>.btn{flex:1 1 100%}
   .page-header>div:not(:first-child){width:100%}
-  .page-header>div:not(:first-child)>.btn{flex:1 1 0;min-width:0;padding-left:8px;padding-right:8px;font-size:13px;gap:5px}
+  .page-header>div:not(:first-child):not(.filter-chip-row)>.btn{flex:1 1 0;min-width:0;padding-left:8px;padding-right:8px;font-size:13px;gap:5px}
 }
 
 /* ── Buttons ── */

@@ -175,8 +175,8 @@ function LeadCardHeader({f,role,onAtualizado}){
     <>
       <div style={{display:"flex",alignItems:"center",gap:3}}>
         <div className="fu-nome">{f.cliente_nome}</div>
-        <button className="btn btn-ghost" style={{padding:"1px 3px",fontSize:10,lineHeight:1}} onClick={()=>setEditando(true)} title="Editar nome/veículo"><i className="ti ti-pencil" style={{fontSize:11}}/></button>
-        {role==="admin_master"&&<button className="btn btn-ghost" style={{padding:"1px 3px",fontSize:10,lineHeight:1,color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)"><i className="ti ti-trash" style={{fontSize:11}}/></button>}
+        <button className="icon-btn" style={{width:34,height:34,fontSize:16}} onClick={()=>setEditando(true)} title="Editar nome/veículo" aria-label="Editar nome/veículo"><i className="ti ti-pencil"/></button>
+        {role==="admin_master"&&<button className="icon-btn" style={{width:34,height:34,fontSize:16,color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)" aria-label="Remover lead"><i className="ti ti-trash"/></button>}
       </div>
       <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
     </>
