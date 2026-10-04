@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { isLoggedIn, isManager } from "./auth.js";
+import { isLoggedIn, isManager, getUser } from "./auth.js";
 import Layout from "./components/Layout.jsx";
 import DialogHost from "./components/Dialog.jsx";
 import Login from "./pages/Login.jsx";
@@ -23,7 +23,7 @@ function Priv({ children }) {
 }
 function OwnerOnly({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
-  const u = JSON.parse(localStorage.getItem("la_user")||"{}");
+  const u = getUser() || {};
   if (u.role === "vendedor") return <Navigate to="/crm" replace />;
   return <Layout>{children}</Layout>;
 }
@@ -32,7 +32,7 @@ function OwnerOnly({ children }) {
 // pedido explícito (Felipe só, por ora).
 function AdminMasterOnly({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
-  const u = JSON.parse(localStorage.getItem("la_user")||"{}");
+  const u = getUser() || {};
   if (u.role !== "admin_master") return <Navigate to="/crm" replace />;
   return <Layout>{children}</Layout>;
 }

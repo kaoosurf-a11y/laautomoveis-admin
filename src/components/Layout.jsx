@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { getUser, logout, isManager, isOwner } from "../auth.js";
+import { getUser, logout, isManager, isOwner, estaVendoComo, getDono, voltarParaMim } from "../auth.js";
 import { getAgenda } from "../api.js";
 import { getTema, alternarTema } from "../theme.js";
 
@@ -43,6 +43,9 @@ export default function Layout({ children }) {
   }, [notifDismissed]);
 
   function handleLogout() { logout(); navigate("/login"); }
+  // "Ver como": faixa fixa avisando que o painel está aberto como outro usuário.
+  const vendoComo = estaVendoComo();
+  function handleVoltar() { if (voltarParaMim()) window.location.href = "/admin/equipe"; }
 
   const navItems = [
     ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dashboard", section:"VISÃO GERAL" }] : []),
@@ -158,7 +161,16 @@ export default function Layout({ children }) {
       </header>
 
       {/* Conteúdo */}
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        {vendoComo && (
+          <div className="vercomo-bar" role="status">
+            <i className="ti ti-eye"/>
+            <span>Você está vendo o painel como <strong>{user?.nome}</strong>. O que fizer aqui vale de verdade, em nome dessa pessoa.</span>
+            <button className="btn btn-primary btn-sm" onClick={handleVoltar}>Voltar para {getDono()?.nome?.split(" ")[0] || "meu usuário"}</button>
+          </div>
+        )}
+        {children}
+      </main>
 
       {/* Notificação — aparece ACIMA do bottom nav no mobile, no topo no desktop */}
       {notif && !notifDismissed && (

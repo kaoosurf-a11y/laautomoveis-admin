@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
+import { getUser, verComo } from "../auth.js";
+import { alertDialog } from "../components/Dialog.jsx";
 
 const ROLE_LABEL = { admin_master:"Proprietário", gerente:"Gerente", vendedor:"Vendedor" };
 const CORES=["#C8A84B","#e05252","#8E44AD","#2980B9","#27AE60","#e6a817"];
@@ -14,6 +16,15 @@ export default function Equipe(){
   // cima do ombro, etc.). Mascarada por padrão agora, com o mesmo padrão "olho" já usado
   // no modal de trocar senha (Layout.jsx).
   const[mostrarSenha,setMostrarSenha]=useState(false);
+  // "Ver como": só o dono, e só para gerente/vendedor (o servidor confere de novo).
+  const eu=getUser();
+  const[abrindo,setAbrindo]=useState(null);
+  async function abrirComo(m){
+    setAbrindo(m.id);
+    const r=await verComo(m.id);
+    if(!r.ok){setAbrindo(null);alertDialog(r.erro);return;}
+    window.location.href="/admin/";
+  }
 
   useEffect(()=>{
     api.getUsers().then(u=>{setEquipe(u);setLoading(false);})
@@ -28,7 +39,7 @@ export default function Equipe(){
       <div className="page-header"><h1 className="page-title"><i className="ti ti-users"/> Equipe</h1></div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
         {equipe.map((m,i)=>(
-          <div key={m.usuario} className="card" style={{display:"flex",alignItems:"center",gap:14}}>
+          <div key={m.usuario} className="card" style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
             <div className="tone" style={{width:46,height:46,borderRadius:"50%",background:`${CORES[i%CORES.length]}22`,color:CORES[i%CORES.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,flexShrink:0}}>{m.iniciais}</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:15,fontWeight:700,color:"var(--fg)"}}>{m.nome}</div>
@@ -36,6 +47,10 @@ export default function Equipe(){
               <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>@{m.usuario}</div>
             </div>
             <span className="badge badge-success" style={{fontSize:10}}>Ativo</span>
+            {eu?.role==="admin_master"&&m.role!=="admin_master"&&
+              <button className="btn btn-ghost btn-sm" style={{width:"100%"}} onClick={()=>abrirComo(m)} disabled={abrindo!=null}>
+                <i className={`ti ti-${abrindo===m.id?"loader":"eye"}`} style={abrindo===m.id?{animation:"spin 1s linear infinite"}:undefined}/> Ver como {m.nome.split(" ")[0]}
+              </button>}
           </div>
         ))}
       </div>
