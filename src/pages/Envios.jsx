@@ -79,7 +79,7 @@ function BarraDia({ enviados, liberadas, limite }) {
   return (
     <div>
       <div style={{ position: "relative", height: 10, borderRadius: 99, background: "var(--surface2)", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, width: `${pct(liberadas)}%`, background: "rgba(200,168,75,.25)" }} />
+        <div style={{ position: "absolute", inset: 0, width: `${pct(liberadas)}%`, background: "var(--brand-soft)" }} />
         <div style={{ position: "absolute", inset: 0, width: `${pct(enviados)}%`, background: "var(--brand)" }} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--muted)", marginTop: 6, flexWrap: "wrap", gap: 8 }}>

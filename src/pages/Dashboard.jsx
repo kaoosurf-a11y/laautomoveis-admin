@@ -43,7 +43,7 @@ function MarketingMetrics({ midia, isAdminMaster, onSaved }) {
   const bm = midia.benchmark || { referencia: 38, min: 25, max: 55 };
   const cpl = midia.cpl;
   const cplOk = cpl != null && cpl >= bm.min && cpl <= bm.max;
-  const cplCor = cpl == null ? "var(--muted)" : (cplOk ? "#4caf7d" : (cpl < bm.min ? "#7ba7e0" : "#e07b7b"));
+  const cplCor = cpl == null ? "var(--muted)" : (cplOk ? "var(--success)" : (cpl < bm.min ? "var(--info)" : "var(--alert)"));
 
   async function salvar() {
     const n = Number(String(valor).replace(",", "."));
@@ -245,7 +245,7 @@ function TabOportunidades({ data, isAdminMaster, onMidiaSaved }) {
                 <span style={{fontSize:10,background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:4,padding:"2px 6px",color:"var(--muted)",textTransform:"uppercase"}}>{o.canal}</span>
                 <span style={{flex:1,fontSize:13,color:"var(--fg)",fontWeight:500}}>{o.nome}</span>
                 <span style={{fontSize:12,color:"var(--muted)"}}>— {o.veiculo}</span>
-                <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,background:"#C8A84B22",color:"#C8A84B",fontWeight:600}}>{o.estagio}</span>
+                <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,background:"var(--brand-soft)",color:"var(--brand)",fontWeight:600}}>{o.estagio}</span>
                 <div className="av" style={{width:28,height:28,fontSize:11,background:`${AV_CORES[0]}22`,color:AV_CORES[0]}}>{o.vendedor_iniciais}</div>
               </div>
             ))}
@@ -275,11 +275,11 @@ function TabJornada({ data }) {
       <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-route"/> Ciclo médio de venda</div>
         <div style={{fontSize:13,color:"var(--muted)"}}>
-          {jornada.ciclo_medio_dias!=null?<span>Do 1º contato até fechar: <strong style={{color:"#C8A84B",fontSize:16}}>{jornada.ciclo_medio_dias} dias</strong></span>:"sem dados ainda (nenhuma venda fechada completa no período)"}
+          {jornada.ciclo_medio_dias!=null?<span>Do 1º contato até fechar: <strong style={{color:"var(--brand)",fontSize:16}}>{jornada.ciclo_medio_dias} dias</strong></span>:"sem dados ainda (nenhuma venda fechada completa no período)"}
         </div>
         {jornada.ciclo_medio_dias!=null&&(
           <div style={{marginTop:10,height:4,background:"var(--border)",borderRadius:4}}>
-            <div style={{height:"100%",width:`${Math.min(jornada.ciclo_medio_dias/10*100,100)}%`,background:"#C8A84B",borderRadius:4}}/>
+            <div style={{height:"100%",width:`${Math.min(jornada.ciclo_medio_dias/10*100,100)}%`,background:"var(--brand-fill)",borderRadius:4}}/>
           </div>
         )}
         <div style={{fontSize:11,color:"var(--muted)",marginTop:10}}>Jornada etapa-a-etapa (agendamento, comparecimento, fechamento) está na aba Métricas → Funil de referência.</div>
@@ -311,7 +311,7 @@ function TabJornada({ data }) {
         {followups_hoje.map((f,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
             <span style={{fontSize:12,color:"var(--muted)",minWidth:42,fontFamily:"monospace"}}>{f.horario}</span>
-            <span style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:"#C8A84B33",color:"#C8A84B",fontWeight:700}}>
+            <span style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:"var(--brand-soft)",color:"var(--brand)",fontWeight:700}}>
               {TIPO_LABEL[f.tipo]||f.tipo}
             </span>
             <span style={{flex:1,fontSize:13,color:"var(--fg)",fontWeight:500}}>{f.cliente_nome}</span>
@@ -331,7 +331,7 @@ function TabJornada({ data }) {
               return (
                 <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                   <span style={{fontSize:11,color:"var(--fg)",fontWeight:600}}>{d.total}</span>
-                  <div style={{width:"100%",height:`${Math.round(d.total/max*70)}px`,background:"#C8A84B",borderRadius:"4px 4px 0 0",minHeight:4}}/>
+                  <div style={{width:"100%",height:`${Math.round(d.total/max*70)}px`,background:"var(--brand-fill)",borderRadius:"4px 4px 0 0",minHeight:4}}/>
                   <span style={{fontSize:10,color:"var(--muted)"}}>{d.dia}</span>
                 </div>
               );
@@ -343,14 +343,14 @@ function TabJornada({ data }) {
       {/* Motivos de perda */}
       {data.motivos_perda?.length > 0 && (
         <div className="card" style={{marginTop:12}}>
-          <div className="card-title" style={{color:"#e07b7b"}}><i className="ti ti-alert-circle"/> Motivos de perda</div>
+          <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Motivos de perda</div>
           {data.motivos_perda.map((m,i)=>{
             const max = Math.max(...data.motivos_perda.map(x=>x.total));
             return (
               <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                 <div style={{flex:1,fontSize:13,color:"var(--fg)"}}>{m.motivo}</div>
                 <div style={{flex:2,height:6,background:"var(--border)",borderRadius:4}}>
-                  <div style={{height:"100%",width:`${Math.round(m.total/max*100)}%`,background:"#e07b7b",borderRadius:4}}/>
+                  <div style={{height:"100%",width:`${Math.round(m.total/max*100)}%`,background:"var(--alert)",borderRadius:4}}/>
                 </div>
                 <div style={{fontSize:12,color:"var(--muted)",minWidth:16,textAlign:"right"}}>{m.total}</div>
               </div>
@@ -364,7 +364,7 @@ function TabJornada({ data }) {
 
 function TabEstoque({ data }) {
   const { estoque } = data;
-  const metricsCores = { ok:"var(--fg)", alerta:"#e07b7b" };
+  const metricsCores = { ok:"var(--fg)", alerta:"var(--alert)" };
   return (
     <>
       {/* KPIs estoque */}
@@ -376,24 +376,24 @@ function TabEstoque({ data }) {
         </div>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-clock"/> Tempo Médio</div>
-          <div className="metric-value" style={{color:estoque.tempo_medio_dias>estoque.meta_dias?"#e07b7b":"var(--fg)"}}>{estoque.tempo_medio_dias!=null?`${estoque.tempo_medio_dias}d`:"sem dados"}</div>
+          <div className="metric-value" style={{color:estoque.tempo_medio_dias>estoque.meta_dias?"var(--alert)":"var(--fg)"}}>{estoque.tempo_medio_dias!=null?`${estoque.tempo_medio_dias}d`:"sem dados"}</div>
           <div className="metric-delta" style={{color:"var(--muted)"}}>meta: {estoque.meta_dias}d</div>
         </div>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-alert-triangle"/> Parados +30d</div>
-          <div className="metric-value" style={{color:"#e07b7b"}}>{estoque.parados_30d} ⚠</div>
+          <div className="metric-value" style={{color:"var(--alert)"}}>{estoque.parados_30d} ⚠</div>
           <div className="metric-delta down">atenção!</div>
         </div>
       </div>
 
       {/* Parados — atenção */}
-      <div className="card" style={{marginBottom:12,border:"1px solid #e07b7b44"}}>
-        <div className="card-title" style={{color:"#e07b7b"}}><i className="ti ti-alert-circle"/> Parados — atenção</div>
+      <div className="card" style={{marginBottom:12,border:"1px solid var(--danger-line)"}}>
+        <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Parados — atenção</div>
         {estoque.parados_lista.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Nenhum veículo parado há mais de 30 dias.</p>}
         {estoque.parados_lista.map((v,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
             <span style={{flex:1,fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
-            <span style={{fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,background:"#e07b7b22",color:"#e07b7b"}}>{v.dias}d</span>
+            <span style={{fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,background:"var(--danger-soft)",color:"var(--alert)"}}>{v.dias}d</span>
           </div>
         ))}
       </div>
@@ -407,7 +407,7 @@ function TabEstoque({ data }) {
             <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
               <div style={{minWidth:80,fontSize:13,color:"var(--fg)"}}>{m.marca}</div>
               <div style={{flex:1,height:8,background:"var(--border)",borderRadius:4}}>
-                <div style={{height:"100%",width:`${Math.round(m.total/max*100)}%`,background:"#C8A84B",borderRadius:4}}/>
+                <div style={{height:"100%",width:`${Math.round(m.total/max*100)}%`,background:"var(--brand-fill)",borderRadius:4}}/>
               </div>
               <div style={{fontSize:12,color:"var(--muted)",minWidth:16,textAlign:"right"}}>{m.total}</div>
             </div>
@@ -420,7 +420,7 @@ function TabEstoque({ data }) {
           chamar de "IA" seria enganoso. */}
       {estoque.alerta_estoque_parado && (
         <div style={{padding:"12px 14px",background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}>
-          <i className="ti ti-alert-triangle" style={{color:"#C8A84B",fontSize:18,marginTop:1}}/>
+          <i className="ti ti-alert-triangle" style={{color:"var(--brand)",fontSize:18,marginTop:1}}/>
           <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.5}}>
             <strong style={{color:"var(--fg)"}}>Alerta de estoque parado:</strong> {estoque.alerta_estoque_parado}
           </div>
@@ -487,7 +487,7 @@ function TabMetricas({ metricas, loading, erro }) {
               diferença real entre "Todas"/"Curitibanos"/"Campos Novos" — parecia que o
               filtro de loja não tinha efeito nessa métrica. `total` vem de uma contagem
               separada, sem LIMIT. */}
-          <div className="metric-value" style={{color:semResposta.total>0?"#e07b7b":undefined}}>{semResposta.total}</div>
+          <div className="metric-value" style={{color:semResposta.total>0?"var(--alert)":undefined}}>{semResposta.total}</div>
           <div className="metric-delta" style={{color:"var(--muted)"}}>leads parados</div>
         </div>
       </div>
@@ -561,13 +561,13 @@ function TabMetricas({ metricas, loading, erro }) {
           </div>
           <div className="metric-card">
             <div className="metric-label"><i className="ti ti-message-off"/> Silêncio pós-handoff</div>
-            <div className="metric-value" style={{color:metricas.qualidade.silencioPosHandoff.pct>20?"#e07b7b":undefined}}>{metricas.qualidade.silencioPosHandoff.pct}%</div>
+            <div className="metric-value" style={{color:metricas.qualidade.silencioPosHandoff.pct>20?"var(--alert)":undefined}}>{metricas.qualidade.silencioPosHandoff.pct}%</div>
             <div className="metric-delta" style={{color:"var(--muted)"}}>{metricas.qualidade.silencioPosHandoff.semResposta} de {metricas.qualidade.silencioPosHandoff.total} sem 1ª resposta do vendedor</div>
           </div>
           {metricas.qualidade.falhaTecnica && (
             <div className="metric-card">
               <div className="metric-label"><i className="ti ti-alert-triangle"/> Falhas técnicas</div>
-              <div className="metric-value" style={{color:metricas.qualidade.falhaTecnica.total>0?"#e07b7b":undefined}}>{metricas.qualidade.falhaTecnica.total}</div>
+              <div className="metric-value" style={{color:metricas.qualidade.falhaTecnica.total>0?"var(--alert)":undefined}}>{metricas.qualidade.falhaTecnica.total}</div>
               <div className="metric-delta" style={{color:"var(--muted)"}}>neste período</div>
             </div>
           )}
@@ -575,7 +575,7 @@ function TabMetricas({ metricas, loading, erro }) {
       )}
       {metricas.qualidade?.falhaTecnica?.recentes?.length > 0 && (
         <div className="card" style={{marginBottom:12,overflowX:"auto"}}>
-          <div className="card-title" style={{color:"#e07b7b"}}><i className="ti ti-alert-octagon"/> Falhas técnicas recentes</div>
+          <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-octagon"/> Falhas técnicas recentes</div>
           {metricas.qualidade.falhaTecnica.recentes.map((f,i)=>(
             <div key={i} style={{padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
               <div style={{display:"flex",justifyContent:"space-between",gap:10,fontSize:12,color:"var(--muted)"}}>
@@ -596,7 +596,7 @@ function TabMetricas({ metricas, loading, erro }) {
             <div style={{minWidth:110,fontSize:13,color:"var(--fg)"}}>{g.estagio}</div>
             <div style={{fontSize:12,color:"var(--muted)"}}>{g.total} leads</div>
             <div style={{flex:1}}/>
-            <div style={{fontSize:13,fontWeight:600,color:Number(g.media_horas_parado)>72?"#e07b7b":"var(--fg)"}}>{Math.round(g.media_horas_parado)}h em média</div>
+            <div style={{fontSize:13,fontWeight:600,color:Number(g.media_horas_parado)>72?"var(--alert)":"var(--fg)"}}>{Math.round(g.media_horas_parado)}h em média</div>
           </div>
         ))}
         <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>Até negociação: {tempoPorEstagio.ate_negociacao_horas??"—"}h · Negociação até fechar: {tempoPorEstagio.negociacao_ate_fechar_horas??"—"}h</div>
@@ -893,16 +893,16 @@ export default function Dashboard() {
           quebram linha em telas estreitas em vez de espremer texto+2 botões numa linha só;
           os dois botões ganharam alvo de toque real (44px). */}
       {notif && (
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#C8A84B18",border:"1px solid #C8A84B55",borderRadius:10,marginBottom:14,flexWrap:"wrap"}}>
-          <div style={{width:10,height:10,borderRadius:"50%",background:"#e07b7b",animation:"pulse 1.5s infinite",flexShrink:0}}/>
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"var(--brand-soft)",border:"1px solid var(--brand-line)",borderRadius:10,marginBottom:14,flexWrap:"wrap"}}>
+          <div style={{width:10,height:10,borderRadius:"50%",background:"var(--alert)",animation:"pulse 1.5s infinite",flexShrink:0}}/>
           <div style={{flex:"1 1 200px",fontSize:13,minWidth:0}}>
-            <strong style={{color:"#C8A84B"}}>Lead quente!</strong> {notif.nome} ({notif.score}pts) · {notif.veiculo} · Atribuído a {notif.vendedor}
+            <strong style={{color:"var(--brand)"}}>Lead quente!</strong> {notif.nome} ({notif.score}pts) · {notif.veiculo} · Atribuído a {notif.vendedor}
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center",marginLeft:"auto"}}>
             {/* 2026-07-15 (auditoria): botão não tinha onClick nenhum, não fazia nada ao
                 clicar. Leva pro CRM Pipeline (a busca por nome ali já acha o lead rápido —
                 não existe hoje um jeito de abrir um lead específico direto por URL). */}
-            <button onClick={()=>navigate("/crm")} style={{fontSize:12,padding:"0 14px",minHeight:44,background:"#C8A84B",color:"#000",border:"none",borderRadius:6,cursor:"pointer",fontWeight:700}}>
+            <button onClick={()=>navigate("/crm")} style={{fontSize:12,padding:"0 14px",minHeight:44,background:"var(--brand-fill)",color:"var(--on-brand)",border:"none",borderRadius:6,cursor:"pointer",fontWeight:700}}>
               Ver lead →
             </button>
             <button onClick={()=>setNotif(null)} aria-label="Fechar" style={{background:"none",border:"none",cursor:"pointer",color:"var(--muted)",fontSize:18,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>×</button>

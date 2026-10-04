@@ -185,12 +185,12 @@ export default function Campanha() {
       </div>
 
       {msg && (
-        <div className="card" style={{ marginBottom: 16, borderColor: msg.tipo === "ok" ? "#4caf7d55" : "var(--danger)" }}>
+        <div className="card" style={{ marginBottom: 16, borderColor: msg.tipo === "ok" ? "var(--success-line)" : "var(--danger)" }}>
           {msg.texto}
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16, background: "#C8A84B14", borderColor: "#C8A84B55" }}>
+      <div className="card" style={{ marginBottom: 16, background: "var(--brand-soft)", borderColor: "var(--brand-line)" }}>
         O formulário da landing <strong>não muda</strong> (nome, telefone e e-mail). Troque aqui o <strong>texto</strong>, a <strong>imagem</strong> e o <strong>link do grupo</strong> do WhatsApp. Toda promoção nova usa o mesmo cadastro e libera o grupo só depois do lead gravar na Lista Vip.
       </div>
 

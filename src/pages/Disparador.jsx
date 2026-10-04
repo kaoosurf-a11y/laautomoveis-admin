@@ -86,7 +86,7 @@ function CardContato({ c, aberto, onToggle }) {
       {aberto && (
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
           {c.historico.map((h, i) => (
-            <div key={i} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, background: h.role === "assistant" ? "var(--surface2)" : "rgba(200,168,75,.12)" }}>
+            <div key={i} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, background: h.role === "assistant" ? "var(--surface2)" : "var(--brand-soft)" }}>
               <span style={{ color: "var(--muted)", fontSize: 10 }}>{h.role === "assistant" ? c.vendedor_nome_exibicao : "Cliente"} · {fmtData(h.timestamp)}</span>
               <div style={{ color: "var(--fg)", marginTop: 2 }}>{h.content}</div>
             </div>
@@ -191,7 +191,7 @@ export default function Disparador() {
         </div>
         {totalRetido > 0 && (
           <div>
-            <span className="badge" style={{ background: "#C8A84B22", color: "#C8A84B", fontSize: 11 }}>{totalRetido} contatos retidos até Dariana reconectar</span>
+            <span className="badge" style={{ background: "var(--brand-soft)", color: "var(--brand)", fontSize: 11 }}>{totalRetido} contatos retidos até Dariana reconectar</span>
           </div>
         )}
       </div>
@@ -254,7 +254,7 @@ export default function Disparador() {
                   <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: cor, flexShrink: 0 }} />
                     <span className="fu-kanban-col-title" style={{ color: "var(--fg)" }}>{v.label}</span>
-                    {!conectado && <span style={{ fontSize: 10, color: "#e05252" }}>desconectado</span>}
+                    {!conectado && <span style={{ fontSize: 10, color: "var(--danger)" }}>desconectado</span>}
                   </span>
                   <span className="kanban-col-count">{info.total}</span>
                 </div>

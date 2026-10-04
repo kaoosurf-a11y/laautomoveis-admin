@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta name="theme-color" content="#0c0c0a" />
     <title>LA Automóveis — Admin</title>
+    <script>
+      // Aplica o tema salvo antes da primeira pintura (evita piscar escuro -> claro).
+      try { if (localStorage.getItem("la_tema") === "light") { document.documentElement.setAttribute("data-theme", "light"); document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f2f2f7"); } } catch (e) {}
+    </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css" />
   </head>
   <body>

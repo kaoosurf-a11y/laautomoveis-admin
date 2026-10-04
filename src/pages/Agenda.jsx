@@ -320,10 +320,10 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
           {fmtH(ag.data_hora)} — {fmtHF(ag.data_hora,ag.duracao_min)}
           {status==="em_breve"&&<span style={{fontSize:11,color:"var(--brand)",marginLeft:8}}><i className="ti ti-alert-triangle"/> EM {min} MIN</span>}
         </span>
-        <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{ag.vendedor_iniciais}</div>
+        <div style={{width:28,height:28,borderRadius:"50%",background:"var(--brand-soft)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{ag.vendedor_iniciais}</div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:8}}>
-        <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:`${tipo.cor}22`,color:tipo.cor,display:"inline-block"}}><i className={`ti ${tipo.icon}`}/> {tipo.label}</span>
+        <span className="tone" style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:`${tipo.cor}22`,color:tipo.cor,display:"inline-block"}}><i className={`ti ${tipo.icon}`}/> {tipo.label}</span>
         {/* 2026-07-28: quem agendou — vendedor no painel vs Lara/Larissa durante a
             conversa de WhatsApp (agenda.origem, ver backend). */}
         {ag.origem==="ia"?(
@@ -404,11 +404,11 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
         </div>
       )}
       {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
+        {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"var(--success-line)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
         {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&!escolhendoReagendar&&!escolhendoVeiculoVenda&&<>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setEscolhendoReagendar(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"rgba(76,175,125,.3)"}} onClick={abrirEscolhaVeiculoVenda}><i className="ti ti-check"/> Veio e comprou</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"var(--success-line)"}} onClick={abrirEscolhaVeiculoVenda}><i className="ti ti-check"/> Veio e comprou</button>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>setEscolhendoMotivo(true)}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
           {/* 2026-07-15: "não veio" (no-show) tinha o MESMO status de "cancelado" (cancelamento
               prévio) — impossível medir taxa de comparecimento porque os dois casos ficavam
@@ -471,7 +471,7 @@ function NovoModal({onClose,onCriado}){
         </div>
         {isManager()&&<div className="form-group"><label className="form-label">Vendedor</label><select className="form-input" value={form.vendedor_id} onChange={e=>set("vendedor_id",e.target.value?Number(e.target.value):"")}><option value="">Selecionar...</option>{vendedores.map(v=><option key={v.id} value={v.id}>{v.nome}</option>)}</select></div>}
         <div className="form-group"><label className="form-label">Observações</label><textarea className="form-input" value={form.observacoes} onChange={e=>set("observacoes",e.target.value)} rows={2} style={{resize:"vertical"}}/></div>
-        {erro&&<div style={{color:foraHorario?"var(--warning)":"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:foraHorario?"rgba(230,168,23,.1)":"rgba(224,82,82,.1)",borderRadius:8}}>
+        {erro&&<div style={{color:foraHorario?"var(--warning)":"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:foraHorario?"var(--warning-soft)":"var(--danger-soft)",borderRadius:8}}>
           <i className="ti ti-alert-triangle" style={{fontSize:14}}/> {erro}
         </div>}
         {foraHorario&&<div className="form-group form-check">
@@ -528,7 +528,7 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
           return(
             <button key={i} className="cal-cel cal-cel-mes" onClick={()=>onSelecionarDia(d)} style={{
               border:isSel?"2px solid var(--brand)":isHoje?"1px solid var(--brand)":"1px solid var(--border)",
-              background:isSel?"rgba(200,168,75,.12)":"var(--surface2)",
+              background:isSel?"var(--brand-soft)":"var(--surface2)",
             }}>
               <span className="cal-cel-num" style={{fontWeight:isHoje?700:500}}>{d.getDate()}</span>
               <div className="cal-cel-chips">

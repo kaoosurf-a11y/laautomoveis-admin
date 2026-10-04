@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../auth.js";
+import { getTema, alternarTema } from "../theme.js";
 
 export default function Login() {
   const [usuario,  setUsuario]  = useState("");
@@ -9,6 +10,7 @@ export default function Login() {
   const [manter,   setManter]   = useState(false);
   const [erro,     setErro]     = useState("");
   const [loading,  setLoading]  = useState(false);
+  const [tema,     setTema]     = useState(getTema);
   const navigate = useNavigate();
 
   async function handleLogin(e) {
@@ -23,20 +25,22 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <button type="button" className="icon-btn login-tema" title={tema==="light"?"Usar tema escuro":"Usar tema claro"} aria-label={tema==="light"?"Usar tema escuro":"Usar tema claro"} onClick={()=>setTema(alternarTema())}>
+        <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/>
+      </button>
       {/* logo */}
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
         <div style={{
-          width:58,height:58,borderRadius:14,
-          background:"linear-gradient(135deg,#C8A84B,#a88a35)",
+          width:60,height:60,borderRadius:16,
+          background:"var(--brand-fill)",
           display:"flex",alignItems:"center",justifyContent:"center",
-          fontWeight:900,fontSize:19,color:"#0c0c0a",
-          boxShadow:"0 2px 16px rgba(200,168,75,.4)",letterSpacing:1,
+          fontWeight:700,fontSize:20,color:"var(--on-brand)",letterSpacing:.5,
         }}>LA</div>
         <div style={{textAlign:"center"}}>
-          <div style={{fontSize:19,fontWeight:900,color:"var(--brand)",letterSpacing:"0.08em",lineHeight:1.1}}>
+          <div style={{fontSize:20,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em",lineHeight:1.1}}>
             LA AUTOMÓVEIS
           </div>
-          <div style={{fontSize:11,color:"var(--muted)",letterSpacing:"0.18em",marginTop:2}}>
+          <div style={{fontSize:12,color:"var(--muted)",marginTop:4}}>
             CRM · Multimarcas
           </div>
         </div>
@@ -78,13 +82,13 @@ export default function Login() {
         {/* manter conectado */}
         <div style={{display:"flex",alignItems:"center",gap:10,margin:"4px 0 16px"}}>
           <div onClick={()=>setManter(v=>!v)} style={{
-            width:20,height:20,borderRadius:5,flexShrink:0,cursor:"pointer",
-            border:`2px solid ${manter?"#C8A84B":"var(--border)"}`,
-            background:manter?"#C8A84B":"transparent",
+            width:22,height:22,borderRadius:"50%",flexShrink:0,cursor:"pointer",
+            border:`2px solid ${manter?"var(--brand-fill)":"var(--muted)"}`,
+            background:manter?"var(--brand-fill)":"transparent",
             display:"flex",alignItems:"center",justifyContent:"center",
             transition:"all .15s",
           }}>
-            {manter && <i className="ti ti-check" style={{fontSize:13,color:"#0c0c0a",fontWeight:900}}/>}
+            {manter && <i className="ti ti-check" style={{fontSize:13,color:"var(--on-brand)",fontWeight:900}}/>}
           </div>
           <span onClick={()=>setManter(v=>!v)}
             style={{fontSize:13,color:"var(--muted)",cursor:"pointer",userSelect:"none"}}>

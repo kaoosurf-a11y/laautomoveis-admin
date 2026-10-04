@@ -133,7 +133,7 @@ function ClassificacaoBadge({f}){
   if(f.estagio_definido_por==="ia_observador"){
     const m=/confianca[:\s]*([0-9.]+)/i.exec(f.motivo||"");
     const conf=m?Math.round(parseFloat(m[1])*100):null;
-    return <span className="badge" style={{fontSize:10,background:"#7ba7e022",color:"#7ba7e0",display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-robot" style={{fontSize:11}}/>IA{conf!==null?` · ${conf}% confiança`:""}</span>;
+    return <span className="badge" style={{fontSize:10,background:"var(--info-soft)",color:"var(--info)",display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-robot" style={{fontSize:11}}/>IA{conf!==null?` · ${conf}% confiança`:""}</span>;
   }
   return null;
 }
@@ -336,7 +336,7 @@ export default function FollowUps(){
               const cor=TIPO_COR[tipo];
               return (
               <div key={tipo} className="fu-kanban-col">
-                <div className="fu-kanban-col-header" style={{borderTopColor:cor,opacity:colArrastando===tipo?.4:1,cursor:"grab"}}
+                <div className="fu-kanban-col-header" style={{"--cor":cor,opacity:colArrastando===tipo?.4:1,cursor:"grab"}}
                   draggable
                   onDragStart={e=>onColHeaderDragStart(e,tipo)}
                   onDragOver={onColHeaderDragOver}
@@ -345,16 +345,16 @@ export default function FollowUps(){
                   title="Arraste pra reordenar as colunas">
                   <span style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
                     <i className="ti ti-grip-vertical" style={{fontSize:13,color:"var(--muted)",flexShrink:0}}/>
-                    <span className="fu-kanban-col-title" style={{color:cor}}>{TIPO_LABEL[tipo]||tipo}</span>
+                    <span className="fu-kanban-col-title">{TIPO_LABEL[tipo]||tipo}</span>
                   </span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
                 <div className="fu-kanban-cards">
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
                   {leads.map(f=>(
-                    <div key={f.id} className="fu-kanban-card" style={{border:`2px solid ${cor}`,boxShadow:`0 0 8px ${cor}4d`}}>
+                    <div key={f.id} className="fu-kanban-card">
                       <div className="fu-item">
-                        <div className="av" style={{background:"rgba(200,168,75,.15)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
+                        <div className="av" style={{background:"var(--brand-soft)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
                         <div className="fu-info">
                           <LeadCardHeader f={f} role={role} onAtualizado={load}/>
                           <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>

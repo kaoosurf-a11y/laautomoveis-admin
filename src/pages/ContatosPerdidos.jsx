@@ -71,7 +71,7 @@ export default function ContatosPerdidos(){
         {lista.length===0&&<div className="empty-state"><i className="ti ti-check"/><p>Nenhum contato perdido — tudo processado normalmente</p></div>}
         {lista.map(c=>(
           <div key={c.id} className="fu-item" style={{borderLeft:"3px solid var(--danger)",paddingLeft:10}}>
-            <div className="av" style={{background:"rgba(224,82,82,.15)",color:"var(--danger)",flexShrink:0,fontSize:10}}>
+            <div className="av" style={{background:"var(--danger-soft)",color:"var(--danger)",flexShrink:0,fontSize:10}}>
               <i className="ti ti-alert-circle" style={{fontSize:16}}/>
             </div>
             <div className="fu-info">

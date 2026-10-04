@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: Painel LA Automóveis
-description: Painel interno de atendimento e vendas da LA Automóveis, usado no celular pelos vendedores e no computador pelos gerentes; escuro, denso e direto, com um único dourado de destaque.
+description: Painel interno de atendimento e vendas da LA Automóveis, usado no celular pelos vendedores e no computador pelos gerentes; visual no estilo do iPhone (iOS), leve, com tema escuro (padrão) e tema claro, e um único dourado de destaque.
 colors:
   ground: "#0c0c0a"      # fundo da página
   surface: "#161614"     # cards, sidebar, topbar
@@ -50,21 +50,38 @@ components:
 
 Painel de uso diário de vendedores, gerentes e do dono da LA Automóveis (duas lojas, Curitibanos e Campos Novos). A maior parte do uso é no celular, com uma mão e com pressa: por isso os alvos de toque têm 44px, o menu de baixo aparece abaixo de 1024px e a informação é densa, sem espaço decorativo.
 
-O visual vem do site da LA: fundo quase preto para a informação saltar, e um único dourado de marca. Este arquivo descreve o painel **como ele é hoje**, com os valores reais de `src/index.css`. Ele não propõe redesenho. O site público usa outra fonte e outro amarelo (ver a skill `design-system-catalogo`); não misturar os dois sistemas.
+O visual vem do site da LA: fundo quase preto para a informação saltar, e um único dourado de marca. Este arquivo descreve o painel **como ele é hoje**, com os valores reais de `src/index.css`. Em 04/10/2026, a pedido do Felipe, o visual foi refeito no estilo do iPhone e ganhou tema claro (ver seção "Temas"). O site público usa outra fonte e outro amarelo (ver a skill `design-system-catalogo`); não misturar os dois sistemas.
+
+## Temas
+
+Dois temas, trocados pelo atributo `data-theme` no `<html>` (`src/theme.js`, escolha guardada no aparelho em `la_tema`). **Escuro é o padrão**; o claro é opção de cada usuário (botão de sol/lua no topo do celular, na lateral do computador e na tela de login).
+
+| Token | Escuro | Claro | Uso |
+|---|---|---|---|
+| `--bg` | `#0c0c0a` | `#f2f2f7` | fundo da página e da lateral |
+| `--surface` | `#161614` | `#ffffff` | cards, modal |
+| `--surface2` | `#1e1e1c` | `#ebebf0` | inputs, área das colunas do kanban |
+| `--fill` | branco 7% | cinza 12% | botão secundário, aba inativa |
+| `--fg` / `--muted` | `#f0ede6` / `#8a8a84` | `#1c1c1e` / `#66666b` | texto |
+| `--brand` | `#C8A84B` | `#8a6500` | dourado **como texto/ícone** (no claro escurece pra dar contraste) |
+| `--brand-fill` + `--on-brand` | `#C8A84B` + `#0c0c0a` | `#C8A84B` + `#1c1c1e` | dourado **como preenchimento** (botão primário, aba ativa) |
+| `--danger` `--success` `--warning` `--alert` `--info` | tons claros | tons escuros | estado; cada um tem par `-soft` (fundo) e alguns `-line` (borda) |
+
+Regras: tela nenhuma escreve cor em hex para texto ou fundo de interface; usa o token. As cores de **categoria** (estágio do kanban, origem, vendedor) continuam em hex nas telas porque são dado, e o `index.css` as escurece sozinho no tema claro (regra `.badge/.score-pill/.av/.cal-chip/.tone`). Elemento novo com cor de categoria como texto leva a classe `tone`.
 
 ## Colors
 
-- **Ground `#0c0c0a`:** fundo da página inteira. Não existe modo claro no painel (mesma linha do site, que o Felipe prefere escuro).
+- **Ground `#0c0c0a`:** fundo da página inteira no tema escuro (valores do claro na tabela acima).
 - **Surface `#161614` e Surface2 `#1e1e1c`:** camadas de profundidade. Surface para cards, sidebar e topbar; surface2 para o que se toca ou preenche (inputs, botão ghost, chips, trilho das barras).
 - **Ink `#f0ede6`:** texto principal. 16,75:1 no fundo.
 - **Muted `#8a8a84`:** texto secundário. Foi clareado de `#6b6b66` em 24/09/2026 porque estava em 3,65:1 (abaixo do mínimo AA de 4,5:1). Não escurecer de novo.
-- **Signal `#C8A84B` (dourado):** tem um trabalho só: **o que o usuário pode fazer ou o que está ativo**. Botão primário, item ativo do menu, aba ativa, número de destaque das métricas, contorno de foco. Não usar como cor de categoria nem de enfeite.
+- **Signal `#C8A84B` (dourado):** tem um trabalho só: **o que o usuário pode fazer ou o que está ativo**. Botão primário, item ativo do menu, aba ativa, contorno de foco. Número de métrica e preço usam a cor do texto (`--fg`), não dourado. Não usar como cor de categoria nem de enfeite.
 - **Danger, Success, Warning:** só para estado (erro, ok, atenção). Nunca como cor de marca ou de decoração.
 - **Lacuna conhecida:** `danger` sobre `surface2` dá 4,37:1, um pouco abaixo de 4,5:1. Em texto pequeno sobre surface2, preferir um fundo `surface`.
 
 ## Typography
 
-Fonte do sistema (SF/Segoe), sem webfont: carrega na hora no celular e não custa nada. Escala em uso, do mais frequente ao menos: 11, 13, 10, 12, 14, 16, 20, 24 px. Pesos 400 a 800. Títulos de página 20px/700 com ícone dourado de 22px; número de métrica 24px/800 em dourado; corpo 13px; apoio 11px. Inputs sempre 16px.
+Fonte do sistema (SF/Segoe), sem webfont: carrega na hora no celular e não custa nada. Escala em uso, do mais frequente ao menos: 11, 13, 10, 12, 14, 16, 20, 24 px. Pesos 400 a 800. Títulos de página 24px/700 (28px no computador) com espaçamento negativo e ícone dourado; número de métrica 26px/700 na cor do texto, com algarismos tabulares; corpo 13 a 14px; apoio 11 a 12px. Rótulo de formulário 12px sem caixa alta. Inputs sempre 16px.
 
 Rótulos em CAIXA ALTA com espaçamento (`.nav-section`, `.metric-label`, `.sec-label`) já existem e ficam como estão. **Rótulo novo não usa caixa alta**, para o padrão não se espalhar.
 
@@ -78,11 +95,11 @@ Rótulos em CAIXA ALTA com espaçamento (`.nav-section`, `.metric-label`, `.sec-
 
 ## Elevation & Depth
 
-Profundidade vem da troca de fundo (ground → surface → surface2) e de uma borda de 1px `line`, e não de sombra. Sombra só onde algo realmente flutua: gaveta do menu, modal e aviso de agendamento. O botão primário e a aba ativa hoje têm degradê dourado e brilho leve; é o que existe e fica, mas **não aplicar degradê nem brilho colorido em elementos novos**.
+Profundidade vem da troca de fundo (ground → surface → surface2) e de uma borda fina de 1px, e não de sombra. Sombra (`--float`) só onde algo realmente flutua: gaveta do menu, modal e aviso de agendamento. Barra do topo e menu de baixo no celular são translúcidos com desfoque, porque o conteúdo rola por baixo deles. **Sem degradê e sem brilho colorido**: botão primário e aba ativa são dourado chapado.
 
 ## Shapes
 
-`--radius-sm` 6px, `--radius` 10px, `--radius-lg` 14px, botões 9px, **pill 99px** para badges, abas e chips. Regra: pílula = filtro ou estado; canto de 10 a 14px = conteúdo (card, input, modal).
+`--radius-sm` 6px, `--radius` 12px, `--radius-lg` 16px, botões 12px (`--radius-btn`), modal 20 a 22px, **pill 99px** para badges, abas e chips. Regra: pílula = filtro ou estado; canto de 10 a 14px = conteúdo (card, input, modal).
 
 ## Components
 
@@ -93,6 +110,7 @@ Reusar as classes existentes, sem criar variação nova dentro de uma página.
 - **Formulário:** `.form-group`, `.form-label`, `.form-input`, `.form-grid`.
 - **Estado:** `.badge` com `-brand`, `-success`, `-warning`, `-danger`, `-muted`; `.score-pill`; `.empty-state`; `.spinner`.
 - **Navegação:** `.nav-item` (ativo com fundo dourado a 12%), `.tab-btn`, `.bottom-nav`.
+- **Kanban:** a cor do estágio aparece só como um ponto ao lado do título da coluna (variável `--cor` passada pela tela); card e coluna têm borda neutra, sem moldura colorida nem brilho.
 - **Kanban e listas:** `.kanban-*`, `.fu-kanban-*`, `.crm-list-*`, `.veiculo-card-*`.
 - **Ícones:** **só Tabler** (`<i className="ti ti-nome"/>`), carregados por CDN em `index.html`. Nomes já em uso: `ti-car`, `ti-building-store`, `ti-clipboard-list`, `ti-heart-handshake`, `ti-message-circle`, `ti-calendar`, `ti-alert-triangle`, `ti-device-mobile`, `ti-robot`, `ti-sun`, `ti-link`. `lucide-react` está instalado mas não é usado; não introduzir.
 
@@ -101,7 +119,7 @@ Reusar as classes existentes, sem criar variação nova dentro de uma página.
 - **Do** adicionar o token aqui e em `:root` antes de uma página usá-lo. Nunca inventar cor, raio ou tamanho solto dentro de um arquivo de página.
 - **Do** garantir contraste mínimo de 4,5:1 em qualquer texto e alvos de toque de 44px.
 - **Do** mostrar erro de carga com mensagem clara (como a tela Envios faz), e não dado de exemplo no lugar.
-- **Don't change sem pedir ao Felipe:** o fundo `#0c0c0a`, o dourado `#C8A84B` e o modo único escuro (identidade atual do painel).
+- **Don't change sem pedir ao Felipe:** o dourado `#C8A84B` e o escuro como tema padrão.
 - **Don't use:** emoji como ícone; degradê ou brilho colorido novos; faixa colorida só na lateral do card; efeito de vidro (blur) sem sobreposição real; segunda cor de destaque; rótulo novo em caixa alta com espaçamento; seta `→` colada em botão; textos "A · B · C" como enfeite.
 - **Pendências herdadas (não são regra):** faixas laterais coloridas em `index.css` (linhas ~313 e 468), sombras douradas e blur do overlay da sidebar. Só mexer com pedido explícito, junto de uma tela específica.
 

@@ -29,7 +29,7 @@ export default function Equipe(){
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
         {equipe.map((m,i)=>(
           <div key={m.usuario} className="card" style={{display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:46,height:46,borderRadius:"50%",background:`${CORES[i%CORES.length]}22`,color:CORES[i%CORES.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,flexShrink:0}}>{m.iniciais}</div>
+            <div className="tone" style={{width:46,height:46,borderRadius:"50%",background:`${CORES[i%CORES.length]}22`,color:CORES[i%CORES.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,flexShrink:0}}>{m.iniciais}</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:15,fontWeight:700,color:"var(--fg)"}}>{m.nome}</div>
               <div style={{fontSize:12,color:"var(--muted)"}}>{ROLE_LABEL[m.role]||m.role}</div>
@@ -44,7 +44,7 @@ export default function Equipe(){
         <div style={{background:"var(--surface2)",borderRadius:8,padding:"12px 14px",fontSize:13,color:"var(--muted)"}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             Senha padrão:
-            <code style={{color:"var(--brand)",background:"rgba(200,168,75,.1)",padding:"2px 8px",borderRadius:4,letterSpacing:mostrarSenha?"normal":2}}>
+            <code style={{color:"var(--brand)",background:"var(--brand-soft)",padding:"2px 8px",borderRadius:4,letterSpacing:mostrarSenha?"normal":2}}>
               {mostrarSenha?"LA@2025":"••••••••"}
             </code>
             <button type="button" onClick={()=>setMostrarSenha(v=>!v)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:15,padding:2,display:"flex",alignItems:"center"}} title={mostrarSenha?"Ocultar":"Mostrar"}>

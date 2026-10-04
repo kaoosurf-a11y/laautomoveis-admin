@@ -215,9 +215,9 @@ const AGENDAMENTO_IA_LABEL={
   desviou_assunto:"Cliente mudou de assunto — Lara parou",
 };
 const AGENDAMENTO_IA_INFO={
-  solicitado:{background:"#7ba7e022",color:"#7ba7e0"}, em_andamento:{background:"#7ba7e022",color:"#7ba7e0"},
-  confirmado:{background:"#25D36622",color:"#25D366"}, sem_resposta:{background:"#e0525222",color:"#e05252"},
-  desviou_assunto:{background:"#e0525222",color:"#e05252"},
+  solicitado:{background:"var(--info-soft)",color:"var(--info)"}, em_andamento:{background:"var(--info-soft)",color:"var(--info)"},
+  confirmado:{background:"var(--wa-soft)",color:"var(--wa)"}, sem_resposta:{background:"var(--danger-soft)",color:"var(--danger)"},
+  desviou_assunto:{background:"var(--danger-soft)",color:"var(--danger)"},
 };
 
 function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
@@ -543,7 +543,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
           <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
             <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>SCORE</div>
-            <div style={{fontSize:20,fontWeight:700,color:lead.score>=70?"var(--danger)":lead.score>=40?"var(--warning)":"#7ba7e0"}}>{lead.score}</div>
+            <div style={{fontSize:20,fontWeight:700,color:lead.score>=70?"var(--danger)":lead.score>=40?"var(--warning)":"var(--info)"}}>{lead.score}</div>
           </div>
           <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
             <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>TEMPERATURA</div>
@@ -734,7 +734,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
         <div className="form-group">
           <label className="form-label">Estágio {readOnly?"":"— arraste o card no board pra mudar, ou selecione aqui"}</label>
           {readOnly?(
-            <div style={{fontSize:14,fontWeight:600,color:colAtual?.cor||"var(--fg)"}}>{colAtual?.label}</div>
+            <div className="tone" style={{fontSize:14,fontWeight:600,color:colAtual?.cor||"var(--fg)"}}>{colAtual?.label}</div>
           ):pedindoVeiculoVenda?(
             <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
               <div style={{fontSize:13,color:"var(--muted)",marginBottom:8}}>Qual veículo do estoque foi vendido? (opcional, mas ajuda a fechar o histórico certo)</div>
@@ -1058,7 +1058,7 @@ export default function CRM(){
               <div key={est.key} className="kanban-col">
                 <div
                   className="kanban-col-header"
-                  style={{border:`3px solid ${est.cor}`,borderBottom:"none",opacity:colArrastando===est.key?.4:1}}
+                  style={{"--cor":est.cor,opacity:colArrastando===est.key?.4:1}}
                   draggable
                   onDragStart={e=>onColHeaderDragStart(e,est.key)}
                   onDragOver={onColHeaderDragOver}
@@ -1068,14 +1068,13 @@ export default function CRM(){
                 >
                   <span style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
                     <i className="ti ti-grip-vertical" style={{fontSize:13,color:"var(--muted)",flexShrink:0}}/>
-                    <span className="kanban-col-title" style={{color:est.cor}}>{est.label}</span>
+                    <span className="kanban-col-title">{est.label}</span>
                   </span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
                 <div
                   className="kanban-cards"
                   style={{
-                    border:`3px solid ${est.cor}`,borderTop:"none",
                     ...(colunaSobre===est.key?{outline:`2px dashed ${est.cor}`,outlineOffset:-2}:{}),
                   }}
                   onDragOver={readOnly?undefined:e=>onColDragOver(e,est.key)}
@@ -1091,16 +1090,16 @@ export default function CRM(){
                       onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
                       onDragEnd={readOnly?undefined:pararAutoScroll}
                       onClick={()=>setLeadSel(lead)}
-                      style={{cursor:readOnly?"pointer":"grab",border:`2px solid ${est.cor}`,boxShadow:`0 0 8px ${est.cor}4d`}}
+                      style={{cursor:readOnly?"pointer":"grab"}}
                     >
                       <div className="kanban-card-nome">{lead.nome}</div>
                       {lead.codigo_vip!=null&&
-                        <div style={{fontSize:11,color:"#E6B422",fontWeight:700,marginBottom:4,letterSpacing:".04em"}}>VIP #{lead.codigo_vip}</div>
+                        <div style={{fontSize:11,color:"var(--brand)",fontWeight:700,marginBottom:4,letterSpacing:".04em"}}>VIP #{lead.codigo_vip}</div>
                       }
                       <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
                       {lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio&&
                         <div
-                          style={{fontSize:10,color:"#7ba7e0",marginBottom:4,display:"flex",alignItems:"center",gap:3}}
+                          style={{fontSize:10,color:"var(--info)",marginBottom:4,display:"flex",alignItems:"center",gap:3}}
                           title={`IA sugeriu mover pra "${SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio}" — move sozinha em 14 dias corridos se ninguém mexer nesse card antes disso`}
                         >
                           <i className="ti ti-bulb" style={{fontSize:11}}/> Sugestão: {SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio} (há {tempoDesde(lead.sugestao_estagio_em)})
@@ -1117,7 +1116,7 @@ export default function CRM(){
                         <Resp r={lead.responsavel_atual}/>
                         <span style={{fontSize:10,color:"var(--muted)"}}><i className="ti ti-clock" style={{fontSize:11}}/> {tempoDesde(lead.atualizado_em)}</span>
                         {lead.agendamento_ia_status&&(lead.agendamento_ia_status==="solicitado"||lead.agendamento_ia_status==="em_andamento")&&
-                          <i className="ti ti-calendar-time" style={{fontSize:11,color:"#7ba7e0"}} title="Lara tentando agendar"/>}
+                          <i className="ti ti-calendar-time" style={{fontSize:11,color:"var(--info)"}} title="Lara tentando agendar"/>}
                       </div>
                       <div className="kanban-card-footer">
                         <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}</div>

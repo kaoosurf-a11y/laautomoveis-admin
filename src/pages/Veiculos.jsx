@@ -357,7 +357,7 @@ export default function Veiculos() {
                   {form.fotos.map((url,i) => (
                     <div key={i} className="foto-item">
                       <img src={url} alt=""/>
-                      {i===0 && <div style={{position:"absolute",bottom:4,left:4,background:"var(--brand)",color:"#0c0c0a",fontSize:10,padding:"2px 6px",borderRadius:4,fontWeight:700}}>CAPA</div>}
+                      {i===0 && <div style={{position:"absolute",bottom:4,left:4,background:"var(--brand-fill)",color:"var(--on-brand)",fontSize:10,padding:"2px 6px",borderRadius:4,fontWeight:700}}>CAPA</div>}
                       <button className="foto-remove" onClick={()=>removerFoto(i)}>×</button>
                     </div>
                   ))}
@@ -370,7 +370,7 @@ export default function Veiculos() {
               <span style={{fontSize:14,color:"var(--fg)"}}>Publicado no site</span>
             </label>
 
-            {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:"rgba(224,82,82,.1)",borderRadius:8}}>{erro}</div>}
+            {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:"var(--danger-soft)",borderRadius:8}}>{erro}</div>}
 
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-ghost" onClick={fechar} style={{flex:1}}>Cancelar</button>

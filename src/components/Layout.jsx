@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { getUser, logout, isManager, isOwner } from "../auth.js";
 import { getAgenda } from "../api.js";
+import { getTema, alternarTema } from "../theme.js";
 
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -9,6 +10,7 @@ export default function Layout({ children }) {
   const [notif, setNotif] = useState(null);
   const [notifDismissed, setNotifDismissed] = useState(false);
   const [perfilModal, setPerfilModal] = useState(false);
+  const [tema, setTema] = useState(getTema);
   const navigate = useNavigate();
   const user = getUser();
 
@@ -120,13 +122,16 @@ export default function Layout({ children }) {
           )}
         </nav>
         <div className="sidebar-footer">
+          <button type="button" className="nav-item tema-item" onClick={() => setTema(alternarTema())}>
+            <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/><span>{tema==="light"?"Tema escuro":"Tema claro"}</span>
+          </button>
           <div className="user-info" onClick={() => setPerfilModal(true)} style={{cursor:"pointer"}}>
             <div className="avatar">{user?.iniciais||"??"}</div>
             <div style={{flex:1,minWidth:0}}>
               <div className="user-name">{user?.nome}</div>
               <div className="user-role">{user?.role==="admin_master"?"Proprietário":user?.role==="gerente"?"Gerente":"Vendedor"}</div>
             </div>
-            <button onClick={e=>{e.stopPropagation();handleLogout();}} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:20,padding:6,display:"flex",alignItems:"center"}}>
+            <button className="icon-btn" title="Sair" aria-label="Sair" onClick={e=>{e.stopPropagation();handleLogout();}}>
               <i className="ti ti-logout"/>
             </button>
           </div>
@@ -137,10 +142,13 @@ export default function Layout({ children }) {
       <header className="topbar-mobile">
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div className="logo-badge" style={{width:32,height:32,fontSize:12}}>LA</div>
-          <span style={{fontSize:14,fontWeight:700,color:"var(--brand)",letterSpacing:"0.06em"}}>LA AUTOMÓVEIS</span>
+          <span style={{fontSize:15,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em"}}>LA AUTOMÓVEIS</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
-          <button onClick={() => setPerfilModal(true)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:22,padding:6,display:"flex",alignItems:"center"}}>
+          <button className="icon-btn" title={tema==="light"?"Usar tema escuro":"Usar tema claro"} aria-label={tema==="light"?"Usar tema escuro":"Usar tema claro"} onClick={() => setTema(alternarTema())}>
+            <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/>
+          </button>
+          <button className="icon-btn" title="Meu perfil" aria-label="Meu perfil" onClick={() => setPerfilModal(true)}>
             <i className="ti ti-user-circle"/>
           </button>
           <button className="menu-btn" onClick={() => setMenuOpen(o=>!o)}>
@@ -160,7 +168,7 @@ export default function Layout({ children }) {
             <div className="notif-title"><i className={`ti ${TIPOS_NOTIF[notif.tipo]?.icon || "ti-alert-triangle"}`}/> {TIPOS_NOTIF[notif.tipo]?.label || "Agendamento"} em {minAte(notif.data_hora)} min!</div>
             <div className="notif-sub">
               {notif.cliente_nome}{notif.veiculo ? ` · ${notif.veiculo}` : ""}
-              {notif.lead_estagio === "negociando" && <span className="badge" style={{marginLeft:6,fontSize:10,background:"#C8A84B22",color:"#C8A84B"}}>Em negociação</span>}
+              {notif.lead_estagio === "negociando" && <span className="badge" style={{marginLeft:6,fontSize:10,background:"var(--brand-soft)",color:"var(--brand)"}}>Em negociação</span>}
             </div>
           </div>
           <div className="notif-hora">{fmtH(notif.data_hora)}</div>
@@ -223,12 +231,12 @@ function PerfilModal({ user, onClose, onLogout }) {
         <div className="modal-handle"/>
         <div className="modal-header">
           <h2 className="modal-title">Meu perfil</h2>
-          <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:24,cursor:"pointer"}}><i className="ti ti-x"/></button>
+          <button className="icon-btn" aria-label="Fechar" onClick={onClose}><i className="ti ti-x"/></button>
         </div>
 
         {/* Info do usuário */}
         <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0 20px",borderBottom:"1px solid var(--border)",marginBottom:20}}>
-          <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(200,168,75,.15)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,flexShrink:0}}>
+          <div style={{width:52,height:52,borderRadius:"50%",background:"var(--brand-soft)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,flexShrink:0}}>
             {user?.iniciais}
           </div>
           <div>
@@ -261,9 +269,9 @@ function PerfilModal({ user, onClose, onLogout }) {
 
         {msg && (
           <div style={{padding:"10px 12px",borderRadius:8,marginBottom:14,fontSize:13,
-            background: msg.tipo==="ok"?"rgba(76,175,125,.12)":"rgba(224,82,82,.12)",
+            background: msg.tipo==="ok"?"var(--success-soft)":"var(--danger-soft)",
             color: msg.tipo==="ok"?"var(--success)":"var(--danger)",
-            border:`1px solid ${msg.tipo==="ok"?"rgba(76,175,125,.3)":"rgba(224,82,82,.3)"}`}}>
+            border:`1px solid ${msg.tipo==="ok"?"var(--success-line)":"var(--danger-line)"}`}}>
             <i className={`ti ti-${msg.tipo==="ok"?"check":"alert-circle"}`} style={{marginRight:6}}/>
             {msg.texto}
           </div>

@@ -163,7 +163,7 @@ export default function Status() {
                     <span style={{ fontSize: 11, color: "var(--muted)" }}>{fmtData(h.enviado_em)}</span>
                   </div>
                   <div style={{ fontSize: 12, color: "var(--fg)" }}>{h.marca ? `${h.marca} ${h.modelo} ${h.ano} — ` : ""}{h.legenda}</div>
-                  {!h.sucesso && h.erro && <div style={{ fontSize: 11, color: "#e05252", marginTop: 4 }}>{h.erro}</div>}
+                  {!h.sucesso && h.erro && <div style={{ fontSize: 11, color: "var(--danger)", marginTop: 4 }}>{h.erro}</div>}
                 </div>
               </div>
             ))}
