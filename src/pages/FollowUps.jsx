@@ -335,7 +335,7 @@ export default function FollowUps(){
               const leads=(data.porTipo?.[tipo]||[]).filter(passaFiltro);
               const cor=TIPO_COR[tipo];
               return (
-              <div key={tipo} className="fu-kanban-col">
+              <div key={tipo} className="fu-kanban-col" style={{"--cor":cor}}>
                 <div className="fu-kanban-col-header" style={{"--cor":cor,opacity:colArrastando===tipo?.4:1,cursor:"grab"}}
                   draggable
                   onDragStart={e=>onColHeaderDragStart(e,tipo)}

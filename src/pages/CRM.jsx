@@ -1055,7 +1055,7 @@ export default function CRM(){
           {estagiosKanban.map(est=>{
             const leads=leadsDaColuna(est,kanban).filter(l=>leadBate(l,busca));
             return(
-              <div key={est.key} className="kanban-col">
+              <div key={est.key} className="kanban-col" style={{"--cor":est.cor}}>
                 <div
                   className="kanban-col-header"
                   style={{"--cor":est.cor,opacity:colArrastando===est.key?.4:1}}

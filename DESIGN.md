@@ -110,7 +110,7 @@ Reusar as classes existentes, sem criar variação nova dentro de uma página.
 - **Formulário:** `.form-group`, `.form-label`, `.form-input`, `.form-grid`.
 - **Estado:** `.badge` com `-brand`, `-success`, `-warning`, `-danger`, `-muted`; `.score-pill`; `.empty-state`; `.spinner`.
 - **Navegação:** `.nav-item` (ativo com fundo dourado a 12%), `.tab-btn`, `.bottom-nav`.
-- **Kanban:** a cor do estágio aparece só como um ponto ao lado do título da coluna (variável `--cor` passada pela tela); card e coluna têm borda neutra, sem moldura colorida nem brilho.
+- **Kanban:** cada coluna tem a cor do seu estágio (variável `--cor` passada pela tela): contorno de 2px na coluna, cabeçalho tingido e ponto ao lado do título. Pedido do Felipe em 04/10/2026, pra cada coluna ficar bem definida. Os cards ficam com borda neutra, sem brilho.
 - **Kanban e listas:** `.kanban-*`, `.fu-kanban-*`, `.crm-list-*`, `.veiculo-card-*`.
 - **Ícones:** **só Tabler** (`<i className="ti ti-nome"/>`), carregados por CDN em `index.html`. Nomes já em uso: `ti-car`, `ti-building-store`, `ti-clipboard-list`, `ti-heart-handshake`, `ti-message-circle`, `ti-calendar`, `ti-alert-triangle`, `ti-device-mobile`, `ti-robot`, `ti-sun`, `ti-link`. `lucide-react` está instalado mas não é usado; não introduzir.
 

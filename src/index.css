@@ -288,17 +288,19 @@ tr:hover td{background:var(--hover)}
 .kanban-board::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px;border:3px solid var(--surface2)}
 .kanban-board::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .kanban-col{flex-shrink:0;width:230px;scroll-snap-align:start;display:flex;flex-direction:column;min-height:0}
-/* A cor do estágio (--cor, vinda da tela) vira só um ponto ao lado do título: a
-   coluna continua reconhecível pela cor sem moldura grossa nem brilho nos cards. */
-.kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;border-bottom:none;cursor:grab;flex-shrink:0}
+/* Cada coluna tem a cor do seu estágio (--cor, vinda da tela): contorno da coluna,
+   cabeçalho tingido e ponto ao lado do título. Os cards ficam neutros, sem brilho. */
+.kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 10px;position:relative;background:var(--surface2);border:2px solid var(--cor,var(--border));border-radius:var(--radius-lg) var(--radius-lg) 0 0;border-bottom:none;cursor:grab;flex-shrink:0}
 .kanban-col-header:active{cursor:grabbing}
+.kanban-col-header::after{content:"";position:absolute;inset:0;background:var(--cor,transparent);opacity:.18;border-radius:calc(var(--radius-lg) - 2px) calc(var(--radius-lg) - 2px) 0 0;pointer-events:none}
+.kanban-col-header>*{position:relative;z-index:1}
 .kanban-col-title{font-size:13px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:7px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kanban-col-title::before,.fu-kanban-col-title::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--cor,var(--muted));flex-shrink:0}
+.kanban-col-title::before,.fu-kanban-col-title::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--cor,var(--muted));flex-shrink:0}
 .kanban-col-count{font-size:11px;font-weight:600;color:var(--muted);background:var(--fill);padding:2px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
 /* Preenche o resto da altura da coluna (que agora vem do .kanban-board com altura
    presa à viewport, ver acima) em vez de um max-height fixo em pixels — min-height:0
    é necessário pra um filho flex conseguir encolher/rolar dentro do pai. */
-.kanban-cards{background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:4px 8px 8px;min-height:0;flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.kanban-cards{background:var(--surface2);border:2px solid var(--cor,var(--border));border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:4px 8px 8px;min-height:0;flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .kanban-cards::-webkit-scrollbar{width:8px}
 .kanban-cards::-webkit-scrollbar-track{background:transparent}
 .kanban-cards::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px}
@@ -337,7 +339,7 @@ tr:hover td{background:var(--hover)}
 .fu-kanban-col{flex-shrink:0;width:320px;display:flex;flex-direction:column;min-height:0}
 .fu-kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 10px;cursor:grab}
 .fu-kanban-col-title{font-size:14px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:7px}
-.fu-kanban-cards{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:64px;max-height:calc(100vh - 300px);overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
+.fu-kanban-cards{background:var(--surface2);border:2px solid var(--cor,var(--border));border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:64px;max-height:calc(100vh - 300px);overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
 .fu-kanban-cards::-webkit-scrollbar{width:8px}
 .fu-kanban-cards::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
 .fu-kanban-cards::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px}
