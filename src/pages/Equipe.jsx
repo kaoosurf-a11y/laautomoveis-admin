@@ -3,8 +3,8 @@ import { api } from "../lib/api.js";
 import { getUser, verComo } from "../auth.js";
 import { alertDialog } from "../components/Dialog.jsx";
 
-const ROLE_LABEL = { admin_master:"Proprietário", gerente:"Gerente", vendedor:"Vendedor" };
 const CORES=["#C8A84B","#e05252","#8E44AD","#2980B9","#27AE60","#e6a817"];
+const GRUPOS=[{role:"admin_master",titulo:"Proprietários"},{role:"gerente",titulo:"Gerentes"},{role:"vendedor",titulo:"Vendedores"}];
 
 export default function Equipe(){
   const[equipe,setEquipe]=useState([]);
@@ -37,23 +37,36 @@ export default function Equipe(){
   return(
     <div>
       <div className="page-header"><h1 className="page-title"><i className="ti ti-users"/> Equipe</h1></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
-        {equipe.map((m,i)=>(
-          <div key={m.usuario} className="card" style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
-            <div className="tone" style={{width:46,height:46,borderRadius:"50%",background:`${CORES[i%CORES.length]}22`,color:CORES[i%CORES.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,flexShrink:0}}>{m.iniciais}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:"var(--fg)"}}>{m.nome}</div>
-              <div style={{fontSize:12,color:"var(--muted)"}}>{ROLE_LABEL[m.role]||m.role}</div>
-              <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>@{m.usuario}</div>
+      {GRUPOS.map(g=>{
+        const pessoas=equipe.filter(m=>m.role===g.role);
+        if(!pessoas.length)return null;
+        return(
+          <div key={g.role}>
+            <div className="sec-label">{g.titulo} ({pessoas.length})</div>
+            <div className="equipe-grid">
+              {pessoas.map(m=>{
+                const cor=CORES[equipe.indexOf(m)%CORES.length];
+                return(
+                <div key={m.usuario} className="card equipe-card">
+                  <div className="equipe-top">
+                    <div className="equipe-av tone" style={{background:`${cor}22`,color:cor}}>{m.iniciais}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="equipe-nome">{m.nome}</div>
+                      <div className="equipe-sub">@{m.usuario}</div>
+                    </div>
+                    <span className="equipe-status">Ativo</span>
+                  </div>
+                  {eu?.role==="admin_master"&&m.role!=="admin_master"&&
+                    <button className="btn btn-ghost btn-sm" style={{width:"100%"}} onClick={()=>abrirComo(m)} disabled={abrindo!=null}>
+                      <i className={`ti ti-${abrindo===m.id?"loader":"eye"}`} style={abrindo===m.id?{animation:"spin 1s linear infinite"}:undefined}/> Ver como {m.nome.split(" ")[0]}
+                    </button>}
+                </div>
+                );
+              })}
             </div>
-            <span className="badge badge-success" style={{fontSize:10}}>Ativo</span>
-            {eu?.role==="admin_master"&&m.role!=="admin_master"&&
-              <button className="btn btn-ghost btn-sm" style={{width:"100%"}} onClick={()=>abrirComo(m)} disabled={abrindo!=null}>
-                <i className={`ti ti-${abrindo===m.id?"loader":"eye"}`} style={abrindo===m.id?{animation:"spin 1s linear infinite"}:undefined}/> Ver como {m.nome.split(" ")[0]}
-              </button>}
           </div>
-        ))}
-      </div>
+        );
+      })}
       <div className="card" style={{marginTop:20}}>
         <div className="card-title"><i className="ti ti-key"/> Credenciais</div>
         <div style={{background:"var(--surface2)",borderRadius:8,padding:"12px 14px",fontSize:13,color:"var(--muted)"}}>
