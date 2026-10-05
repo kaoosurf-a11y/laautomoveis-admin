@@ -106,6 +106,8 @@ Profundidade vem da troca de fundo (ground → surface → surface2) e de uma bo
 Reusar as classes existentes, sem criar variação nova dentro de uma página.
 
 - **Botões:** `.btn` com `.btn-primary`, `.btn-ghost`, `.btn-danger`, `.btn-icon`, `.btn-sm`. Altura mínima 44px.
+- **Filtro de recorte:** `.seg` com `.seg-btn` (controle segmentado, ativo em dourado chapado). É para o que muda o recorte dos dados da tela (período, loja). Aba de conteúdo continua `.tab-btn`; não usar `.btn` como filtro. Criado em 05/10/2026 no Dashboard, onde período, loja e abas eram três fileiras de botões dourados iguais.
+- **Dashboard:** `.dash-grid` (2 colunas a partir de 1024px), `.card-head` (título do card com ação à direita), `.metrics-grid.cols-3`, `.meter` (progresso fino), `.rank-*`, `.lista-*`, `.ajuste-loja*`. Meta e investimento são editados por loja, uma linha por loja; em "Todas" os números são a soma e isso vem escrito.
 - **Card e métrica:** `.card`, `.metric-card` (`.metric-label`, `.metric-value`, `.metric-delta`).
 - **Formulário:** `.form-group`, `.form-label`, `.form-input`, `.form-grid`.
 - **Estado:** `.badge` com `-brand`, `-success`, `-warning`, `-danger`, `-muted`; `.score-pill`; `.empty-state`; `.spinner`.

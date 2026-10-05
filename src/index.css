@@ -643,3 +643,43 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .login-page{gap:28px}
 .login-card{padding:32px 26px}
 @media(prefers-reduced-motion:reduce){.main-content>*{animation:none}.kanban-card:hover{transform:none}}
+
+/* ── Dashboard (05/10/2026): filtros segmentados, grade de 2 colunas, ajuste por loja ── */
+/* .seg = filtro de recorte (período, loja). Abas de conteúdo continuam .tab-btn. */
+.seg{display:inline-flex;gap:2px;padding:3px;background:var(--fill);border-radius:var(--radius);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg-btn{font-family:inherit;font-size:13px;font-weight:500;color:var(--fg);background:none;border:none;border-radius:9px;padding:0 14px;min-height:38px;cursor:pointer;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,color .15s}
+.seg-btn i{font-size:15px}
+.seg-btn.active{background:var(--brand-fill);color:var(--on-brand);font-weight:600}
+.seg-btn:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+@media(hover:hover){.seg-btn:not(.active):hover{background:var(--hover)}}
+@media(max-width:1023px){.seg{display:flex;width:100%}.seg-btn{min-height:44px;flex:1 0 auto;padding:0 12px}}
+.dash-bar{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:16px}
+.dash-escopo{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dash-grid{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);margin-bottom:12px;align-items:start}
+@media(min-width:1024px){.dash-grid{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.card-head .card-title{margin-bottom:0}
+.metrics-grid.cols-3{margin-bottom:0}
+.metrics-grid.cols-3>:first-child{grid-column:1/-1}
+@media(min-width:600px){.metrics-grid.cols-3{grid-template-columns:repeat(3,1fr)}.metrics-grid.cols-3>:first-child{grid-column:auto}}
+.meter{height:4px;border-radius:99px;background:var(--surface2);overflow:hidden;margin-top:8px}
+.meter>span{display:block;height:100%;border-radius:99px;background:var(--brand-fill)}
+.vazio{color:var(--muted);font-size:13px}
+.rank-grupo+.rank-grupo{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.rank-loja{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px}
+.rank-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.rank-row:last-child{margin-bottom:0}
+.rank-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;align-items:baseline}
+.rank-nome{font-size:13px;color:var(--fg);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-num{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.rank-num strong{color:var(--fg);font-weight:600}
+.lista-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--border)}
+.lista-row:first-of-type{border-top:none;padding-top:0}
+.lista-nome{font-size:13px;font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lista-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ajuste-lojas{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:grid;gap:16px}
+.ajuste-loja-nome{font-size:13px;font-weight:600;color:var(--fg);margin-bottom:8px}
+.ajuste-loja-campos{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);align-items:end}
+@media(min-width:600px){.ajuste-loja-campos{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}}
+.dash-col{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
