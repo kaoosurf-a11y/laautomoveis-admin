@@ -129,6 +129,46 @@ function Anuncios({ midia, onSaved }) {
   );
 }
 
+// Funil enviado pra Meta (Conversions API), uma linha por loja — cada loja tem o próprio
+// Pixel, os números nunca se somam. Qualificado = nome completo + CPF + nascimento
+// (Felipe 06/10/2026). Backend antigo não manda `meta_capi`: o card some.
+function FunilMeta({ lojas }) {
+  if (!lojas?.length) return null;
+  return (
+    <div className="card" style={{marginBottom:12}}>
+      <div className="card-head">
+        <div className="card-title"><i className="ti ti-brand-meta"/> Conversões enviadas à Meta</div>
+      </div>
+      {lojas.map((l, i) => (
+        <div key={l.loja_id} style={{marginTop: i ? 14 : 0}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,fontSize:13,fontWeight:600}}>
+            {l.nome}
+            <span className={`badge ${l.ativo?"badge-success":"badge-muted"}`}>{l.ativo?"Ligada":"Desligada"}</span>
+            {l.erros > 0 && <span className="badge badge-danger">{l.erros} com erro</span>}
+          </div>
+          <div className="metrics-grid cols-3">
+            <div className="metric-card">
+              <div className="metric-label"><i className="ti ti-user-plus"/> Leads novos</div>
+              <div className="metric-value">{l.leads}</div>
+              <div className="metric-delta">{l.enviados} eventos entregues à Meta</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label"><i className="ti ti-user-check"/> Qualificados</div>
+              <div className="metric-value">{l.qualificados}</div>
+              <div className="metric-delta">{l.custo_por_qualificado==null?"nome completo, CPF e nascimento":`${fmtR(l.custo_por_qualificado)} por qualificado`}</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label"><i className="ti ti-car"/> Vendas</div>
+              <div className="metric-value">{l.vendas}</div>
+              <div className={`metric-delta ${l.vendas_sem_valor>0?"down":""}`}>{l.vendas_sem_valor>0?`${l.vendas_sem_valor} sem valor preenchido`:l.vendas>0?"com valor informado":"no período do filtro"}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
   const { resumo, vendedores, canais, midia } = data;
   const ehMes = periodo === "mes";
@@ -186,6 +226,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
       </div>
 
       <Anuncios midia={midia} onSaved={onMidiaSaved}/>
+      <FunilMeta lojas={data.meta_capi}/>
 
       <div className="dash-grid">
         {/* Por vendedor — barra relativa ao maior total de leads do grupo. Em "Todas" a
