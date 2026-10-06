@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getCRMKanban, moverLead, criarLeadCRM, agendarVisita, agendarRetomada, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
+import { getCRMKanban, getMovimentosLead, moverLead, criarLeadCRM, agendarVisita, agendarRetomada, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
@@ -174,6 +174,38 @@ const RESP_INFO={ia:["#25D366","IA"],humano:["#7ba7e0","Humano"],pausado:["#e052
 function Resp({r}){const[c,l]=RESP_INFO[r]||RESP_INFO.ia;return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 // Tempo desde a última mudança no lead — proxy pro "tempo no estágio atual" (não existe
 // histórico granular de transição por estágio ainda, ver achado da Fase 1).
+// Historico de mudancas de coluna do card (2026-10-05, Felipe: "sempre fica identificado quem moveu").
+// Fonte: GET /api/crm/leads/:id/movimentos (crm_estagio_log, gravado por gatilho no banco). So leitura.
+function quemMoveuLabel(m){
+  if(m.quem==="humano")return m.usuario_nome||"Pessoa da equipe";
+  if(String(m.quem||"").startsWith("ia"))return "IA";
+  if(m.quem==="sistema")return "Sistema";
+  return "Automação";
+}
+function MovimentosLead({leadId}){
+  const[mov,setMov]=useState(null);
+  useEffect(()=>{
+    let vivo=true;
+    getMovimentosLead(leadId).then(r=>{if(vivo)setMov(r?.movimentos||[]);}).catch(()=>{if(vivo)setMov([]);});
+    return()=>{vivo=false;};
+  },[leadId]);
+  if(!mov||!mov.length)return null;
+  const nomeCol=k=>(ESTAGIOS_ADMIN.find(e=>e.key===k)||{}).label||k||"entrada";
+  return(
+    <div className="form-group">
+      <label className="form-label">Movimentos do card</label>
+      <div style={{background:"var(--surface2)",borderRadius:8,padding:"8px 12px",display:"flex",flexDirection:"column",gap:6}}>
+        {mov.slice(0,8).map(m=>(
+          <div key={m.id} style={{fontSize:12.5,color:"var(--fg)",lineHeight:1.35}}>
+            <strong>{quemMoveuLabel(m)}</strong> moveu de {nomeCol(m.de)} para <strong>{nomeCol(m.para)}</strong>
+            <span style={{color:"var(--muted)"}}> · há {tempoDesde(m.criado_em)}{m.motivo?` · ${m.motivo}`:""}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function tempoDesde(iso){
   if(!iso)return "";
   const ms=Date.now()-new Date(iso).getTime();
@@ -672,6 +704,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             </div>
           </div>
         </>)}
+        <MovimentosLead leadId={lead.id}/>
         {readOnly?(
           (obsAtual||lead.resumo_handoff)&&
             <div className="form-group">
