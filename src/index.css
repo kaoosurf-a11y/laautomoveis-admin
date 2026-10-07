@@ -745,6 +745,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .kanban-card.kc{display:grid;grid-template-columns:36px minmax(0,1fr);column-gap:10px;padding:10px 10px 8px;border-radius:10px}
 .kc-av{position:relative;width:36px;height:36px;grid-row:1}
 .kc-ini{width:36px;height:36px;border-radius:50%;background:var(--surface2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.kc-foto{width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;background:var(--surface2);outline:1px solid var(--border);outline-offset:-1px}
 .kc-ch{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;box-shadow:0 0 0 2px var(--surface)}
 .kc-main{min-width:0}
 .kc-top{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted)}

@@ -256,6 +256,13 @@ function diaMesCurto(iso){if(!iso)return "";const d=new Date(iso);if(isNaN(d))re
 const iniciaisDe=n=>String(n||"?").trim().split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
 // Selo de canal em cima da foto/inicial: de onde o lead veio (mesmas origens do seletor).
 const CANAL={anuncio:["#1877F2","ti-brand-meta","Anúncio"],site:["#5b6b7f","ti-world","Site"],organico:["#25D366","ti-brand-whatsapp","Orgânico (WhatsApp)"],presencial:["#b08a2e","ti-building-store","Presencial (loja)"],reativacao:["#8E44AD","ti-refresh","Campanha de reativação"],particular:["#128a43","ti-brand-whatsapp","WhatsApp particular do vendedor"]};
+// Foto de perfil do cliente (a que o Chatwoot já guarda; vem em lead.foto_url). Sem foto,
+// ou se a imagem não abrir, mostra a inicial. loading="lazy": só baixa a foto do card que aparece.
+function FotoLead({lead}){
+  const[falhou,setFalhou]=useState(false);
+  if(!lead.foto_url||falhou)return <div className="kc-ini">{iniciaisDe(lead.nome)}</div>;
+  return <img className="kc-foto" src={lead.foto_url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
+}
 // Status do follow-up no rodapé: bolinha vermelha (atrasado), verde (em dia). Sem follow-up não mostra nada.
 function StatusFollowup({lead}){
   if(!lead.followup_tipo)return null;
@@ -1193,9 +1200,8 @@ export default function CRM(){
                       onClick={()=>setLeadSel(lead)}
                       style={{cursor:readOnly?"pointer":"grab"}}
                     >
-                      {/* Sem foto de perfil guardada em lugar nenhum (conferido 07/10): inicial do cliente. */}
                       <div className="kc-av">
-                        <div className="kc-ini">{iniciaisDe(lead.nome)}</div>
+                        <FotoLead lead={lead}/>
                         {canal&&<span className="kc-ch" style={{background:canal[0]}} title={`Origem: ${canal[2]}`}><i className={`ti ${canal[1]}`}/></span>}
                       </div>
                       <div className="kc-main">
