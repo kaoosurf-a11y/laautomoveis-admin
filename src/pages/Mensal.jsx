@@ -18,9 +18,11 @@ const brlCurto = (n) => {
 };
 const pct = (a, b) => (b > 0 ? `${Math.round((a / b) * 100)}%` : "—");
 const div = (a, b) => (b > 0 ? brl(a / b) : "—");
+// Custo de IA é pequeno (reais por dia): mostra com centavos.
+const brl2 = (n) => `R$ ${Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const CAMPOS = ["leads", "leads_anuncio", "fora_horario", "passados_vendedor", "vendas", "valor_vendido",
-  "vendas_valor_real", "vendas_com_lead", "vendas_com_vendedor", "verba"];
+  "vendas_valor_real", "vendas_com_lead", "vendas_com_vendedor", "verba", "ia_custo", "ia_tokens", "ia_chamadas"];
 
 // Junta as linhas (mês x loja) em uma por mês, pra loja escolhida ou somando todas.
 function porMes(linhas, loja) {
@@ -55,6 +57,10 @@ export default function Mensal() {
 
   if (!m) return <div className="empty-state"><i className="ti ti-report-analytics" /><p>Ainda não há leads nem vendas para mostrar.</p></div>;
   const emAndamento = m.mes === dados.mes_atual;
+  // Consumo de IA (07/10): medido por loja; o que não tem loja definida entra só em "Todas".
+  const iaMes = (dados.ia || []).find(x => x.mes === m.mes);
+  const iaCusto = m.ia_custo + (loja === "todas" ? Number(iaMes?.ia_sem_loja || 0) : 0);
+  const iaDias = Number(iaMes?.ia_dias || 0);
 
   return (
     <div>
@@ -117,6 +123,39 @@ export default function Mensal() {
           <div className="metric-value">{div(m.verba, m.vendas)}</div>
           <div className="metric-delta">{pct(m.vendas, m.leads)} de conversão</div>
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card-head">
+          <div className="card-title"><i className="ti ti-robot" /> Custo da IA</div>
+          <span className="badge badge-muted" style={{ fontSize: 11 }}>visível só para o proprietário</span>
+        </div>
+        {iaDias === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--muted)" }}>Sem medição neste mês. O consumo de IA passou a ser medido em 04/10/2026.</p>
+        ) : (
+          <>
+            <div className="metrics-grid cols-3">
+              <div className="metric-card">
+                <div className="metric-label">Gasto medido</div>
+                <div className="metric-value">{brl2(iaCusto)}</div>
+                <div className="metric-delta">em {iaDias} {iaDias === 1 ? "dia" : "dias"}, desde {iaMes.ia_desde}</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-label">Ritmo para 30 dias</div>
+                <div className="metric-value">{brl((iaCusto / iaDias) * 30)}</div>
+                <div className="metric-delta">{brl2(iaCusto / iaDias)} por dia</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-label">Uso</div>
+                <div className="metric-value">{(m.ia_tokens / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi</div>
+                <div className="metric-delta">tokens, {num(m.ia_chamadas)} chamadas</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 12, lineHeight: 1.5 }}>
+              Estimativa pelo consumo real de cada resposta e pela tabela de preços da OpenAI em dólar. Confira com a fatura.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
