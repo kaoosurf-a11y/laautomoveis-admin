@@ -81,19 +81,38 @@ export default function Veiculos() {
   const [erro, setErro] = useState("");
   const [confirmarDel, setConfirmarDel] = useState(null);
   // Saída do veículo (2026-10-07, Felipe): ao excluir, o painel pergunta se foi venda,
-  // por quanto, qual loja vendeu e o WhatsApp do comprador. Vai junto no DELETE e fica
+  // ou erro de cadastro; se foi venda, por quanto, qual vendedor vendeu e qual lead comprou. Vai junto no DELETE e fica
   // guardado em veiculos_saidas, que não é apagada na purga dos 7 dias.
-  const [saida, setSaida] = useState({ motivo:"vendido", valor:"", loja:"1", telefone:"" });
+  const SAIDA_VAZIA = { motivo:"", valor:"", loja:"1", vendedor:"", lead:null, semLead:false, busca:"" };
+  const [saida, setSaida] = useState(SAIDA_VAZIA);
+  const [vendaOpcoes, setVendaOpcoes] = useState({ vendedores:[], leads:[] });
+  const souMaster = getUser()?.role === "admin_master";
 
   function abrirExcluir(v) {
+    const eu = getUser();
+    setVendaOpcoes({ vendedores:[], leads:[] });
     setSaida({
-      motivo: "vendido",
+      ...SAIDA_VAZIA,
       valor: String(Math.round(Number(v.preco) || 0) || ""),
-      loja: String(getUser()?.loja_id || v.loja_id || 1),
-      telefone: "",
+      loja: String(eu?.loja_id || v.loja_id || 1),
+      vendedor: eu?.role === "vendedor" ? String(eu.id) : "",
     });
     setConfirmarDel(v);
   }
+
+  // Vendedores da loja que vendeu + busca do lead que comprou (com pequena espera pra
+  // não chamar a cada tecla). A loja é resolvida no servidor pra quem não é dono.
+  useEffect(() => {
+    if (!confirmarDel || saida.motivo !== "vendido") return;
+    let vivo = true;
+    const t = setTimeout(() => {
+      api.getVendaOpcoes(saida.loja, saida.busca).then(d => { if (vivo && d) setVendaOpcoes(d); }).catch(() => {});
+    }, saida.busca ? 300 : 0);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [confirmarDel, saida.motivo, saida.loja, saida.busca]);
+
+  const vendaCompleta = saida.motivo === "erro" ||
+    (saida.motivo === "vendido" && Number(saida.valor) > 0 && saida.vendedor && (saida.lead || saida.semLead));
 
   async function load() {
     const data = await api.getVeiculos().catch(() => []);
@@ -157,12 +176,15 @@ export default function Veiculos() {
 
   async function confirmarRemover() {
     if (!confirmarDel) return;
+    if (!vendaCompleta) return;
     const vendido = saida.motivo === "vendido";
     await api.removerVeiculo(confirmarDel.id, {
       motivo: saida.motivo,
       valor_venda: vendido ? Number(saida.valor) || null : null,
       loja_venda_id: vendido ? Number(saida.loja) : null,
-      comprador_telefone: vendido ? saida.telefone : "",
+      vendedor_id: vendido ? Number(saida.vendedor) || null : null,
+      crm_lead_id: vendido && saida.lead ? saida.lead.id : null,
+      comprador_sem_lead: vendido && !saida.lead && saida.semLead,
     }).catch(() => {});
     setConfirmarDel(null);
     await load();
@@ -405,7 +427,7 @@ export default function Veiculos() {
       {/* Modal confirmação excluir */}
       {confirmarDel && (
         <div className="modal-overlay" onClick={() => setConfirmarDel(null)}>
-          <div className="modal" style={{maxWidth:380}} onClick={e=>e.stopPropagation()}>
+          <div className="modal" style={{maxWidth:400,maxHeight:"92vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
             <div className="modal-handle"/>
             <div style={{textAlign:"center",padding:"10px 0 16px"}}>
               <i className="ti ti-alert-triangle" style={{fontSize:52,color:"var(--danger)",marginBottom:12,display:"block"}}/>
@@ -417,34 +439,74 @@ export default function Veiculos() {
               </p>
             </div>
             <div style={{display:"flex",gap:8,marginBottom:14}}>
-              <button type="button" className={saida.motivo==="vendido"?"btn btn-primary":"btn btn-ghost"} style={{flex:1}} onClick={()=>setSaida(s=>({...s,motivo:"vendido"}))}>Foi vendido</button>
-              <button type="button" className={saida.motivo==="outro"?"btn btn-primary":"btn btn-ghost"} style={{flex:1}} onClick={()=>setSaida(s=>({...s,motivo:"outro"}))}>Outro motivo</button>
+              <button type="button" className={saida.motivo==="vendido"?"btn btn-primary":"btn btn-ghost"} style={{flex:1}} onClick={()=>setSaida(s=>({...s,motivo:"vendido"}))}>Venda feita</button>
+              <button type="button" className={saida.motivo==="erro"?"btn btn-primary":"btn btn-ghost"} style={{flex:1}} onClick={()=>setSaida(s=>({...s,motivo:"erro"}))}>Erro</button>
             </div>
+            {saida.motivo==="erro" && (
+              <p style={{fontSize:13,color:"var(--muted)",marginBottom:14,textAlign:"center"}}>Cadastro errado ou duplicado. Não conta como venda.</p>
+            )}
             {saida.motivo==="vendido" && (
               <div style={{textAlign:"left"}}>
                 <div className="form-group">
-                  <label className="form-label">Valor da venda (R$)</label>
+                  <label className="form-label">Valor da venda (R$) *</label>
                   <input className="form-input" inputMode="numeric" placeholder="Ex: 89.900"
                     value={saida.valor ? Number(saida.valor).toLocaleString("pt-BR") : ""}
                     onChange={e=>setSaida(s=>({...s,valor:e.target.value.replace(/\D/g,"").slice(0,9)}))}/>
                 </div>
+                {souMaster && (
+                  <div className="form-group">
+                    <label className="form-label">Loja que vendeu *</label>
+                    <select className="form-input" value={saida.loja} onChange={e=>setSaida(s=>({...s,loja:e.target.value,vendedor:"",lead:null,busca:""}))}>
+                      <option value="1">Curitibanos</option>
+                      <option value="2">Campos Novos</option>
+                    </select>
+                  </div>
+                )}
                 <div className="form-group">
-                  <label className="form-label">Loja que vendeu</label>
-                  <select className="form-input" value={saida.loja} onChange={e=>setSaida(s=>({...s,loja:e.target.value}))}>
-                    <option value="1">Curitibanos</option>
-                    <option value="2">Campos Novos</option>
+                  <label className="form-label">Vendedor que fez a venda *</label>
+                  <select className="form-input" value={saida.vendedor} onChange={e=>setSaida(s=>({...s,vendedor:e.target.value}))}>
+                    <option value="">Selecione</option>
+                    {vendaOpcoes.vendedores.map(u => <option key={u.id} value={u.id}>{u.nome}{u.role==="gerente"?" (gerente)":""}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">WhatsApp do comprador (opcional)</label>
-                  <input className="form-input" inputMode="tel" placeholder="Ex: 49 99999-9999"
-                    value={saida.telefone} onChange={e=>setSaida(s=>({...s,telefone:e.target.value}))}/>
+                  <label className="form-label">Lead que comprou *</label>
+                  {saida.lead ? (
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",border:"1px solid var(--border)",borderRadius:10}}>
+                      <div style={{flex:1,minWidth:0,fontSize:14,color:"var(--fg)"}}>
+                        <strong>{saida.lead.nome}</strong>
+                        <span style={{color:"var(--muted)"}}> · final {saida.lead.telefone_final}</span>
+                      </div>
+                      <button type="button" className="btn btn-ghost btn-icon" title="Trocar" onClick={()=>setSaida(s=>({...s,lead:null}))}><i className="ti ti-x"/></button>
+                    </div>
+                  ) : (
+                    <>
+                      <input className="form-input" placeholder="Buscar por nome ou telefone" disabled={saida.semLead}
+                        value={saida.busca} onChange={e=>setSaida(s=>({...s,busca:e.target.value}))}/>
+                      {!saida.semLead && saida.busca.trim().length >= 2 && (
+                        <div style={{marginTop:6,maxHeight:170,overflowY:"auto",border:"1px solid var(--border)",borderRadius:10}}>
+                          {vendaOpcoes.leads.length === 0 && <div style={{padding:"10px 12px",fontSize:13,color:"var(--muted)"}}>Nenhum lead encontrado nesta loja.</div>}
+                          {vendaOpcoes.leads.map(l => (
+                            <button type="button" key={l.id} onClick={()=>setSaida(s=>({...s,lead:l,semLead:false}))}
+                              style={{display:"block",width:"100%",textAlign:"left",padding:"9px 12px",background:"none",border:"none",borderBottom:"1px solid var(--border)",cursor:"pointer",color:"var(--fg)",fontSize:14}}>
+                              <strong>{l.nome}</strong> <span style={{color:"var(--muted)"}}>· final {l.telefone_final}</span>
+                              <div style={{fontSize:12,color:"var(--muted)"}}>{[l.veiculo_interesse, l.vendedor].filter(Boolean).join(" · ")}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,fontSize:13,color:"var(--muted)",cursor:"pointer"}}>
+                        <input type="checkbox" checked={saida.semLead} onChange={e=>setSaida(s=>({...s,semLead:e.target.checked,busca:""}))}/>
+                        Comprador não está no CRM
+                      </label>
+                    </>
+                  )}
                 </div>
               </div>
             )}
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-ghost" onClick={() => setConfirmarDel(null)} style={{flex:1}}>Cancelar</button>
-              <button className="btn btn-danger" onClick={confirmarRemover} style={{flex:1,background:"var(--danger)",color:"white"}}>
+              <button className="btn btn-danger" onClick={confirmarRemover} disabled={!vendaCompleta} style={{flex:1,background:"var(--danger)",color:"white",opacity:vendaCompleta?1:.45}}>
                 <i className="ti ti-trash"/> Excluir
               </button>
             </div>

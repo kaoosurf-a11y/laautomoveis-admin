@@ -40,6 +40,7 @@ export const api = {
   criarVeiculo: (data) => req("POST", "/api/veiculos", data),
   editarVeiculo: (id, data) => req("PUT", `/api/veiculos/${id}`, data),
   removerVeiculo: (id, saida) => req("DELETE", `/api/veiculos/${id}`, saida),
+  getVendaOpcoes: (loja, q) => req("GET", `/api/veiculos/admin/venda-opcoes?loja=${loja}&q=${encodeURIComponent(q || "")}`),
   restaurarVeiculo: (id) => req("PATCH", `/api/veiculos/${id}/restaurar`),
   moverVeiculo: (id, direcao, site) => req("PATCH", `/api/veiculos/${id}/mover`, { direcao, site }),
 
