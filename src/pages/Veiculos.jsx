@@ -348,11 +348,12 @@ export default function Veiculos() {
       {/* Modal editar/criar */}
       {modal && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget && fechar()}>
-          <div className="modal" style={{maxWidth:560}}>
+          {/* 2026-10-07 (Felipe): janela larga com os campos em grade (.modal-form), sem rolagem no computador. */}
+          <div className="modal modal-lg modal-form">
             <div className="modal-handle"/>
             <div className="modal-header">
               <h2 className="modal-title">{modal==="criar" ? "Novo veículo" : "Editar veículo"}</h2>
-              <button onClick={fechar} style={{background:"none",border:"none",color:"var(--muted)",fontSize:24,cursor:"pointer",padding:4}}><i className="ti ti-x"/></button>
+              <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={fechar}><i className="ti ti-x"/></button>
             </div>
 
             <div className="form-group"><label className="form-label">Marca *</label><input className="form-input" value={form.marca} onChange={e=>set("marca",e.target.value)} placeholder="Ex: Volkswagen"/></div>
@@ -378,7 +379,7 @@ export default function Veiculos() {
               <div className="form-group"><label className="form-label">Detalhe</label><input className="form-input" value={form.detalhe} onChange={e=>set("detalhe",e.target.value)} placeholder="Ex: Único dono"/></div>
             </div>
 
-            <div className="form-group">
+            <div className="form-group span-all">
               <label className="form-label">Opcionais (Enter para adicionar)</label>
               <div className="tag-input-wrap">
                 {form.opcionais.map((op,i) => (
@@ -388,7 +389,7 @@ export default function Veiculos() {
               </div>
             </div>
 
-            <div className="form-group">
+            <div className="form-group span-all">
               <label className="form-label">Fotos</label>
               <label className="btn btn-ghost" style={{cursor:"pointer",width:"fit-content",marginBottom:10}}>
                 <i className="ti ti-upload"/> {uploading ? "Enviando..." : "Enviar fotos"}
@@ -415,7 +416,7 @@ export default function Veiculos() {
             {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:"var(--danger-soft)",borderRadius:8}}>{erro}</div>}
 
             <div style={{display:"flex",gap:10}}>
-              <button className="btn btn-ghost" onClick={fechar} style={{flex:1}}>Cancelar</button>
+              <button className="btn btn-ghost" data-fechar onClick={fechar} style={{flex:1}}>Cancelar</button>
               <button className="btn btn-primary" onClick={salvar} disabled={loading} style={{flex:1}}>
                 {loading ? <span className="spinner"/> : <><i className="ti ti-device-floppy"/> Salvar</>}
               </button>

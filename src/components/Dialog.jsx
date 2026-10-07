@@ -24,7 +24,7 @@ function DialogModal({ cfg, onDone }) {
   const icon = isConfirm ? (danger ? "ti-alert-triangle" : "ti-help-circle") : "ti-alert-circle";
   const iconColor = !isConfirm || danger ? "var(--danger)" : "var(--brand)";
   return (
-    <div className="modal-overlay" onClick={() => isConfirm && onDone(false)}>
+    <div className="modal-overlay" data-dialog onClick={() => isConfirm && onDone(false)}>
       <div className="modal" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
         <div className="modal-handle" />
         <div style={{ textAlign: "center", padding: "10px 0 20px" }}>

@@ -712,7 +712,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .metric-card{display:flex;flex-direction:column}
   .metric-label{margin-bottom:5px;white-space:normal;line-height:1.25;align-items:flex-start}
   .metric-label i{margin-top:1px}
-  .metric-value{font-size:22px;margin-top:auto}
+  .metric-value{font-size:22px}
   .metric-delta{margin-top:3px}
   .dash-grid,.dash-col{gap:10px}
   .funnel-step{margin-bottom:9px}
@@ -769,3 +769,45 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .kc-st{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .kc-st::after{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .kc-st.ok{color:var(--success)}.kc-st.late{color:var(--danger)}
+/* ── Janelas (07/10/2026, Felipe): tudo visível sem rolagem no computador, X no topo ── */
+.modal-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;transition:background .15s,color .15s}
+.modal-x:hover{background:var(--fill);color:var(--fg)}
+.modal-campos{display:grid;grid-template-columns:minmax(0,1fr);gap:0 14px}
+.meta-lojas{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+.fu-filtros{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:1023px){.fu-header{margin-bottom:14px}}
+@media(min-width:768px){
+  .modal{max-height:94dvh;padding:20px 24px}
+  .modal-header{margin-bottom:14px}
+  .modal.modal-lg{max-width:940px}
+  .modal-campos{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* Conteúdo em duas colunas tipo jornal; cada bloco fica inteiro numa coluna. */
+  .modal-cols{columns:2;column-gap:28px}
+  .modal-cols>*{break-inside:avoid}
+  .modal-cols>.form-group,.modal-cols>div{margin-bottom:10px!important}
+}
+@media(min-width:1024px){
+  .meta-lojas{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+  /* Cards de dentro de um card (Anúncios, Meta, Resultado mensal): mais baixos */
+  .card .metric-card{padding:9px 12px}
+  .card .metric-card .metric-value{font-size:19px}
+  .card .metric-card .metric-label{margin-bottom:3px}
+  .card .metric-card .metric-delta{margin-top:2px}
+  .fu-header{flex-wrap:nowrap;justify-content:flex-start;gap:18px}
+  /* Follow-ups: card mais enxuto */
+  .fu-kanban-card{padding:10px}
+  .fu-kanban-col{width:300px}
+  .fu-kanban-cards{max-height:calc(100vh - 150px);gap:8px}
+}
+/* Caixa de marcar dentro de formulário: a regra geral de campo (.form-group input) tirava a
+   aparência dela e virava uma bolinha cinza sem o "v". Volta a ser uma caixa de marcar normal. */
+.form-group input[type="checkbox"],.form-check input[type="checkbox"]{-webkit-appearance:auto;appearance:auto;width:18px;height:18px;min-height:0;padding:0;background:none;border:none;border-radius:4px;box-shadow:none;flex-shrink:0}
+/* Formulário em grade dentro da janela (ex.: veículo): 4 campos por linha; o que não é campo
+   simples (grades internas, fotos, opcionais, botões) ocupa a linha inteira. */
+@media(min-width:768px){
+  .modal.modal-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;align-content:start}
+  .modal-form>*{grid-column:1/-1}
+  .modal-form>.form-group:not(.span-all){grid-column:auto}
+  .modal-form>.form-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:0 14px}
+  .modal-form .foto-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+}

@@ -306,16 +306,18 @@ export default function FollowUps(){
 
   return(
     <div>
-      <div className="page-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1></div>
       {/* Filtro de data — substitui as antigas abas "Agenda de hoje"/"Vencidos"
-              (mesma tabela de "Por estágio", só um recorte por data). */}
-          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+              (mesma tabela de "Por estágio", só um recorte por data).
+              2026-10-07: os filtros subiram pra linha do título (menos espaço em branco). */}
+      <div className="page-header fu-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1>
+          <div className="fu-filtros">
             <button className={`tab-btn ${filtroData==="todos"?"active":""}`} onClick={()=>setFiltroData("todos")}>Todos ({totalEmFollowup})</button>
             <button className={`tab-btn ${filtroData==="hoje"?"active":""}`} onClick={()=>setFiltroData("hoje")}>Hoje ({totalHoje})</button>
             <button className={`tab-btn ${filtroData==="vencidos"?"active":""}`} onClick={()=>setFiltroData("vencidos")} style={{color:totalVencidos>0?"var(--danger)":undefined}}>
               Vencidos {totalVencidos>0&&<span style={{background:"var(--danger)",color:"white",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,marginLeft:4}}>{totalVencidos}</span>}
             </button>
           </div>
+      </div>
           {/* Board horizontal, uma coluna por tipo de follow-up, SEMPRE todas
           (mesmo vazias, igual ao Kanban do CRM). TIPO_ORDEM já bate 1:1 com os
           estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/

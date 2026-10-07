@@ -238,8 +238,9 @@ function indexarEstoque(veiculos){
   }).filter(Boolean);
 }
 // Devolve {valor, desde}: desde=true quando há mais de um veículo desse modelo com preços diferentes.
+const VALOR_MINIMO=1000;
 function precoDoLead(lead,indice){
-  if(Number(lead.valor)>0)return {valor:Number(lead.valor),desde:false};
+  if(Number(lead.valor)>=VALOR_MINIMO)return {valor:Number(lead.valor),desde:false};
   const txt=semAcento(lead.veiculo_interesse);
   if(!txt||!indice.length)return null;
   let ms=indice.filter(v=>v.re.test(txt));
@@ -252,6 +253,8 @@ function precoDoLead(lead,indice){
   return {valor:Math.min(...precos),desde:precos.length>1};
 }
 const fmtR0=n=>"R$ "+Math.round(n).toLocaleString("pt-BR");
+// Soma da coluna em formato curto, pra caber ao lado do título: R$ 7,1 mi · R$ 790 mil
+const fmtRCurto=n=>n>=1e6?`R$ ${(n/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1})} mi`:n>=1e3?`R$ ${Math.round(n/1e3).toLocaleString("pt-BR")} mil`:fmtR0(n);
 function diaMesCurto(iso){if(!iso)return "";const d=new Date(iso);if(isNaN(d))return "";return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0");}
 const iniciaisDe=n=>String(n||"?").trim().split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
 // Selo de canal em cima da foto/inicial: de onde o lead veio (mesmas origens do seletor).
@@ -558,7 +561,9 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
+      {/* 2026-10-07 (Felipe): janela larga com o conteúdo em colunas (.modal-cols), pra caber
+          tudo sem rolagem no computador. data-autosave: ver lib/modalGuard.js. */}
+      <div className="modal modal-lg" data-autosave onClick={e=>e.stopPropagation()}>
         <div className="modal-handle"/>
         <div className="modal-header">
           {editandoNome?(
@@ -586,8 +591,9 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
               }
             </h2>
           )}
-          <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button>
+          <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={onClose}><i className="ti ti-x"/></button>
         </div>
+        <div className="modal-cols">
         <div style={{marginBottom:14}}>
           <div style={{fontSize:13,color:"var(--muted)",marginBottom:4}}>Veículo</div>
           {editandoVeiculo?(
@@ -615,7 +621,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
               }
             </div>
           )}
-          {lead.valor&&<div style={{fontSize:14,color:"var(--brand)",fontWeight:700}}>R$ {Number(lead.valor).toLocaleString("pt-BR")}</div>}
+          {Number(lead.valor)>=VALOR_MINIMO&&<div style={{fontSize:14,color:"var(--fg)",fontWeight:700,fontVariantNumeric:"tabular-nums"}}>R$ {Number(lead.valor).toLocaleString("pt-BR")}</div>}
           {lead.veiculo_vendido_id&&
             <div style={{fontSize:12,color:"var(--success)",marginTop:4,display:"flex",alignItems:"center",gap:4}}>
               <i className="ti ti-check" style={{fontSize:13}}/> Vendido: {lead.veiculo_vendido_marca} {lead.veiculo_vendido_modelo} {lead.veiculo_vendido_ano}
@@ -853,7 +859,8 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             {excluindo?<span className="spinner"/>:<><i className="ti ti-trash" style={{marginRight:6}}/>Excluir lead (teste/erro)</>}
           </button>
         }
-        <button className="btn btn-ghost" onClick={onClose} style={{width:"100%"}}>Fechar</button>
+        <button className="btn btn-ghost" data-fechar onClick={onClose} style={{width:"100%"}}>Fechar</button>
+        </div>
       </div>
     </div>
   );
@@ -890,11 +897,11 @@ function NovoModal({onClose,onCriado,campanhaVipAtiva}){
   }
   return(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
+      <div className="modal modal-lg" onClick={e=>e.stopPropagation()}>
         <div className="modal-handle"/>
         <div className="modal-header">
           <h2 className="modal-title">Novo lead</h2>
-          <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button>
+          <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={onClose}><i className="ti ti-x"/></button>
         </div>
         {campanhaVipAtiva!==false && (
         <div className="form-group form-check">
@@ -902,6 +909,7 @@ function NovoModal({onClose,onCriado,campanhaVipAtiva}){
           <label htmlFor="lista_vip_novo">Lista VIP — Operação L.A. 35 (sem vendedor; o grupo informa o evento)</label>
         </div>
         )}
+        <div className="modal-campos">
         <div className="form-group"><label className="form-label">Nome *</label><input className="form-input" value={form.nome} onChange={e=>set("nome",e.target.value)} placeholder="Nome do cliente"/></div>
         <div className="form-group"><label className="form-label">Telefone (opcional)</label><input className="form-input" value={form.telefone} onChange={e=>set("telefone",e.target.value)} placeholder="(49) 9 9999-9999 — deixe em branco se não tiver ainda"/></div>
         <div className="form-group"><label className="form-label">{form.lista_vip?"Veículo (opcional)":"Veículo *"}</label><input className="form-input" value={form.veiculo_interesse} onChange={e=>set("veiculo_interesse",e.target.value)} placeholder={form.lista_vip?"Operação L.A. 35":"Ex: HB20 2022"}/></div>
@@ -920,6 +928,7 @@ function NovoModal({onClose,onCriado,campanhaVipAtiva}){
         <div className="form-group"><label className="form-label">Cidade</label><input className="form-input" value={form.cidade||""} onChange={e=>set("cidade",e.target.value)} placeholder="Ex: Curitibanos"/></div>
         <div className="form-group"><label className="form-label">{form.lista_vip?"E-mail *":"E-mail"}</label><input type="email" className="form-input" value={form.email||""} onChange={e=>set("email",e.target.value)} placeholder="cliente@email.com"/></div>
         <div className="form-group"><label className="form-label">Profissão</label><input className="form-input" value={form.profissao||""} onChange={e=>set("profissao",e.target.value)} placeholder="Ex: Motorista"/></div>
+        </div>
         <div className="form-group"><label className="form-label">Observações</label><textarea className="form-input" style={{minHeight:60}} value={form.observacoes||""} onChange={e=>set("observacoes",e.target.value)} placeholder="Qualquer detalhe relevante sobre o cliente"/></div>
         {/* Validação humana (2026-07-16): cliente antigo da campanha de reativação que
         respondeu confirmando o número — o vendedor conferiu que é ele de verdade antes
@@ -931,7 +940,7 @@ function NovoModal({onClose,onCriado,campanhaVipAtiva}){
         </div>
         {erro&&<div style={{color:"var(--danger)",fontSize:13,marginBottom:10}}>{erro}</div>}
         <div className="modal-actions">
-          <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-ghost" data-fechar onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={submit} disabled={loading}>{loading?<span className="spinner"/>:"Adicionar"}</button>
         </div>
       </div>
@@ -1174,7 +1183,7 @@ export default function CRM(){
                     <i className="ti ti-grip-vertical" style={{fontSize:13,color:"var(--muted)",flexShrink:0}}/>
                     <span className="kanban-col-title">{est.label}</span>
                   </span>
-                  <span className="kanban-col-count" title={soma>0?"Soma do valor dos carros de interesse com preço conhecido (preenchido no lead ou casado com o estoque)":undefined}>{leads.length}{soma>0?` · ${fmtR0(soma)}`:""}</span>
+                  <span className="kanban-col-count" title={soma>0?"Soma do valor dos carros de interesse com preço conhecido (preenchido no lead ou casado com o estoque)":undefined}>{leads.length}{soma>0?` · ${fmtRCurto(soma)}`:""}</span>
                 </div>
                 <div
                   className="kanban-cards"

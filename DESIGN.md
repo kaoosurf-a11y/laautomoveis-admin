@@ -97,6 +97,8 @@ Rótulos em CAIXA ALTA com espaçamento (`.nav-section`, `.metric-label`, `.sec-
 - **Filtros na linha do título:** no Dashboard, loja e período ficam ao lado do título e as abas dividem a linha com o texto do recorte; no CRM, busca, loja e contador ficam ao lado do título. Tela nova segue o mesmo: nada de linha só para um filtro.
 - **Grade de métricas no computador:** `.metrics-grid` distribui os cards pela largura toda (`auto-fit`, mínimo 150px), sem coluna vazia à direita. Rótulo comprido quebra em duas linhas, não corta.
 
+- **Janelas (07/10/2026, pedido do Felipe):** no computador nenhuma janela deve precisar de rolagem. Formulário grande usa `modal-lg` (até 940px) com os campos em grade: `.modal-campos` (3 por linha), `.modal-form` (a janela vira grade de 4, ex.: veículo) ou `.modal-cols` (conteúdo em duas colunas, ex.: detalhe do lead). Toda janela tem X no topo (`.modal-x`) e fecha com ESC. Fechar pelo X, pelo ESC, clicando fora ou em botão com `data-fechar` passa por `src/lib/modalGuard.js`, que avisa se há dado alterado e não salvo. Janela onde cada campo salva sozinho leva `data-autosave` (o aviso só aparece com um ✓ pendente). Janela nova não precisa de código próprio pra isso: basta usar `.modal-overlay` > `.modal` > `.modal-header`.
+
 ## Elevation & Depth
 
 Profundidade vem da troca de fundo (ground → surface → surface2) e de uma borda fina de 1px, e não de sombra. Sombra (`--float`) só onde algo realmente flutua: gaveta do menu, modal e aviso de agendamento. Barra do topo e menu de baixo no celular são translúcidos com desfoque, porque o conteúdo rola por baixo deles. **Sem degradê e sem brilho colorido**: botão primário e aba ativa são dourado chapado.

@@ -139,8 +139,10 @@ function FunilMeta({ lojas }) {
       <div className="card-head">
         <div className="card-title"><i className="ti ti-brand-meta"/> Conversões enviadas à Meta</div>
       </div>
-      {lojas.map((l, i) => (
-        <div key={l.loja_id} style={{marginTop: i ? 14 : 0}}>
+      {/* 2026-10-07: uma loja ao lado da outra (cada uma no seu bloco, números separados). */}
+      <div className="meta-lojas">
+      {lojas.map((l) => (
+        <div key={l.loja_id}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,fontSize:13,fontWeight:600}}>
             {l.nome}
             <span className={`badge ${l.ativo?"badge-success":"badge-muted"}`}>{l.ativo?"Ligada":"Desligada"}</span>
@@ -165,6 +167,7 @@ function FunilMeta({ lojas }) {
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }
