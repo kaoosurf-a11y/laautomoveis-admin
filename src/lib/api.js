@@ -39,7 +39,7 @@ export const api = {
   getVeiculo: (id) => req("GET", `/api/veiculos/${id}`),
   criarVeiculo: (data) => req("POST", "/api/veiculos", data),
   editarVeiculo: (id, data) => req("PUT", `/api/veiculos/${id}`, data),
-  removerVeiculo: (id) => req("DELETE", `/api/veiculos/${id}`),
+  removerVeiculo: (id, saida) => req("DELETE", `/api/veiculos/${id}`, saida),
   restaurarVeiculo: (id) => req("PATCH", `/api/veiculos/${id}/restaurar`),
   moverVeiculo: (id, direcao, site) => req("PATCH", `/api/veiculos/${id}/mover`, { direcao, site }),
 

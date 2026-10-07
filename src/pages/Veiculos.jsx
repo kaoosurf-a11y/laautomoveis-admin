@@ -80,6 +80,20 @@ export default function Veiculos() {
   const [tagInput, setTagInput] = useState("");
   const [erro, setErro] = useState("");
   const [confirmarDel, setConfirmarDel] = useState(null);
+  // Saída do veículo (2026-10-07, Felipe): ao excluir, o painel pergunta se foi venda,
+  // por quanto, qual loja vendeu e o WhatsApp do comprador. Vai junto no DELETE e fica
+  // guardado em veiculos_saidas, que não é apagada na purga dos 7 dias.
+  const [saida, setSaida] = useState({ motivo:"vendido", valor:"", loja:"1", telefone:"" });
+
+  function abrirExcluir(v) {
+    setSaida({
+      motivo: "vendido",
+      valor: String(Math.round(Number(v.preco) || 0) || ""),
+      loja: String(getUser()?.loja_id || v.loja_id || 1),
+      telefone: "",
+    });
+    setConfirmarDel(v);
+  }
 
   async function load() {
     const data = await api.getVeiculos().catch(() => []);
@@ -143,7 +157,13 @@ export default function Veiculos() {
 
   async function confirmarRemover() {
     if (!confirmarDel) return;
-    await api.removerVeiculo(confirmarDel.id).catch(() => {});
+    const vendido = saida.motivo === "vendido";
+    await api.removerVeiculo(confirmarDel.id, {
+      motivo: saida.motivo,
+      valor_venda: vendido ? Number(saida.valor) || null : null,
+      loja_venda_id: vendido ? Number(saida.loja) : null,
+      comprador_telefone: vendido ? saida.telefone : "",
+    }).catch(() => {});
     setConfirmarDel(null);
     await load();
   }
@@ -230,7 +250,7 @@ export default function Veiculos() {
                         {v.ativo ? (
                           <>
                             <button className="btn btn-ghost btn-icon" onClick={() => abrirEditar(v)} title="Editar"><i className="ti ti-edit"/></button>
-                            <button className="btn btn-danger btn-icon" onClick={() => setConfirmarDel(v)} title="Excluir"><i className="ti ti-trash"/></button>
+                            <button className="btn btn-danger btn-icon" onClick={() => abrirExcluir(v)} title="Excluir"><i className="ti ti-trash"/></button>
                           </>
                         ) : (
                           <button className="btn btn-primary btn-icon" onClick={() => restaurar(v)} disabled={restaurando===v.id} title="Restaurar">
@@ -287,7 +307,7 @@ export default function Veiculos() {
                       <button className="btn btn-ghost" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirEditar(v)}>
                         <i className="ti ti-edit"/> Editar
                       </button>
-                      <button className="btn btn-danger" style={{padding:"8px 14px",fontSize:13}} onClick={() => setConfirmarDel(v)}>
+                      <button className="btn btn-danger" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirExcluir(v)}>
                         <i className="ti ti-trash"/>
                       </button>
                     </>
@@ -385,9 +405,9 @@ export default function Veiculos() {
       {/* Modal confirmação excluir */}
       {confirmarDel && (
         <div className="modal-overlay" onClick={() => setConfirmarDel(null)}>
-          <div className="modal" style={{maxWidth:360}} onClick={e=>e.stopPropagation()}>
+          <div className="modal" style={{maxWidth:380}} onClick={e=>e.stopPropagation()}>
             <div className="modal-handle"/>
-            <div style={{textAlign:"center",padding:"10px 0 20px"}}>
+            <div style={{textAlign:"center",padding:"10px 0 16px"}}>
               <i className="ti ti-alert-triangle" style={{fontSize:52,color:"var(--danger)",marginBottom:12,display:"block"}}/>
               <h2 style={{fontSize:17,fontWeight:700,color:"var(--fg)",marginBottom:8}}>Excluir veículo?</h2>
               <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.5}}>
@@ -396,6 +416,32 @@ export default function Veiculos() {
                 <span style={{fontSize:13}}>Fica na lixeira por 7 dias — qualquer pessoa no painel pode restaurar nesse período. Depois disso é apagado de vez.</span>
               </p>
             </div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
+              <button type="button" className={saida.motivo==="vendido"?"btn btn-primary":"btn btn-ghost"} style={{flex:1}} onClick={()=>setSaida(s=>({...s,motivo:"vendido"}))}>Foi vendido</button>
+              <button type="button" className={saida.motivo==="outro"?"btn btn-primary":"btn btn-ghost"} style={{flex:1}} onClick={()=>setSaida(s=>({...s,motivo:"outro"}))}>Outro motivo</button>
+            </div>
+            {saida.motivo==="vendido" && (
+              <div style={{textAlign:"left"}}>
+                <div className="form-group">
+                  <label className="form-label">Valor da venda (R$)</label>
+                  <input className="form-input" inputMode="numeric" placeholder="Ex: 89.900"
+                    value={saida.valor ? Number(saida.valor).toLocaleString("pt-BR") : ""}
+                    onChange={e=>setSaida(s=>({...s,valor:e.target.value.replace(/\D/g,"").slice(0,9)}))}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Loja que vendeu</label>
+                  <select className="form-input" value={saida.loja} onChange={e=>setSaida(s=>({...s,loja:e.target.value}))}>
+                    <option value="1">Curitibanos</option>
+                    <option value="2">Campos Novos</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">WhatsApp do comprador (opcional)</label>
+                  <input className="form-input" inputMode="tel" placeholder="Ex: 49 99999-9999"
+                    value={saida.telefone} onChange={e=>setSaida(s=>({...s,telefone:e.target.value}))}/>
+                </div>
+              </div>
+            )}
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-ghost" onClick={() => setConfirmarDel(null)} style={{flex:1}}>Cancelar</button>
               <button className="btn btn-danger" onClick={confirmarRemover} style={{flex:1,background:"var(--danger)",color:"white"}}>
