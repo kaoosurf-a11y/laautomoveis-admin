@@ -65,17 +65,10 @@ const COMBUSTIVEIS = ["Flex", "Gasolina", "Diesel", "Elétrico", "Híbrido"];
 const BADGES = ["", "Destaque", "Seminovo", "Oportunidade", "Novo"];
 const TIPOS = ["Hatch", "Sedan", "SUV", "Picape", "Perua"];
 
-// Cada foto pede o enquadramento em que o dado aparece legível.
-const FOTOS_GUIA = [
-  { id: "capa", nome: "Capa 3/4", dica: "Carro inteiro, de dia. Foto do anúncio e a cor." },
-  { id: "frente", nome: "Frente com emblema", dica: "Logo da grade nítido, sem reflexo. Lê a marca." },
-  { id: "traseira", nome: "Traseira com o nome", dica: "Letra da tampa legível. Lê modelo, versão e motor." },
-  { id: "lateral", nome: "Lateral inteira", dica: "Silhueta completa, sem cortar. Lê as portas." },
-  { id: "painel", nome: "Painel com o km", dica: "Painel ligado, número legível, sem flash." },
-  { id: "cambio", nome: "Alavanca do câmbio", dica: "A alavanca inteira no quadro." },
-  { id: "interior", nome: "Interior", dica: "Bancos e central, com luz. Lê os itens." },
-];
-const FOTO_ORDEM = [...FOTOS_GUIA.map(f => f.id), "chave", "manual", "estepe"];
+const CAMPOS_LEITURA = {
+  marca: "Marca", modelo: "Modelo", versao: "Versão", tipo: "Categoria", cor: "Cor",
+  portas: "Portas", cambio: "Câmbio", combustivel: "Combustível", motorizacao: "Motorização", km: "Km",
+};
 const VALORIZA = [
   { id: "chave", item: "Chave reserva", dica: "As duas chaves juntas" },
   { id: "manual", item: "Manual do proprietário", dica: "Capa do manual" },
@@ -102,7 +95,6 @@ export default function Veiculos() {
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [slots, setSlots] = useState({});
   const [leituras, setLeituras] = useState({});
   const [releituras, setReleituras] = useState([]);
   const [sugeridos, setSugeridos] = useState([]);
@@ -159,7 +151,6 @@ export default function Veiculos() {
   }, [veiculos]);
 
   function limparLeitura() {
-    setSlots({});
     setLeituras({});
     setReleituras([]);
     setSugeridos([]);
@@ -170,47 +161,20 @@ export default function Veiculos() {
   function set(k, v) { setForm(f => ({...f, [k]:v})); }
 
   async function uploadFotos(files) {
+    const lista = [...(files || [])].filter(Boolean);
+    if (!lista.length) return;
     setUploading(true);
     try {
       const fd = new FormData();
-      [...files].forEach(f => fd.append("fotos", f));
+      lista.forEach(f => fd.append("fotos", f));
       const { urls } = await api.uploadFotos(fd);
-      set("fotos", [...form.fotos, ...urls]);
+      if (urls?.length) setForm(f => ({ ...f, fotos: [...(f.fotos || []), ...urls].slice(0, 12) }));
     } catch(e) { await alertDialog("Erro no upload: " + e.message); }
     finally { setUploading(false); }
   }
 
   function removerFoto(idx) {
-    const url = form.fotos[idx];
-    set("fotos", form.fotos.filter((_,i) => i!==idx));
-    setSlots(s => {
-      const next = { ...s };
-      for (const k of Object.keys(next)) if (next[k] === url) delete next[k];
-      return next;
-    });
-  }
-
-  function montarFotos(fotosAtuais, nextSlots, prevSlots) {
-    const ordenadas = FOTO_ORDEM.map(id => nextSlots[id]).filter(Boolean);
-    const usadas = new Set([...ordenadas, ...Object.values(prevSlots)]);
-    const extras = (fotosAtuais || []).filter(u => !usadas.has(u));
-    return [...ordenadas, ...extras];
-  }
-
-  async function uploadSlot(id, file) {
-    if (!file) return;
-    setUploading(id);
-    try {
-      const fd = new FormData();
-      fd.append("fotos", file);
-      const { urls } = await api.uploadFotos(fd);
-      const url = urls?.[0];
-      if (!url) return;
-      const next = { ...slots, [id]: url };
-      setSlots(next);
-      setForm(f => ({ ...f, fotos: montarFotos(f.fotos, next, slots) }));
-    } catch (e) { await alertDialog("Erro no upload: " + e.message); }
-    finally { setUploading(false); }
+    setForm(f => ({ ...f, fotos: f.fotos.filter((_, i) => i !== idx) }));
   }
 
   function aplicarLeitura(f, data) {
@@ -233,7 +197,8 @@ export default function Veiculos() {
   }
 
   async function lerFotos() {
-    const fotos = FOTO_ORDEM.filter(id => slots[id]).map(id => ({ id, url: slots[id] }));
+    const fotos = (form.fotos || []).slice(0, 12).map((url, i) => ({ id: `foto-${i + 1}`, url }));
+    if (!fotos.length) return;
     setLendo(true);
     setErro("");
     try {
@@ -247,18 +212,9 @@ export default function Veiculos() {
     finally { setLendo(false); }
   }
 
-  function toggleValor(id, item) {
+  function toggleValor(item) {
     const ligado = (form.opcionais || []).includes(item);
-    if (ligado) {
-      const url = slots[id];
-      set("opcionais", form.opcionais.filter(o => o !== item));
-      if (url) {
-        setSlots(s => { const n = { ...s }; delete n[id]; return n; });
-        set("fotos", form.fotos.filter(u => u !== url));
-      }
-      return;
-    }
-    set("opcionais", [...(form.opcionais || []), item]);
+    set("opcionais", ligado ? form.opcionais.filter(o => o !== item) : [...(form.opcionais || []), item]);
   }
 
   function addOpcional(e) {
@@ -340,7 +296,7 @@ export default function Veiculos() {
 
   const brl = n => Number(n).toLocaleString("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:0});
   const disponiveis = veiculos.filter(v => v.ativo).length;
-  const faltamFotos = FOTOS_GUIA.filter(f => !slots[f.id]);
+  const temFotos = (form.fotos || []).length > 0;
 
   function CampoLabel({ children, campo }) {
     const p = pistaLeitura(leituras, campo);
@@ -493,44 +449,42 @@ export default function Veiculos() {
             </div>
 
             <section className="ficha-bloco">
-              <div className="ficha-titulo">Fotos da ficha</div>
+              <div className="ficha-titulo">Fotos do anúncio</div>
               <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 10px" }}>
-                Bata cada foto no enquadramento pedido. Elas entram no anúncio e preenchem a ficha abaixo.
+                Manda as fotos de uma vez, pela câmera ou pela galeria. A IA preenche o que conseguir ler. O que não aparecer, você completa na ficha.
               </p>
-              <div className="ficha-fotos">
-                {FOTOS_GUIA.map(f => (
-                  <div key={f.id} className="ficha-foto">
-                    <div className="ficha-foto-nome">{f.nome}</div>
-                    <div className="ficha-foto-dica">{f.dica}</div>
-                    <div className="ficha-foto-quadro">
-                      {slots[f.id]
-                        ? <img src={slots[f.id]} alt={f.nome}/>
-                        : <i className="ti ti-camera" style={{ fontSize: 22, color: "var(--muted)" }}/>}
-                    </div>
-                    <div className="ficha-foto-acoes">
-                      <label>
-                        <i className="ti ti-camera"/> {uploading === f.id ? "…" : "Câmera"}
-                        <input type="file" accept="image/*" capture="environment" disabled={!!uploading} onChange={e => { uploadSlot(f.id, e.target.files?.[0]); e.target.value = ""; }}/>
-                      </label>
-                      <label>
-                        <i className="ti ti-photo"/> Galeria
-                        <input type="file" accept="image/*" disabled={!!uploading} onChange={e => { uploadSlot(f.id, e.target.files?.[0]); e.target.value = ""; }}/>
-                      </label>
-                    </div>
-                  </div>
-                ))}
+              <div className="ficha-lote">
+                <label>
+                  <i className="ti ti-camera"/> {uploading ? "Enviando..." : "Bater fotos"}
+                  <input type="file" accept="image/*" capture="environment" multiple disabled={!!uploading || lendo} onChange={e => { uploadFotos(e.target.files); e.target.value = ""; }}/>
+                </label>
+                <label>
+                  <i className="ti ti-photo"/> {uploading ? "Enviando..." : "Galeria"}
+                  <input type="file" accept="image/*" multiple disabled={!!uploading || lendo} onChange={e => { uploadFotos(e.target.files); e.target.value = ""; }}/>
+                </label>
               </div>
-              {faltamFotos.length > 0 && (
+              {temFotos && (
+                <div className="foto-grid">
+                  {form.fotos.map((url, i) => (
+                    <div key={url} className="foto-item">
+                      <img src={url} alt=""/>
+                      {i === 0 && <div style={{ position: "absolute", bottom: 4, left: 4, background: "var(--brand-fill)", color: "var(--on-brand)", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>CAPA</div>}
+                      <button type="button" className="foto-remove" onClick={() => removerFoto(i)}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button type="button" className="btn btn-primary" style={{ width: "100%", marginTop: 10 }} disabled={!temFotos || lendo || !!uploading} onClick={lerFotos}>
+                {lendo ? <span className="spinner"/> : <><i className="ti ti-sparkles"/> Ler as fotos e preencher a ficha</>}
+              </button>
+              {Object.keys(leituras).length > 0 && (
                 <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>
-                  Faltam {faltamFotos.length} {faltamFotos.length === 1 ? "foto" : "fotos"} para preencher a ficha.
+                  A IA preencheu o que deu para ler. Complete na ficha o que ficou em branco. Ano e preço continuam com você.
                 </p>
               )}
-              <button type="button" className="btn btn-primary" style={{ width: "100%", marginTop: 10 }} disabled={faltamFotos.length > 0 || lendo} onClick={lerFotos}>
-                {lendo ? <span className="spinner"/> : <><i className="ti ti-sparkles"/> Preencher a ficha com as fotos</>}
-              </button>
               {releituras.length > 0 && (
-                <div style={{ marginTop: 10, fontSize: 13, color: "var(--fg)", background: "var(--danger-soft)", borderRadius: 8, padding: "8px 10px" }}>
-                  {releituras.map(r => <div key={r.slot}>{FOTOS_GUIA.find(f => f.id === r.slot)?.nome || r.slot}: {r.motivo}. Tire de novo com mais luz, ou preencha o campo.</div>)}
+                <div style={{ marginTop: 10, fontSize: 13, color: "var(--fg)", background: "var(--surface2)", borderRadius: 8, padding: "8px 10px" }}>
+                  {releituras.map(r => <div key={r.slot}>{CAMPOS_LEITURA[r.slot] || r.slot}: {r.motivo}. Complete o campo.</div>)}
                 </div>
               )}
             </section>
@@ -587,44 +541,13 @@ export default function Veiculos() {
                   return (
                     <div key={v.id}>
                       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--fg)", cursor: "pointer" }}>
-                        <input type="checkbox" checked={ligado} onChange={() => toggleValor(v.id, v.item)} style={{ width: 16, height: 16, accentColor: "var(--brand)" }}/>
+                        <input type="checkbox" checked={ligado} onChange={() => toggleValor(v.item)} style={{ width: 16, height: 16, accentColor: "var(--brand)" }}/>
                         {v.item}
                       </label>
-                      {ligado && (
-                        <div className="ficha-foto-acoes" style={{ maxWidth: 240, marginTop: 6 }}>
-                          <label>
-                            <i className="ti ti-camera"/> Câmera
-                            <input type="file" accept="image/*" capture="environment" disabled={!!uploading} onChange={e => { uploadSlot(v.id, e.target.files?.[0]); e.target.value = ""; }}/>
-                          </label>
-                          <label>
-                            <i className="ti ti-photo"/> Galeria
-                            <input type="file" accept="image/*" disabled={!!uploading} onChange={e => { uploadSlot(v.id, e.target.files?.[0]); e.target.value = ""; }}/>
-                          </label>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
-
-            <div className="form-group span-all">
-              <label className="form-label">Mais fotos da galeria</label>
-              <label className="btn btn-ghost" style={{cursor:"pointer",width:"fit-content",marginBottom:10}}>
-                <i className="ti ti-upload"/> {uploading ? "Enviando..." : "Enviar fotos"}
-                <input type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>uploadFotos(e.target.files)} disabled={uploading}/>
-              </label>
-              {form.fotos.length>0 && (
-                <div className="foto-grid">
-                  {form.fotos.map((url,i) => (
-                    <div key={i} className="foto-item">
-                      <img src={url} alt=""/>
-                      {i===0 && <div style={{position:"absolute",bottom:4,left:4,background:"var(--brand-fill)",color:"var(--on-brand)",fontSize:10,padding:"2px 6px",borderRadius:4,fontWeight:700}}>CAPA</div>}
-                      <button className="foto-remove" onClick={()=>removerFoto(i)}>×</button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:16,padding:"10px 0"}}>

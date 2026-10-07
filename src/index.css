@@ -874,3 +874,6 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .ficha-foto-acoes{display:flex;gap:6px;margin-top:8px}
 .ficha-foto-acoes label,.form-group .ficha-foto-acoes label{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;margin:0;padding:6px 4px;font-size:11px;font-weight:600;color:var(--fg);border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface2)}
 .ficha-foto-acoes input,.form-group .ficha-foto-acoes input{display:none}
+.ficha-lote{display:flex;gap:8px}
+.ficha-lote label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;margin:0;padding:11px 8px;font-size:13px;font-weight:700;color:var(--fg);border:1px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface2)}
+.ficha-lote input{display:none}
