@@ -976,7 +976,14 @@ export default function CRM(){
   // a cada clique. O follow-up automático (estágio-motivo) roda no backend, então
   // um PATCH de estágio já basta pra tudo — arrastar ou usar o dropdown têm o
   // mesmo efeito.
-  async function handleMover(id,est,motivo,veiculo_vendido_id){try{await moverLead(id,est,motivo,veiculo_vendido_id);}catch{}load(true);}
+  // 2026-10-07 (Felipe): ao mover pra "Vai pensar" o vendedor escolhe quando a IA lembra o cliente
+  // (amanhã, 3 dias ou 1 semana). O card só é movido depois da escolha; fechar o aviso cancela.
+  const[lembreteVaiPensar,setLembreteVaiPensar]=useState(null);
+  async function handleMover(id,est,motivo,veiculo_vendido_id,lembrete_dias){
+    if(est==="vai_pensar"&&!lembrete_dias){setLembreteVaiPensar({id,motivo});return;}
+    try{await moverLead(id,est,motivo,veiculo_vendido_id,undefined,lembrete_dias);}catch{}
+    load(true);
+  }
 
   const todos=estagios.flatMap(e=>leadsDaColuna(e,kanban));
   const filtrados=todos.filter(l=>leadBate(l,busca));
@@ -1168,6 +1175,24 @@ export default function CRM(){
         </div>
 
       {leadSel&&<LeadModal lead={leadSel} onClose={()=>setLeadSel(null)} onMover={(id,est,motivo,veiculoVendidoId)=>{handleMover(id,est,motivo,veiculoVendidoId);setLeadSel(null);}} onAtualizado={()=>load(true)} readOnly={readOnly} estagios={estagiosKanban} role={role}/>}
+      {lembreteVaiPensar&&(
+        <div className="modal-overlay" onClick={()=>setLembreteVaiPensar(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+            <div className="modal-handle"/>
+            <div className="modal-header">
+              <h2 className="modal-title">Vai pensar</h2>
+              <button onClick={()=>setLembreteVaiPensar(null)} aria-label="Fechar" style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button>
+            </div>
+            <p style={{color:"var(--muted)",margin:"0 0 14px"}}>Quando a IA deve lembrar o cliente?</p>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[[1,"Amanhã"],[3,"Em 3 dias"],[7,"Em 1 semana"]].map(([dias,rotulo])=>(
+                <button key={dias} className="btn btn-ghost" style={{minHeight:44,justifyContent:"center"}}
+                  onClick={()=>{const p=lembreteVaiPensar;setLembreteVaiPensar(null);handleMover(p.id,"vai_pensar",p.motivo,null,dias);}}>{rotulo}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {!readOnly&&novoModal&&<NovoModal campanhaVipAtiva={campanhaVipAtiva} onClose={()=>setNovoModal(false)} onCriado={()=>{load();setNovoModal(false);}}/>}
     </div>
   );
