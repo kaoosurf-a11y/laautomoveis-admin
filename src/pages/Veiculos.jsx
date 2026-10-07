@@ -168,15 +168,48 @@ export default function Veiculos() {
   function fechar() { setModal(null); }
   function set(k, v) { setForm(f => ({...f, [k]:v})); }
 
+  async function otimizarFoto(file) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || typeof createImageBitmap !== "function") return file;
+    const bitmap = await createImageBitmap(file).catch(() => null);
+    if (!bitmap) return file;
+    const maior = Math.max(bitmap.width, bitmap.height);
+    if (maior <= 1920 && file.size <= 700 * 1024 && file.type === "image/jpeg") {
+      bitmap.close?.();
+      return file;
+    }
+    const escala = Math.min(1, 1920 / maior);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * escala));
+    canvas.height = Math.max(1, Math.round(bitmap.height * escala));
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.86));
+    if (!blob) return file;
+    return new File([blob], "foto.jpeg", { type: "image/jpeg" });
+  }
+
   async function uploadFotos(files) {
-    const lista = [...(files || [])].filter(Boolean);
+    let lista = [...(files || [])].filter(Boolean);
     if (!lista.length) return;
+    const cabe = 24 - (form.fotos?.length || 0);
+    if (cabe <= 0) {
+      await alertDialog("Este anúncio já tem 24 fotos.");
+      return;
+    }
+    if (lista.length > cabe) {
+      lista = lista.slice(0, cabe);
+      await alertDialog(`O anúncio aceita 24 fotos. Vou enviar ${cabe}.`);
+    }
     setUploading(true);
     try {
-      const fd = new FormData();
-      lista.forEach(f => fd.append("fotos", f));
-      const { urls } = await api.uploadFotos(fd);
-      if (urls?.length) setForm(f => ({ ...f, fotos: [...(f.fotos || []), ...urls].slice(0, 12) }));
+      for (let i = 0; i < lista.length; i += 8) {
+        const parte = lista.slice(i, i + 8);
+        const prontas = await Promise.all(parte.map(otimizarFoto));
+        const fd = new FormData();
+        prontas.forEach(f => fd.append("fotos", f));
+        const { urls } = await api.uploadFotos(fd);
+        if (urls?.length) setForm(f => ({ ...f, fotos: [...(f.fotos || []), ...urls].slice(0, 24) }));
+      }
     } catch(e) { await alertDialog("Erro no upload: " + e.message); }
     finally { setUploading(false); }
   }
