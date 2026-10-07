@@ -165,6 +165,9 @@ function ordenarColunas(base,savedKeys){
 const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E44AD","WI":"#27AE60"};
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
+// Nota de qualificação da IA (la_leads.score_qualificacao, 0 a 100): pesquisando < 40, qualificado 40 a 74, pronto 75+.
+const QUALIF_LABEL={pesquisando:"Pesquisando",qualificado:"Qualificado",pronto:"Pronto pra fechar"};
+function Qualif({n,c}){if(n==null||n<40)return null;const cor=n>=75?"#4caf7d":"#e6a817";return <span className="badge" title={`Qualificação da IA: ${n} de 100${QUALIF_LABEL[c]?" ("+QUALIF_LABEL[c]+")":""}`} style={{background:`${cor}22`,color:cor,fontSize:10}}>Q {n}</span>;}
 function Temp({t}){if(t==="quente")return <i className="ti ti-flame" style={{color:"var(--danger)",fontSize:12}}/>;if(t==="morno")return <i className="ti ti-sun" style={{color:"var(--warning)",fontSize:12}}/>;return <i className="ti ti-snowflake" style={{color:"#7ba7e0",fontSize:12}}/>;}
 function Orig({o}){const m={anuncio:["#5b7bc4","Anún"],site:["#7ba7e0","Site"],organico:["#25D366","Org"],presencial:["#C8A84B","Loja"],reativacao:["#8E44AD","Reat"],particular:["#17A2B8","Part"]};const[c,l]=m[o]||["var(--muted)","?"];return <span className="badge" style={{background:`${c}22`,color:c,fontSize:10}}>{l}</span>;}
 // Badge de responsável (IA/Humano/Pausado) — grava só em crm_leads.responsavel_atual,
@@ -574,8 +577,14 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
           <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
-            <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>SCORE</div>
-            <div style={{fontSize:20,fontWeight:700,color:lead.score>=70?"var(--danger)":lead.score>=40?"var(--warning)":"var(--info)"}}>{lead.score}</div>
+            {/* 2026-10-07 (Felipe): nota de qualificação da IA (0 a 100), no lugar do "score" que só repetia a temperatura. */}
+            <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>QUALIFICAÇÃO (IA)</div>
+            {lead.nota_qualificacao==null
+              ? <div style={{fontSize:13,fontWeight:600,color:"var(--muted)"}}>Sem nota</div>
+              : <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+                  <span style={{fontSize:20,fontWeight:700,color:lead.nota_qualificacao>=75?"var(--success)":lead.nota_qualificacao>=40?"var(--warning)":"var(--muted)"}}>{lead.nota_qualificacao}</span>
+                  <span style={{fontSize:11,color:"var(--muted)"}}>{QUALIF_LABEL[lead.classificacao_qualificacao]||""}</span>
+                </div>}
           </div>
           <div style={{background:"var(--surface2)",borderRadius:8,padding:"10px 12px"}}>
             <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>TEMPERATURA</div>
@@ -1159,7 +1168,7 @@ export default function CRM(){
                           <i className="ti ti-calendar-time" style={{fontSize:11,color:"var(--info)"}} title="Lara tentando agendar"/>}
                       </div>
                       <div className="kanban-card-footer">
-                        <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}</div>
+                        <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}<Qualif n={lead.nota_qualificacao} c={lead.classificacao_qualificacao}/></div>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
                           <LeadPhoneChatwoot lead={lead} compact onClick={e=>e.stopPropagation()}/>
                           <Score s={lead.score}/>
