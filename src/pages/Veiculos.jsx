@@ -65,6 +65,34 @@ const COMBUSTIVEIS = ["Flex", "Gasolina", "Diesel", "Elétrico", "Híbrido"];
 const BADGES = ["", "Destaque", "Seminovo", "Oportunidade", "Novo"];
 const TIPOS = ["Hatch", "Sedan", "SUV", "Picape", "Perua"];
 
+// Fotos do anúncio: as mesmas imagens identificam o carro, entram na galeria e ficam no estoque.
+const FOTOS_GUIA = [
+  { id: "capa", nome: "Capa 3/4", le: "cor", obrigatoria: true },
+  { id: "frente", nome: "Frente", le: "marca", obrigatoria: true },
+  { id: "traseira", nome: "Traseira", le: "modelo", obrigatoria: true },
+  { id: "lateral", nome: "Lateral", le: "portas", obrigatoria: true },
+  { id: "painel", nome: "Painel ligado", le: "km", obrigatoria: true },
+  { id: "cambio", nome: "Câmbio", le: "câmbio", obrigatoria: true },
+  { id: "interior", nome: "Interior", le: "itens", obrigatoria: true },
+  { id: "outro-lado", nome: "Outro lado", le: "galeria", obrigatoria: false },
+  { id: "rodas", nome: "Rodas", le: "galeria", obrigatoria: false },
+  { id: "porta-malas", nome: "Porta-malas", le: "galeria", obrigatoria: false },
+];
+const FOTO_ORDEM = [...FOTOS_GUIA.map(f => f.id), "chave", "manual", "estepe"];
+const VALORIZA = [
+  { id: "chave", item: "Chave reserva", dica: "As duas chaves juntas" },
+  { id: "manual", item: "Manual do proprietário", dica: "Capa do manual" },
+  { id: "estepe", item: "Estepe e macaco", dica: "Dentro do porta-malas" },
+];
+
+function pistaLeitura(leituras, campo) {
+  const l = leituras?.[campo];
+  if (!l) return null;
+  if (l.leitura === "lido") return "lido na foto";
+  if (l.leitura === "provavel") return "confere";
+  return "não deu para ler";
+}
+
 const empty = {
   marca:"", modelo:"", versao:"", tipo:"", ano:new Date().getFullYear(), preco:"",
   km:"", cambio:"Automático", combustivel:"Flex", motorizacao:"", cor:"",
@@ -77,6 +105,13 @@ export default function Veiculos() {
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [slots, setSlots] = useState({});
+  const [leituras, setLeituras] = useState({});
+  const [releituras, setReleituras] = useState([]);
+  const [sugeridos, setSugeridos] = useState([]);
+  const [lendo, setLendo] = useState(false);
+  const [maisFotos, setMaisFotos] = useState(false);
+  const [vendidos, setVendidos] = useState(null);
   const [tagInput, setTagInput] = useState("");
   const [erro, setErro] = useState("");
   const [confirmarDel, setConfirmarDel] = useState(null);
@@ -117,6 +152,7 @@ export default function Veiculos() {
   async function load() {
     const data = await api.getVeiculos().catch(() => []);
     setVeiculos(data);
+    api.getContagensVeiculos().then(c => setVendidos(Number(c?.vendidos))).catch(() => setVendidos(null));
   }
   useEffect(() => { load(); }, []);
   useEffect(() => {
@@ -126,8 +162,15 @@ export default function Veiculos() {
     if (v) abrirEditar(v);
   }, [veiculos]);
 
-  function abrirCriar() { setForm(empty); setErro(""); setModal("criar"); }
-  function abrirEditar(v) { setForm({...v}); setErro(""); setModal(v); }
+  function limparLeitura() {
+    setSlots({});
+    setLeituras({});
+    setReleituras([]);
+    setSugeridos([]);
+    setMaisFotos(false);
+  }
+  function abrirCriar() { setForm(empty); limparLeitura(); setErro(""); setModal("criar"); }
+  function abrirEditar(v) { setForm({...v, opcionais: v.opcionais || [], fotos: v.fotos || []}); limparLeitura(); setErro(""); setModal(v); }
   function fechar() { setModal(null); }
   function set(k, v) { setForm(f => ({...f, [k]:v})); }
 
@@ -142,7 +185,86 @@ export default function Veiculos() {
     finally { setUploading(false); }
   }
 
-  function removerFoto(idx) { set("fotos", form.fotos.filter((_,i) => i!==idx)); }
+  function removerFoto(idx) {
+    const url = form.fotos[idx];
+    set("fotos", form.fotos.filter((_,i) => i!==idx));
+    setSlots(s => {
+      const next = { ...s };
+      for (const k of Object.keys(next)) if (next[k] === url) delete next[k];
+      return next;
+    });
+  }
+
+  function montarFotos(fotosAtuais, nextSlots, prevSlots) {
+    const ordenadas = FOTO_ORDEM.map(id => nextSlots[id]).filter(Boolean);
+    const usadas = new Set([...ordenadas, ...Object.values(prevSlots)]);
+    const extras = (fotosAtuais || []).filter(u => !usadas.has(u));
+    return [...ordenadas, ...extras];
+  }
+
+  async function uploadSlot(id, file) {
+    if (!file) return;
+    setUploading(id);
+    try {
+      const fd = new FormData();
+      fd.append("fotos", file);
+      const { urls } = await api.uploadFotos(fd);
+      const url = urls?.[0];
+      if (!url) return;
+      const next = { ...slots, [id]: url };
+      setSlots(next);
+      setForm(f => ({ ...f, fotos: montarFotos(f.fotos, next, slots) }));
+    } catch (e) { await alertDialog("Erro no upload: " + e.message); }
+    finally { setUploading(false); }
+  }
+
+  function aplicarLeitura(f, data) {
+    const criando = modal === "criar";
+    const next = { ...f };
+    const preencher = (key, valor) => {
+      if (valor === "" || valor == null) return;
+      if (!criando && String(f[key] ?? "").trim() !== "") return;
+      next[key] = valor;
+    };
+    for (const key of ["marca", "modelo", "versao", "tipo", "cor", "cambio", "combustivel", "motorizacao"]) {
+      preencher(key, data.campos?.[key]?.valor);
+    }
+    preencher("portas", data.campos?.portas?.valor);
+    preencher("km", data.campos?.km?.valor);
+    const novos = (data.opcionais || []).map(o => o.nome);
+    const manuais = (f.opcionais || []).filter(o => !sugeridos.includes(o));
+    next.opcionais = [...new Set([...manuais, ...novos])];
+    return { next, novos };
+  }
+
+  async function lerFotos() {
+    const fotos = FOTO_ORDEM.filter(id => slots[id]).map(id => ({ id, url: slots[id] }));
+    setLendo(true);
+    setErro("");
+    try {
+      const data = await api.lerFotosVeiculo(fotos);
+      const { next, novos } = aplicarLeitura(form, data);
+      setForm(next);
+      setLeituras(data.campos || {});
+      setReleituras(data.releituras || []);
+      setSugeridos(novos);
+    } catch (e) { setErro(e.message); }
+    finally { setLendo(false); }
+  }
+
+  function toggleValor(id, item) {
+    const ligado = (form.opcionais || []).includes(item);
+    if (ligado) {
+      const url = slots[id];
+      set("opcionais", form.opcionais.filter(o => o !== item));
+      if (url) {
+        setSlots(s => { const n = { ...s }; delete n[id]; return n; });
+        set("fotos", form.fotos.filter(u => u !== url));
+      }
+      return;
+    }
+    set("opcionais", [...(form.opcionais || []), item]);
+  }
 
   function addOpcional(e) {
     if (e.key==="Enter" && tagInput.trim()) {
@@ -222,11 +344,31 @@ export default function Veiculos() {
   }
 
   const brl = n => Number(n).toLocaleString("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:0});
+  const disponiveis = veiculos.filter(v => v.ativo).length;
+  const fotosObrigatorias = FOTOS_GUIA.filter(f => f.obrigatoria);
+  const faltamFotos = fotosObrigatorias.filter(f => !slots[f.id]);
+
+  function CampoLabel({ children, campo }) {
+    const p = pistaLeitura(leituras, campo);
+    const cor = p === "não deu para ler" ? "var(--danger)" : p === "confere" ? "var(--warning, #b8860b)" : "var(--success, #2e7d32)";
+    return (
+      <label className="form-label" style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+        <span>{children}</span>
+        {p && <span style={{ fontWeight: 500, color: cor }}>{p}</span>}
+      </label>
+    );
+  }
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title"><i className="ti ti-car"/> Veículos</h1>
+        <div>
+          <h1 className="page-title"><i className="ti ti-car"/> Veículos</h1>
+          <div style={{ display: "flex", gap: 16, marginTop: 4, fontSize: 13, color: "var(--muted)" }}>
+            <span>Disponíveis <strong style={{ color: "var(--fg)" }}>{disponiveis}</strong></span>
+            <span>Vendidos <strong style={{ color: "var(--fg)" }}>{vendidos == null ? "…" : vendidos}</strong></span>
+          </div>
+        </div>
         <button className="btn btn-primary" onClick={abrirCriar}>
           <i className="ti ti-plus"/> Novo veículo
         </button>
@@ -357,13 +499,45 @@ export default function Veiculos() {
             </div>
 
             <section className="ficha-bloco">
+              <div className="ficha-titulo">Fotos do anúncio</div>
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 10px" }}>
+                Estas fotos identificam o carro, entram na galeria e ficam no estoque.
+              </p>
+              <div className="foto-grid">
+                {FOTOS_GUIA.filter(f => f.obrigatoria || maisFotos).map(f => (
+                  <label key={f.id} className="foto-item" style={{ cursor: "pointer", minHeight: 84, display: "block" }}>
+                    {slots[f.id]
+                      ? <img src={slots[f.id]} alt={f.nome}/>
+                      : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 72, fontSize: 11, color: "var(--muted)", textAlign: "center", padding: 6 }}>{uploading === f.id ? "Enviando..." : f.nome}</span>}
+                    <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, fontSize: 10, background: "rgba(0,0,0,.55)", color: "#fff", padding: "2px 4px" }}>{f.nome} · {f.le}</span>
+                    <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} disabled={!!uploading} onChange={e => { uploadSlot(f.id, e.target.files?.[0]); e.target.value = ""; }}/>
+                  </label>
+                ))}
+              </div>
+              <button type="button" className="btn btn-ghost" style={{ marginTop: 8, fontSize: 12 }} onClick={() => setMaisFotos(v => !v)}>
+                {maisFotos ? "Ocultar fotos a mais" : "Fotos a mais (outro lado, rodas, porta-malas)"}
+              </button>
+              <div style={{ marginTop: 8 }}>
+                <button type="button" className="btn btn-primary" disabled={faltamFotos.length > 0 || lendo} onClick={lerFotos}>
+                  {lendo ? <span className="spinner"/> : <><i className="ti ti-sparkles"/> Preencher a ficha com as fotos</>}
+                </button>
+                {faltamFotos.length > 0 && <span style={{ marginLeft: 8, fontSize: 12, color: "var(--muted)" }}>Faltam {faltamFotos.map(f => f.nome.toLowerCase()).join(", ")}</span>}
+              </div>
+              {releituras.length > 0 && (
+                <div style={{ marginTop: 10, fontSize: 13, color: "var(--fg)", background: "var(--danger-soft)", borderRadius: 8, padding: "8px 10px" }}>
+                  {releituras.map(r => <div key={r.slot}>{FOTOS_GUIA.find(f => f.id === r.slot)?.nome || r.slot}: {r.motivo}. Tire de novo com mais luz, ou preencha o campo.</div>)}
+                </div>
+              )}
+            </section>
+
+            <section className="ficha-bloco">
               <div className="ficha-titulo">Veículo</div>
               <div className="ficha-grade">
-                <div className="form-group"><label className="form-label">Marca *</label><input className="form-input" value={form.marca} onChange={e=>set("marca",e.target.value)} placeholder="Ex: Volkswagen"/></div>
-                <div className="form-group"><label className="form-label">Modelo *</label><input className="form-input" value={form.modelo} onChange={e=>set("modelo",e.target.value)} placeholder="Ex: Nivus Highline"/></div>
-                <div className="form-group"><label className="form-label">Versão</label><input className="form-input" value={form.versao} onChange={e=>set("versao",e.target.value)} placeholder="Ex: LT, Highline, Titanium"/></div>
+                <div className="form-group"><CampoLabel campo="marca">Marca *</CampoLabel><input className="form-input" value={form.marca} onChange={e=>set("marca",e.target.value)} placeholder="Ex: Volkswagen"/></div>
+                <div className="form-group"><CampoLabel campo="modelo">Modelo *</CampoLabel><input className="form-input" value={form.modelo} onChange={e=>set("modelo",e.target.value)} placeholder="Ex: Nivus Highline"/></div>
+                <div className="form-group"><CampoLabel campo="versao">Versão</CampoLabel><input className="form-input" value={form.versao} onChange={e=>set("versao",e.target.value)} placeholder="Ex: LT, Highline, Titanium"/></div>
                 <div className="form-group">
-                  <label className="form-label">Categoria *</label>
+                  <CampoLabel campo="tipo">Categoria *</CampoLabel>
                   <select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>
                     <option value="" disabled>Selecione...</option>
                     {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
@@ -376,12 +550,12 @@ export default function Veiculos() {
               <div className="ficha-titulo">Ficha técnica</div>
               <div className="ficha-grade">
                 <div className="form-group"><label className="form-label">Ano *</label><input className="form-input" type="number" value={form.ano} onChange={e=>set("ano",e.target.value)}/></div>
-                <div className="form-group"><label className="form-label">KM *</label><input className="form-input" type="number" value={form.km} onChange={e=>set("km",e.target.value)} placeholder="18500"/></div>
-                <div className="form-group"><label className="form-label">Câmbio</label><select className="form-input" value={form.cambio} onChange={e=>set("cambio",e.target.value)}>{CAMBIOS.map(c=><option key={c}>{c}</option>)}</select></div>
-                <div className="form-group"><label className="form-label">Combustível</label><select className="form-input" value={form.combustivel} onChange={e=>set("combustivel",e.target.value)}>{COMBUSTIVEIS.map(c=><option key={c}>{c}</option>)}</select></div>
-                <div className="form-group"><label className="form-label">Motorização</label><input className="form-input" value={form.motorizacao} onChange={e=>set("motorizacao",e.target.value)} placeholder="Ex: 1.0, 1.6, 2.0 Turbo"/></div>
-                <div className="form-group"><label className="form-label">Cor</label><input className="form-input" value={form.cor} onChange={e=>set("cor",e.target.value)} placeholder="Ex: Prata"/></div>
-                <div className="form-group"><label className="form-label">Portas</label><input className="form-input" type="number" min="2" max="5" value={form.portas ?? 4} onChange={e=>set("portas",e.target.value)}/></div>
+                <div className="form-group"><CampoLabel campo="km">KM *</CampoLabel><input className="form-input" type="number" value={form.km} onChange={e=>set("km",e.target.value)} placeholder="18500"/></div>
+                <div className="form-group"><CampoLabel campo="cambio">Câmbio</CampoLabel><select className="form-input" value={form.cambio} onChange={e=>set("cambio",e.target.value)}>{CAMBIOS.map(c=><option key={c}>{c}</option>)}</select></div>
+                <div className="form-group"><CampoLabel campo="combustivel">Combustível</CampoLabel><select className="form-input" value={form.combustivel} onChange={e=>set("combustivel",e.target.value)}>{COMBUSTIVEIS.map(c=><option key={c}>{c}</option>)}</select></div>
+                <div className="form-group"><CampoLabel campo="motorizacao">Motorização</CampoLabel><input className="form-input" value={form.motorizacao} onChange={e=>set("motorizacao",e.target.value)} placeholder="Ex: 1.0, 1.6, 2.0 Turbo"/></div>
+                <div className="form-group"><CampoLabel campo="cor">Cor</CampoLabel><input className="form-input" value={form.cor} onChange={e=>set("cor",e.target.value)} placeholder="Ex: Prata"/></div>
+                <div className="form-group"><CampoLabel campo="portas">Portas</CampoLabel><input className="form-input" type="number" min="2" max="5" value={form.portas ?? 4} onChange={e=>set("portas",e.target.value)}/></div>
               </div>
             </section>
 
@@ -401,6 +575,28 @@ export default function Veiculos() {
                   <span key={i} className="tag">{op}<button onClick={()=>removerOpcional(i)}>×</button></span>
                 ))}
                 <input className="tag-input" value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={addOpcional} placeholder="Ex: Câmera de ré..."/>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                {VALORIZA.map(v => {
+                  const ligado = (form.opcionais || []).includes(v.item);
+                  return (
+                    <div key={v.id}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--fg)", cursor: "pointer" }}>
+                        <input type="checkbox" checked={ligado} onChange={() => toggleValor(v.id, v.item)} style={{ width: 16, height: 16, accentColor: "var(--brand)" }}/>
+                        {v.item}
+                      </label>
+                      {ligado && !(v.id === "estepe" && slots["porta-malas"]) && (
+                        <label className="btn btn-ghost" style={{ cursor: "pointer", width: "fit-content", marginTop: 6, fontSize: 12 }}>
+                          <i className="ti ti-camera"/> {slots[v.id] ? "Trocar foto" : v.dica}
+                          <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} disabled={!!uploading} onChange={e => { uploadSlot(v.id, e.target.files?.[0]); e.target.value = ""; }}/>
+                        </label>
+                      )}
+                      {ligado && v.id === "estepe" && slots["porta-malas"] && (
+                        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>A foto do porta-malas já mostra o estepe.</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
