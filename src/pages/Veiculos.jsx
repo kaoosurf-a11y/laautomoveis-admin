@@ -472,6 +472,7 @@ export default function Veiculos() {
                 <div className="form-group">
                   <label className="form-label">Lead que comprou *</label>
                   {saida.lead ? (
+                    <>
                     <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",border:"1px solid var(--border)",borderRadius:10}}>
                       <div style={{flex:1,minWidth:0,fontSize:14,color:"var(--fg)"}}>
                         <strong>{saida.lead.nome}</strong>
@@ -479,6 +480,8 @@ export default function Veiculos() {
                       </div>
                       <button type="button" className="btn btn-ghost btn-icon" title="Trocar" onClick={()=>setSaida(s=>({...s,lead:null}))}><i className="ti ti-x"/></button>
                     </div>
+                      <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>O card deste lead vai para Venda feita no Kanban, com este valor.</div>
+                    </>
                   ) : (
                     <>
                       <input className="form-input" placeholder="Buscar por nome ou telefone" disabled={saida.semLead}
