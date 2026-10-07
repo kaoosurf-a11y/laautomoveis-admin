@@ -815,3 +815,44 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .ficha-grade-3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .modal-form .foto-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
 }
+
+/* Dashboard no computador: anúncios ao lado da Meta, gráfico de canal largo,
+   e o de 7 dias ocupando a coluna da direita em vez de uma faixa de 90px. */
+.dash-meio{display:grid;gap:10px;margin-bottom:10px;grid-template-columns:minmax(0,1fr)}
+.dash-jornada{display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}
+.jornada-lado{display:flex;flex-direction:column;gap:10px}
+.jornada-ciclo-num{font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+.jornada-ciclo-num span{font-size:14px;font-weight:600;color:var(--muted);margin-left:4px}
+.fu-linha{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border)}
+.fu-linha:first-of-type{border-top:none;padding-top:0}
+.fu-hora{font-size:12px;color:var(--muted);min-width:40px;font-variant-numeric:tabular-nums}
+.fu-tipo{font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-soft);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.fu-nome{flex:1;min-width:0;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.perda-linha{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.perda-linha:last-child{margin-bottom:0}
+.perda-nome{flex:1.2;min-width:0;font-size:13px;color:var(--fg)}
+.perda-track{flex:2;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.perda-track>div{height:100%;background:var(--alert);border-radius:4px}
+.perda-num{min-width:16px;text-align:right;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dias-chart{display:flex;align-items:stretch;gap:8px;height:180px}
+.dias-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.dias-track{flex:1;width:100%;max-width:72px;position:relative;min-height:0}
+.dias-bar{position:absolute;left:0;right:0;bottom:0;background:var(--brand-fill);border-radius:6px 6px 0 0;min-height:4px}
+.dias-num{font-size:13px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums}
+.dias-dia{font-size:11px;color:var(--muted)}
+@media(min-width:1024px){
+  .dash-meio{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .dash-grid{grid-template-columns:minmax(280px,.95fr) minmax(0,1.35fr);align-items:stretch}
+  .dash-canais .funnel-step:last-child{margin-bottom:0}
+  .dash-canais .funnel-track,.dash-canais .funnel-bar{height:18px}
+  .dash-canais .funnel-step{margin-bottom:16px}
+  .dash-canais .funnel-label{flex:1.1;font-size:13px;min-width:0}
+  .dash-canais .funnel-track{flex:3.2}
+  .rank-row .funnel-track,.rank-row .funnel-bar{height:10px}
+  .lista-grade{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
+  .lista-grade .lista-row:nth-child(-n+2){border-top:none;padding-top:0}
+  .metrics-grid.jornada-ia{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .dash-jornada{grid-template-columns:minmax(260px,340px) minmax(0,1fr);align-items:stretch}
+  .jornada-chart{display:flex;flex-direction:column;min-height:360px}
+  .jornada-chart .dias-chart{flex:1;height:auto;min-height:280px}
+}

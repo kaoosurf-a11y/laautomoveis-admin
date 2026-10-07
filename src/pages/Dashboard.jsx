@@ -94,7 +94,7 @@ function Anuncios({ midia, onSaved }) {
     : { t:`dentro da faixa do setor (${faixa})`, c:"" };
 
   return (
-    <div className="card" style={{marginBottom:12}}>
+    <div className="card">
       <div className="card-head">
         <div className="card-title"><i className="ti ti-ad"/> Anúncios</div>
         {lojas.length > 0 && (
@@ -135,7 +135,7 @@ function Anuncios({ midia, onSaved }) {
 function FunilMeta({ lojas }) {
   if (!lojas?.length) return null;
   return (
-    <div className="card" style={{marginBottom:12}}>
+    <div className="card">
       <div className="card-head">
         <div className="card-title"><i className="ti ti-brand-meta"/> Conversões enviadas à Meta</div>
       </div>
@@ -229,8 +229,10 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
         ))}
       </div>
 
-      <Anuncios midia={midia} onSaved={onMidiaSaved}/>
-      <FunilMeta lojas={data.meta_capi}/>
+      <div className="dash-meio">
+        <Anuncios midia={midia} onSaved={onMidiaSaved}/>
+        <FunilMeta lojas={data.meta_capi}/>
+      </div>
 
       <div className="dash-grid">
         {/* Por vendedor — barra relativa ao maior total de leads do grupo. Em "Todas" a
@@ -251,8 +253,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
         {/* "Funil de vendas" saiu daqui (2026-10-05): tinha só duas linhas e contava venda
             pelo lead CRIADO no período, então discordava do card "Vendas" (que conta a
             venda FECHADA no período). O funil completo fica na aba Métricas. */}
-        <div className="dash-col">
-        <div className="card">
+        <div className="card dash-canais">
           <div className="card-title"><i className="ti ti-chart-pie"/> Leads por canal</div>
           {canais.length===0 && <p className="vazio">Nenhum lead no período.</p>}
           {canais.map((c,i)=>(
@@ -265,13 +266,15 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="card">
-          <div className="card-head">
-            <div className="card-title"><i className="ti ti-flame"/> Leads mais quentes em aberto</div>
-            <button className="btn btn-ghost btn-sm" onClick={onAbrirCrm}>Abrir CRM</button>
-          </div>
-          {!data.ultimas_oportunidades?.length && <p className="vazio">Nenhum lead em aberto.</p>}
+      <div className="card">
+        <div className="card-head">
+          <div className="card-title"><i className="ti ti-flame"/> Leads mais quentes em aberto</div>
+          <button className="btn btn-ghost btn-sm" onClick={onAbrirCrm}>Abrir CRM</button>
+        </div>
+        {!data.ultimas_oportunidades?.length && <p className="vazio">Nenhum lead em aberto.</p>}
+        <div className="lista-grade">
           {data.ultimas_oportunidades?.map((o,i)=>(
             <div key={i} className="lista-row">
               <div style={{flex:1,minWidth:0}}>
@@ -282,8 +285,6 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
               <span className="badge badge-brand">{o.score}</span>
             </div>
           ))}
-        </div>
-
         </div>
       </div>
     </>
@@ -306,23 +307,10 @@ function TabJornada({ data }) {
           etapas sempre "sem dados". O funil de referência na aba Métricas cobre essa
           jornada com dado real (Agenda). Mantido só o ciclo médio total, que não depende
           desses campos. */}
-      <div className="card" style={{marginBottom:12}}>
-        <div className="card-title"><i className="ti ti-route"/> Ciclo médio de venda</div>
-        <div style={{fontSize:13,color:"var(--muted)"}}>
-          {jornada.ciclo_medio_dias!=null?<span>Do 1º contato até fechar: <strong style={{color:"var(--brand)",fontSize:16}}>{jornada.ciclo_medio_dias} dias</strong></span>:"sem dados ainda (nenhuma venda fechada completa no período)"}
-        </div>
-        {jornada.ciclo_medio_dias!=null&&(
-          <div style={{marginTop:10,height:4,background:"var(--border)",borderRadius:4}}>
-            <div style={{height:"100%",width:`${Math.min(jornada.ciclo_medio_dias/10*100,100)}%`,background:"var(--brand-fill)",borderRadius:4}}/>
-          </div>
-        )}
-        <div style={{fontSize:11,color:"var(--muted)",marginTop:10}}>Jornada etapa-a-etapa (agendamento, comparecimento, fechamento) está na aba Métricas → Funil de referência.</div>
-      </div>
-
       {/* Agente IA — 2026-07-15 (auditoria): "LEADS QUALIF." removido, sempre mostrava 0
           (qualificado_ia nunca é escrito por nenhum processo real do sistema hoje). */}
       <div className="sec-label">Agente IA</div>
-      <div className="metrics-grid" style={{marginBottom:12}}>
+      <div className="metrics-grid jornada-ia" style={{marginBottom:12}}>
         {[
           { label:"LEADS QUENTES",  value:agente_ia.leads_quentes,  sub:"temperatura" },
           { label:"SCORE QUENTE",   value:agente_ia.score_quente,   sub:"≥60 pts" },
@@ -338,60 +326,67 @@ function TabJornada({ data }) {
         ))}
       </div>
 
-      {/* Follow-ups hoje */}
-      <div className="card">
-        <div className="card-title"><i className="ti ti-clock-check"/> Follow-ups hoje</div>
-        {followups_hoje.length === 0 && <p style={{color:"var(--muted)",fontSize:13}}>Nenhum follow-up hoje.</p>}
-        {followups_hoje.map((f,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
-            <span style={{fontSize:12,color:"var(--muted)",minWidth:42,fontFamily:"monospace"}}>{f.horario}</span>
-            <span style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:"var(--brand-soft)",color:"var(--brand)",fontWeight:700}}>
-              {TIPO_LABEL[f.tipo]||f.tipo}
-            </span>
-            <span style={{flex:1,fontSize:13,color:"var(--fg)",fontWeight:500}}>{f.cliente_nome}</span>
-            <span style={{fontSize:12,color:"var(--muted)"}}>{f.motivo}</span>
-            <div className="av" style={{width:28,height:28,fontSize:11,background:`${AV_CORES[0]}22`,color:AV_CORES[0]}}>{f.vendedor_iniciais}</div>
+      <div className="dash-jornada">
+        <div className="jornada-lado">
+          <div className="card">
+            <div className="card-title"><i className="ti ti-route"/> Ciclo médio de venda</div>
+            <div className="jornada-ciclo-num">
+              {jornada.ciclo_medio_dias!=null ? <>{jornada.ciclo_medio_dias}<span> dias</span></> : "—"}
+            </div>
+            <div className="metric-delta">
+              {jornada.ciclo_medio_dias!=null ? "do 1º contato até fechar" : "nenhuma venda fechada completa no período"}
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Gráfico leads 7 dias */}
-      {data.leads_7dias && (
-        <div className="card" style={{marginTop:12}}>
-          <div className="card-title"><i className="ti ti-chart-bar"/> Leads últimos 7 dias</div>
-          <div style={{display:"flex",alignItems:"flex-end",gap:8,height:90,padding:"0 4px"}}>
-            {data.leads_7dias.map((d,i)=>{
-              const max = Math.max(...data.leads_7dias.map(x=>x.total), 1);
-              return (
-                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                  <span style={{fontSize:11,color:"var(--fg)",fontWeight:600}}>{d.total}</span>
-                  <div style={{width:"100%",height:`${Math.round(d.total/max*70)}px`,background:"var(--brand-fill)",borderRadius:"4px 4px 0 0",minHeight:4}}/>
-                  <span style={{fontSize:10,color:"var(--muted)"}}>{d.dia}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Motivos de perda */}
-      {data.motivos_perda?.length > 0 && (
-        <div className="card" style={{marginTop:12}}>
-          <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Motivos de perda</div>
-          {data.motivos_perda.map((m,i)=>{
-            const max = Math.max(...data.motivos_perda.map(x=>x.total));
-            return (
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                <div style={{flex:1,fontSize:13,color:"var(--fg)"}}>{m.motivo}</div>
-                <div style={{flex:2,height:6,background:"var(--border)",borderRadius:4}}>
-                  <div style={{height:"100%",width:`${Math.round(m.total/max*100)}%`,background:"var(--alert)",borderRadius:4}}/>
-                </div>
-                <div style={{fontSize:12,color:"var(--muted)",minWidth:16,textAlign:"right"}}>{m.total}</div>
+          <div className="card">
+            <div className="card-title"><i className="ti ti-clock-check"/> Follow-ups hoje</div>
+            {followups_hoje.length === 0 && <p className="vazio">Nenhum follow-up hoje.</p>}
+            {followups_hoje.map((f,i)=>(
+              <div key={i} className="fu-linha">
+                <span className="fu-hora">{f.horario}</span>
+                <span className="fu-tipo">{TIPO_LABEL[f.tipo]||f.tipo}</span>
+                <span className="fu-nome">{f.cliente_nome}</span>
+                <div className="av" style={{width:28,height:28,fontSize:11,background:`${AV_CORES[0]}22`,color:AV_CORES[0]}}>{f.vendedor_iniciais}</div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {data.motivos_perda?.length > 0 && (
+            <div className="card">
+              <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Motivos de perda</div>
+              {data.motivos_perda.map((m,i)=>{
+                const max = Math.max(...data.motivos_perda.map(x=>x.total));
+                return (
+                  <div key={i} className="perda-linha">
+                    <div className="perda-nome">{m.motivo}</div>
+                    <div className="perda-track"><div style={{width:`${Math.round(m.total/max*100)}%`}}/></div>
+                    <div className="perda-num">{m.total}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+
+        {data.leads_7dias && (
+          <div className="card jornada-chart">
+            <div className="card-title"><i className="ti ti-chart-bar"/> Leads últimos 7 dias</div>
+            <div className="dias-chart">
+              {data.leads_7dias.map((d,i)=>{
+                const max = Math.max(...data.leads_7dias.map(x=>x.total), 1);
+                const pct = Math.max(6, Math.round(d.total/max*100));
+                return (
+                  <div key={i} className="dias-col">
+                    <span className="dias-num">{d.total}</span>
+                    <div className="dias-track"><div className="dias-bar" style={{height:`${pct}%`}}/></div>
+                    <span className="dias-dia">{d.dia}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }
