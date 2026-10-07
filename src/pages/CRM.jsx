@@ -27,7 +27,7 @@ const FOLLOWUP_LABEL={
 // pós-handoff pode sugerir (n8n workflow OBSERVADOR POS-HANDOFF, node "Decidir Acao").
 // A IA nunca move esses estágios sozinha na hora mais — só sugere (grava
 // sugestao_estagio/sugestao_estagio_em em crm_leads + nota privada no Chatwoot) e espera
-// até 14 dias o vendedor mexer no card antes de promover automaticamente. Esse selinho é
+// até 24 horas úteis (desde 07/10/2026; sugestão antiga: 14 dias) o vendedor mexer no card antes de promover automaticamente. Esse selinho é
 // a mesma informação, só que visível direto no board (antes só aparecia na nota do
 // Chatwoot — gap achado numa auditoria de sinergia estoque/agente/CRM/dashboard).
 const SUGESTAO_LABEL={
@@ -1133,7 +1133,7 @@ export default function CRM(){
                       {lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio&&
                         <div
                           style={{fontSize:10,color:"var(--info)",marginBottom:4,display:"flex",alignItems:"center",gap:3}}
-                          title={`IA sugeriu mover pra "${SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio}" — move sozinha em 14 dias corridos se ninguém mexer nesse card antes disso`}
+                          title={`IA sugeriu mover pra "${SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio}" — move sozinha em 24 horas úteis se ninguém mexer nesse card antes disso`}
                         >
                           <i className="ti ti-bulb" style={{fontSize:11}}/> Sugestão: {SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio} (há {tempoDesde(lead.sugestao_estagio_em)})
                         </div>
