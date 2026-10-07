@@ -65,18 +65,15 @@ const COMBUSTIVEIS = ["Flex", "Gasolina", "Diesel", "Elétrico", "Híbrido"];
 const BADGES = ["", "Destaque", "Seminovo", "Oportunidade", "Novo"];
 const TIPOS = ["Hatch", "Sedan", "SUV", "Picape", "Perua"];
 
-// Fotos do anúncio: as mesmas imagens identificam o carro, entram na galeria e ficam no estoque.
+// Cada foto pede o enquadramento em que o dado aparece legível.
 const FOTOS_GUIA = [
-  { id: "capa", nome: "Capa 3/4", le: "cor", obrigatoria: true },
-  { id: "frente", nome: "Frente", le: "marca", obrigatoria: true },
-  { id: "traseira", nome: "Traseira", le: "modelo", obrigatoria: true },
-  { id: "lateral", nome: "Lateral", le: "portas", obrigatoria: true },
-  { id: "painel", nome: "Painel ligado", le: "km", obrigatoria: true },
-  { id: "cambio", nome: "Câmbio", le: "câmbio", obrigatoria: true },
-  { id: "interior", nome: "Interior", le: "itens", obrigatoria: true },
-  { id: "outro-lado", nome: "Outro lado", le: "galeria", obrigatoria: false },
-  { id: "rodas", nome: "Rodas", le: "galeria", obrigatoria: false },
-  { id: "porta-malas", nome: "Porta-malas", le: "galeria", obrigatoria: false },
+  { id: "capa", nome: "Capa 3/4", dica: "Carro inteiro, de dia. Foto do anúncio e a cor." },
+  { id: "frente", nome: "Frente com emblema", dica: "Logo da grade nítido, sem reflexo. Lê a marca." },
+  { id: "traseira", nome: "Traseira com o nome", dica: "Letra da tampa legível. Lê modelo, versão e motor." },
+  { id: "lateral", nome: "Lateral inteira", dica: "Silhueta completa, sem cortar. Lê as portas." },
+  { id: "painel", nome: "Painel com o km", dica: "Painel ligado, número legível, sem flash." },
+  { id: "cambio", nome: "Alavanca do câmbio", dica: "A alavanca inteira no quadro." },
+  { id: "interior", nome: "Interior", dica: "Bancos e central, com luz. Lê os itens." },
 ];
 const FOTO_ORDEM = [...FOTOS_GUIA.map(f => f.id), "chave", "manual", "estepe"];
 const VALORIZA = [
@@ -110,7 +107,6 @@ export default function Veiculos() {
   const [releituras, setReleituras] = useState([]);
   const [sugeridos, setSugeridos] = useState([]);
   const [lendo, setLendo] = useState(false);
-  const [maisFotos, setMaisFotos] = useState(false);
   const [vendidos, setVendidos] = useState(null);
   const [tagInput, setTagInput] = useState("");
   const [erro, setErro] = useState("");
@@ -167,7 +163,6 @@ export default function Veiculos() {
     setLeituras({});
     setReleituras([]);
     setSugeridos([]);
-    setMaisFotos(false);
   }
   function abrirCriar() { setForm(empty); limparLeitura(); setErro(""); setModal("criar"); }
   function abrirEditar(v) { setForm({...v, opcionais: v.opcionais || [], fotos: v.fotos || []}); limparLeitura(); setErro(""); setModal(v); }
@@ -345,8 +340,7 @@ export default function Veiculos() {
 
   const brl = n => Number(n).toLocaleString("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:0});
   const disponiveis = veiculos.filter(v => v.ativo).length;
-  const fotosObrigatorias = FOTOS_GUIA.filter(f => f.obrigatoria);
-  const faltamFotos = fotosObrigatorias.filter(f => !slots[f.id]);
+  const faltamFotos = FOTOS_GUIA.filter(f => !slots[f.id]);
 
   function CampoLabel({ children, campo }) {
     const p = pistaLeitura(leituras, campo);
@@ -499,30 +493,41 @@ export default function Veiculos() {
             </div>
 
             <section className="ficha-bloco">
-              <div className="ficha-titulo">Fotos do anúncio</div>
+              <div className="ficha-titulo">Fotos da ficha</div>
               <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 10px" }}>
-                Estas fotos identificam o carro, entram na galeria e ficam no estoque.
+                Bata cada foto no enquadramento pedido. Elas entram no anúncio e preenchem a ficha abaixo.
               </p>
-              <div className="foto-grid">
-                {FOTOS_GUIA.filter(f => f.obrigatoria || maisFotos).map(f => (
-                  <label key={f.id} className="foto-item" style={{ cursor: "pointer", minHeight: 84, display: "block" }}>
-                    {slots[f.id]
-                      ? <img src={slots[f.id]} alt={f.nome}/>
-                      : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 72, fontSize: 11, color: "var(--muted)", textAlign: "center", padding: 6 }}>{uploading === f.id ? "Enviando..." : f.nome}</span>}
-                    <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, fontSize: 10, background: "rgba(0,0,0,.55)", color: "#fff", padding: "2px 4px" }}>{f.nome} · {f.le}</span>
-                    <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} disabled={!!uploading} onChange={e => { uploadSlot(f.id, e.target.files?.[0]); e.target.value = ""; }}/>
-                  </label>
+              <div className="ficha-fotos">
+                {FOTOS_GUIA.map(f => (
+                  <div key={f.id} className="ficha-foto">
+                    <div className="ficha-foto-nome">{f.nome}</div>
+                    <div className="ficha-foto-dica">{f.dica}</div>
+                    <div className="ficha-foto-quadro">
+                      {slots[f.id]
+                        ? <img src={slots[f.id]} alt={f.nome}/>
+                        : <i className="ti ti-camera" style={{ fontSize: 22, color: "var(--muted)" }}/>}
+                    </div>
+                    <div className="ficha-foto-acoes">
+                      <label>
+                        <i className="ti ti-camera"/> {uploading === f.id ? "…" : "Câmera"}
+                        <input type="file" accept="image/*" capture="environment" disabled={!!uploading} onChange={e => { uploadSlot(f.id, e.target.files?.[0]); e.target.value = ""; }}/>
+                      </label>
+                      <label>
+                        <i className="ti ti-photo"/> Galeria
+                        <input type="file" accept="image/*" disabled={!!uploading} onChange={e => { uploadSlot(f.id, e.target.files?.[0]); e.target.value = ""; }}/>
+                      </label>
+                    </div>
+                  </div>
                 ))}
               </div>
-              <button type="button" className="btn btn-ghost" style={{ marginTop: 8, fontSize: 12 }} onClick={() => setMaisFotos(v => !v)}>
-                {maisFotos ? "Ocultar fotos a mais" : "Fotos a mais (outro lado, rodas, porta-malas)"}
+              {faltamFotos.length > 0 && (
+                <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>
+                  Faltam {faltamFotos.length} {faltamFotos.length === 1 ? "foto" : "fotos"} para preencher a ficha.
+                </p>
+              )}
+              <button type="button" className="btn btn-primary" style={{ width: "100%", marginTop: 10 }} disabled={faltamFotos.length > 0 || lendo} onClick={lerFotos}>
+                {lendo ? <span className="spinner"/> : <><i className="ti ti-sparkles"/> Preencher a ficha com as fotos</>}
               </button>
-              <div style={{ marginTop: 8 }}>
-                <button type="button" className="btn btn-primary" disabled={faltamFotos.length > 0 || lendo} onClick={lerFotos}>
-                  {lendo ? <span className="spinner"/> : <><i className="ti ti-sparkles"/> Preencher a ficha com as fotos</>}
-                </button>
-                {faltamFotos.length > 0 && <span style={{ marginLeft: 8, fontSize: 12, color: "var(--muted)" }}>Faltam {faltamFotos.map(f => f.nome.toLowerCase()).join(", ")}</span>}
-              </div>
               {releituras.length > 0 && (
                 <div style={{ marginTop: 10, fontSize: 13, color: "var(--fg)", background: "var(--danger-soft)", borderRadius: 8, padding: "8px 10px" }}>
                   {releituras.map(r => <div key={r.slot}>{FOTOS_GUIA.find(f => f.id === r.slot)?.nome || r.slot}: {r.motivo}. Tire de novo com mais luz, ou preencha o campo.</div>)}
@@ -585,14 +590,17 @@ export default function Veiculos() {
                         <input type="checkbox" checked={ligado} onChange={() => toggleValor(v.id, v.item)} style={{ width: 16, height: 16, accentColor: "var(--brand)" }}/>
                         {v.item}
                       </label>
-                      {ligado && !(v.id === "estepe" && slots["porta-malas"]) && (
-                        <label className="btn btn-ghost" style={{ cursor: "pointer", width: "fit-content", marginTop: 6, fontSize: 12 }}>
-                          <i className="ti ti-camera"/> {slots[v.id] ? "Trocar foto" : v.dica}
-                          <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} disabled={!!uploading} onChange={e => { uploadSlot(v.id, e.target.files?.[0]); e.target.value = ""; }}/>
-                        </label>
-                      )}
-                      {ligado && v.id === "estepe" && slots["porta-malas"] && (
-                        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>A foto do porta-malas já mostra o estepe.</div>
+                      {ligado && (
+                        <div className="ficha-foto-acoes" style={{ maxWidth: 240, marginTop: 6 }}>
+                          <label>
+                            <i className="ti ti-camera"/> Câmera
+                            <input type="file" accept="image/*" capture="environment" disabled={!!uploading} onChange={e => { uploadSlot(v.id, e.target.files?.[0]); e.target.value = ""; }}/>
+                          </label>
+                          <label>
+                            <i className="ti ti-photo"/> Galeria
+                            <input type="file" accept="image/*" disabled={!!uploading} onChange={e => { uploadSlot(v.id, e.target.files?.[0]); e.target.value = ""; }}/>
+                          </label>
+                        </div>
                       )}
                     </div>
                   );
@@ -601,7 +609,7 @@ export default function Veiculos() {
             </div>
 
             <div className="form-group span-all">
-              <label className="form-label">Fotos</label>
+              <label className="form-label">Mais fotos da galeria</label>
               <label className="btn btn-ghost" style={{cursor:"pointer",width:"fit-content",marginBottom:10}}>
                 <i className="ti ti-upload"/> {uploading ? "Enviando..." : "Enviar fotos"}
                 <input type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>uploadFotos(e.target.files)} disabled={uploading}/>
