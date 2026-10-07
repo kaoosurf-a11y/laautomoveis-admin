@@ -841,8 +841,12 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .dias-num{font-size:13px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums}
 .dias-dia{font-size:11px;color:var(--muted)}
 @media(min-width:1024px){
-  .dash-meio{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
-  .dash-grid{grid-template-columns:minmax(280px,.95fr) minmax(0,1.35fr);align-items:stretch}
+  .dash-meio{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}
+  /* Duas lojas: Anúncios na largura inteira e a Meta lado a lado.
+     Antes a Meta empilhava na coluna da direita e sobrava um vão embaixo de Anúncios. */
+  .dash-meio.varias-lojas{grid-template-columns:minmax(0,1fr)}
+  .dash-meio.varias-lojas .meta-lojas{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+  .dash-grid{grid-template-columns:minmax(280px,.95fr) minmax(0,1.35fr);align-items:start}
   .dash-canais .funnel-step:last-child{margin-bottom:0}
   .dash-canais .funnel-track,.dash-canais .funnel-bar{height:18px}
   .dash-canais .funnel-step{margin-bottom:16px}

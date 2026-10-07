@@ -229,7 +229,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
         ))}
       </div>
 
-      <div className="dash-meio">
+      <div className={`dash-meio${(data.meta_capi?.length || 0) > 1 ? " varias-lojas" : ""}`}>
         <Anuncios midia={midia} onSaved={onMidiaSaved}/>
         <FunilMeta lojas={data.meta_capi}/>
       </div>
