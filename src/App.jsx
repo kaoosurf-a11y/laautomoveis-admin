@@ -16,6 +16,7 @@ import Status from "./pages/Status.jsx";
 import Lojas from "./pages/Lojas.jsx";
 import Campanha from "./pages/Campanha.jsx";
 import Envios from "./pages/Envios.jsx";
+import Mensal from "./pages/Mensal.jsx";
 
 function Priv({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
@@ -47,6 +48,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={isLoggedIn() ? (isManager() ? <Navigate to="/dashboard" replace /> : <Navigate to="/crm" replace />) : <Navigate to="/login" replace />} />
       <Route path="/dashboard" element={<OwnerOnly><Dashboard /></OwnerOnly>} />
+      <Route path="/mensal"    element={<AdminMasterOnly><Mensal /></AdminMasterOnly>} />
       <Route path="/crm"       element={<Priv><CRM /></Priv>} />
       <Route path="/followups" element={<Priv><FollowUps /></Priv>} />
       <Route path="/agenda"    element={<Priv><Agenda /></Priv>} />

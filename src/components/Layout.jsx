@@ -49,6 +49,8 @@ export default function Layout({ children }) {
 
   const navItems = [
     ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dashboard", section:"VISÃO GERAL" }] : []),
+    // Resultado mensal (2026-10-07): leads, vendas e verba mês a mês, por loja. Só admin_master.
+    ...(isOwner() ? [{ to:"/mensal", icon:"ti-report-analytics", label:"Resultado mensal", section:null }] : []),
     { to:"/crm",       icon:"ti-target",        label:"CRM Pipeline", section:"COMERCIAL" },
     { to:"/followups", icon:"ti-clock",          label:"Follow-ups",   section:null },
     { to:"/agenda",    icon:"ti-calendar-event", label:"Agenda",       badge:agendaHoje||null, section:null },

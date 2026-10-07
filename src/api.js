@@ -64,6 +64,7 @@ export async function getMovimentosLead(id) { return req(`/api/crm/leads/${id}/m
 export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method:"POST",body:JSON.stringify(d)}); }
 export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`,{method:"PATCH",body:JSON.stringify(d)}); }
 export async function excluirLeadCRM(id) { return req(`/api/crm/leads/${id}`,{method:"DELETE"}); }
+export async function getResultadoMensal() { return req("/api/dashboard/mensal"); }
 export async function getClientesValidados() { return req("/api/crm/clientes"); }
 export async function getDisparador(params={}) {
   const qs = new URLSearchParams(params).toString();
