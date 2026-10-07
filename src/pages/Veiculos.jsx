@@ -348,7 +348,7 @@ export default function Veiculos() {
       {/* Modal editar/criar */}
       {modal && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget && fechar()}>
-          {/* 2026-10-07 (Felipe): janela larga com os campos em grade (.modal-form), sem rolagem no computador. */}
+          {/* 2026-10-07: ficha em blocos. A grade de 5 colunas cortava o combustível (Flex virava um pedaço). */}
           <div className="modal modal-lg modal-form">
             <div className="modal-handle"/>
             <div className="modal-header">
@@ -356,28 +356,43 @@ export default function Veiculos() {
               <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={fechar}><i className="ti ti-x"/></button>
             </div>
 
-            <div className="form-group"><label className="form-label">Marca *</label><input className="form-input" value={form.marca} onChange={e=>set("marca",e.target.value)} placeholder="Ex: Volkswagen"/></div>
-            <div className="form-group"><label className="form-label">Modelo *</label><input className="form-input" value={form.modelo} onChange={e=>set("modelo",e.target.value)} placeholder="Ex: Nivus Highline"/></div>
-            <div className="form-group"><label className="form-label">Versão</label><input className="form-input" value={form.versao} onChange={e=>set("versao",e.target.value)} placeholder="Ex: LT, Highline, Titanium"/></div>
-            <div className="form-group">
-              <label className="form-label">Categoria *</label>
-              <select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>
-                <option value="" disabled>Selecione...</option>
-                {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+            <section className="ficha-bloco">
+              <div className="ficha-titulo">Veículo</div>
+              <div className="ficha-grade">
+                <div className="form-group"><label className="form-label">Marca *</label><input className="form-input" value={form.marca} onChange={e=>set("marca",e.target.value)} placeholder="Ex: Volkswagen"/></div>
+                <div className="form-group"><label className="form-label">Modelo *</label><input className="form-input" value={form.modelo} onChange={e=>set("modelo",e.target.value)} placeholder="Ex: Nivus Highline"/></div>
+                <div className="form-group"><label className="form-label">Versão</label><input className="form-input" value={form.versao} onChange={e=>set("versao",e.target.value)} placeholder="Ex: LT, Highline, Titanium"/></div>
+                <div className="form-group">
+                  <label className="form-label">Categoria *</label>
+                  <select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>
+                    <option value="" disabled>Selecione...</option>
+                    {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+            </section>
 
-            <div className="form-grid">
-              <div className="form-group"><label className="form-label">Ano *</label><input className="form-input" type="number" value={form.ano} onChange={e=>set("ano",e.target.value)}/></div>
-              <div className="form-group"><label className="form-label">Preço (R$) *</label><input className="form-input" type="number" value={form.preco} onChange={e=>set("preco",e.target.value)} placeholder="119900"/></div>
-              <div className="form-group"><label className="form-label">KM *</label><input className="form-input" type="number" value={form.km} onChange={e=>set("km",e.target.value)} placeholder="18500"/></div>
-              <div className="form-group"><label className="form-label">Câmbio</label><select className="form-input" value={form.cambio} onChange={e=>set("cambio",e.target.value)}>{CAMBIOS.map(c=><option key={c}>{c}</option>)}</select></div>
-              <div className="form-group"><label className="form-label">Combustível</label><select className="form-input" value={form.combustivel} onChange={e=>set("combustivel",e.target.value)}>{COMBUSTIVEIS.map(c=><option key={c}>{c}</option>)}</select></div>
-              <div className="form-group"><label className="form-label">Motorização</label><input className="form-input" value={form.motorizacao} onChange={e=>set("motorizacao",e.target.value)} placeholder="Ex: 1.0, 1.6, 2.0 Turbo"/></div>
-              <div className="form-group"><label className="form-label">Cor</label><input className="form-input" value={form.cor} onChange={e=>set("cor",e.target.value)} placeholder="Ex: Prata"/></div>
-              <div className="form-group"><label className="form-label">Badge</label><select className="form-input" value={form.badge} onChange={e=>set("badge",e.target.value)}>{BADGES.map(b=><option key={b} value={b}>{b||"Sem badge"}</option>)}</select></div>
-              <div className="form-group"><label className="form-label">Detalhe</label><input className="form-input" value={form.detalhe} onChange={e=>set("detalhe",e.target.value)} placeholder="Ex: Único dono"/></div>
-            </div>
+            <section className="ficha-bloco">
+              <div className="ficha-titulo">Ficha técnica</div>
+              <div className="ficha-grade">
+                <div className="form-group"><label className="form-label">Ano *</label><input className="form-input" type="number" value={form.ano} onChange={e=>set("ano",e.target.value)}/></div>
+                <div className="form-group"><label className="form-label">KM *</label><input className="form-input" type="number" value={form.km} onChange={e=>set("km",e.target.value)} placeholder="18500"/></div>
+                <div className="form-group"><label className="form-label">Câmbio</label><select className="form-input" value={form.cambio} onChange={e=>set("cambio",e.target.value)}>{CAMBIOS.map(c=><option key={c}>{c}</option>)}</select></div>
+                <div className="form-group"><label className="form-label">Combustível</label><select className="form-input" value={form.combustivel} onChange={e=>set("combustivel",e.target.value)}>{COMBUSTIVEIS.map(c=><option key={c}>{c}</option>)}</select></div>
+                <div className="form-group"><label className="form-label">Motorização</label><input className="form-input" value={form.motorizacao} onChange={e=>set("motorizacao",e.target.value)} placeholder="Ex: 1.0, 1.6, 2.0 Turbo"/></div>
+                <div className="form-group"><label className="form-label">Cor</label><input className="form-input" value={form.cor} onChange={e=>set("cor",e.target.value)} placeholder="Ex: Prata"/></div>
+                <div className="form-group"><label className="form-label">Portas</label><input className="form-input" type="number" min="2" max="5" value={form.portas ?? 4} onChange={e=>set("portas",e.target.value)}/></div>
+              </div>
+            </section>
+
+            <section className="ficha-bloco">
+              <div className="ficha-titulo">Anúncio</div>
+              <div className="ficha-grade ficha-grade-3">
+                <div className="form-group"><label className="form-label">Preço (R$) *</label><input className="form-input" type="number" value={form.preco} onChange={e=>set("preco",e.target.value)} placeholder="119900"/></div>
+                <div className="form-group"><label className="form-label">Badge</label><select className="form-input" value={form.badge} onChange={e=>set("badge",e.target.value)}>{BADGES.map(b=><option key={b} value={b}>{b||"Sem badge"}</option>)}</select></div>
+                <div className="form-group"><label className="form-label">Detalhe</label><input className="form-input" value={form.detalhe} onChange={e=>set("detalhe",e.target.value)} placeholder="Ex: Único dono"/></div>
+              </div>
+            </section>
 
             <div className="form-group span-all">
               <label className="form-label">Opcionais (Enter para adicionar)</label>

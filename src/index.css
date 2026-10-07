@@ -802,12 +802,16 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 /* Caixa de marcar dentro de formulário: a regra geral de campo (.form-group input) tirava a
    aparência dela e virava uma bolinha cinza sem o "v". Volta a ser uma caixa de marcar normal. */
 .form-group input[type="checkbox"],.form-check input[type="checkbox"]{-webkit-appearance:auto;appearance:auto;width:18px;height:18px;min-height:0;padding:0;background:none;border:none;border-radius:4px;box-shadow:none;flex-shrink:0}
-/* Formulário em grade dentro da janela (ex.: veículo): 4 campos por linha; o que não é campo
-   simples (grades internas, fotos, opcionais, botões) ocupa a linha inteira. */
+/* Ficha do veículo: três blocos (veículo, ficha técnica, anúncio).
+   Quatro campos por linha. Cinco colunas cortavam "Flex" no combustível. */
+.ficha-titulo{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.ficha-bloco{margin-bottom:12px}
+.ficha-grade{display:grid;grid-template-columns:1fr;gap:0 14px}
+.ficha-grade .form-group{min-width:0}
+.modal-form select.form-input{padding-right:32px}
 @media(min-width:768px){
-  .modal.modal-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;align-content:start}
-  .modal-form>*{grid-column:1/-1}
-  .modal-form>.form-group:not(.span-all){grid-column:auto}
-  .modal-form>.form-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:0 14px}
+  .modal.modal-form{display:flex;flex-direction:column}
+  .ficha-grade{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ficha-grade-3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .modal-form .foto-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
 }
