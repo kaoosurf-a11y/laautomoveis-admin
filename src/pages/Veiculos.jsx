@@ -451,15 +451,11 @@ export default function Veiculos() {
             <section className="ficha-bloco">
               <div className="ficha-titulo">Fotos do anúncio</div>
               <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 10px" }}>
-                Manda as fotos de uma vez, pela câmera ou pela galeria. A IA preenche o que conseguir ler. O que não aparecer, você completa na ficha.
+                Envie as fotos de uma vez. A IA preenche o que conseguir ler. Você confere e completa o que ficar em branco.
               </p>
               <div className="ficha-lote">
                 <label>
-                  <i className="ti ti-camera"/> {uploading ? "Enviando..." : "Bater fotos"}
-                  <input type="file" accept="image/*" capture="environment" multiple disabled={!!uploading || lendo} onChange={e => { uploadFotos(e.target.files); e.target.value = ""; }}/>
-                </label>
-                <label>
-                  <i className="ti ti-photo"/> {uploading ? "Enviando..." : "Galeria"}
+                  <i className="ti ti-photo"/> {uploading ? "Enviando..." : "Enviar fotos"}
                   <input type="file" accept="image/*" multiple disabled={!!uploading || lendo} onChange={e => { uploadFotos(e.target.files); e.target.value = ""; }}/>
                 </label>
               </div>
