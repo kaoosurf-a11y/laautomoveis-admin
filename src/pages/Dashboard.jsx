@@ -256,6 +256,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
         <div className="card dash-canais">
           <div className="card-title"><i className="ti ti-chart-pie"/> Leads por canal</div>
           {canais.length===0 && <p className="vazio">Nenhum lead no período.</p>}
+          <div className="canais-lista">
           {canais.map((c,i)=>(
             <div key={i} className="funnel-step">
               <div style={{width:10,height:10,borderRadius:"50%",background:c.cor,flexShrink:0}}/>
@@ -265,6 +266,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
               <div className="funnel-pct">{Math.round(c.total/totalCanais*100)}%</div>
             </div>
           ))}
+          </div>
         </div>
       </div>
 
