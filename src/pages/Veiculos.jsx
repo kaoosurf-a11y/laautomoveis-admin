@@ -144,6 +144,12 @@ export default function Veiculos() {
   }
   useEffect(() => { load(); }, []);
   useEffect(() => {
+    if (!modal) return;
+    function onKey(e) { if (e.key === "Escape") setModal(null); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [modal]);
+  useEffect(() => {
     const editarId = new URLSearchParams(window.location.search).get("editar");
     if (!editarId || !veiculos.length) return;
     const v = veiculos.find(v => String(v.id) === editarId);
@@ -445,9 +451,10 @@ export default function Veiculos() {
             <div className="modal-handle"/>
             <div className="modal-header">
               <h2 className="modal-title">{modal==="criar" ? "Novo veículo" : "Editar veículo"}</h2>
-              <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={fechar}><i className="ti ti-x"/></button>
+              <button type="button" className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={fechar}><i className="ti ti-x"/></button>
             </div>
 
+            <div className="ficha-scroll">
             <section className="ficha-bloco">
               <div className="ficha-titulo">Fotos do anúncio</div>
               <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 10px" }}>
@@ -552,10 +559,11 @@ export default function Veiculos() {
             </label>
 
             {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:"var(--danger-soft)",borderRadius:8}}>{erro}</div>}
+            </div>
 
-            <div style={{display:"flex",gap:10}}>
-              <button className="btn btn-ghost" data-fechar onClick={fechar} style={{flex:1}}>Cancelar</button>
-              <button className="btn btn-primary" onClick={salvar} disabled={loading} style={{flex:1}}>
+            <div className="modal-acoes">
+              <button type="button" className="btn btn-ghost" onClick={fechar} style={{flex:1}}>Cancelar</button>
+              <button type="button" className="btn btn-primary" onClick={salvar} disabled={loading} style={{flex:1}}>
                 {loading ? <span className="spinner"/> : <><i className="ti ti-device-floppy"/> Salvar</>}
               </button>
             </div>

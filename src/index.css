@@ -809,8 +809,12 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .ficha-grade{display:grid;grid-template-columns:1fr;gap:0 14px}
 .ficha-grade .form-group{min-width:0}
 .modal-form select.form-input{padding-right:32px}
+.modal.modal-form{display:flex;flex-direction:column;overflow:hidden;max-height:90dvh}
+.modal-form .modal-header{flex-shrink:0;background:var(--surface);margin-bottom:10px}
+.ficha-scroll{overflow-y:auto;min-height:0;flex:1 1 auto;-webkit-overflow-scrolling:touch}
+.modal-acoes{flex-shrink:0;display:flex;gap:10px;padding-top:12px;background:var(--surface)}
 @media(min-width:768px){
-  .modal.modal-form{display:flex;flex-direction:column}
+  .modal.modal-form{max-height:94dvh}
   .ficha-grade{grid-template-columns:repeat(4,minmax(0,1fr))}
   .ficha-grade-3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .modal-form .foto-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
