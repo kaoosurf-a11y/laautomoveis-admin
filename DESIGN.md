@@ -93,6 +93,10 @@ Rótulos em CAIXA ALTA com espaçamento (`.nav-section`, `.metric-label`, `.sec-
 - **Modal:** sobe do rodapé no celular (com alça) e centraliza a partir de 768px, largura máxima 520px.
 - **Kanban:** colunas de 230px com rolagem horizontal e encaixe.
 
+- **Densidade no computador (07/10/2026, pedido do Felipe: menos espaço em branco):** a partir de 1024px o conteúdo tem margem de 16/24px, título de página 22px, botão 36px, controle segmentado 30px, aba 32px, campo 36px, item do menu 34px e card com 14/16px de respiro. Abaixo de 1024px nada muda: toque continua com 44px. Tudo fica no bloco "Compactação" no fim do `index.css`.
+- **Filtros na linha do título:** no Dashboard, loja e período ficam ao lado do título e as abas dividem a linha com o texto do recorte; no CRM, busca, loja e contador ficam ao lado do título. Tela nova segue o mesmo: nada de linha só para um filtro.
+- **Grade de métricas no computador:** `.metrics-grid` distribui os cards pela largura toda (`auto-fit`, mínimo 150px), sem coluna vazia à direita. Rótulo comprido quebra em duas linhas, não corta.
+
 ## Elevation & Depth
 
 Profundidade vem da troca de fundo (ground → surface → surface2) e de uma borda fina de 1px, e não de sombra. Sombra (`--float`) só onde algo realmente flutua: gaveta do menu, modal e aviso de agendamento. Barra do topo e menu de baixo no celular são translúcidos com desfoque, porque o conteúdo rola por baixo deles. **Sem degradê e sem brilho colorido**: botão primário e aba ativa são dourado chapado.

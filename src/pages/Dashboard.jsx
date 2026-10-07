@@ -489,6 +489,8 @@ function TabMetricas({ metricas, loading, erro }) {
 
   return (
     <>
+      {/* 2026-10-07: as duas fileiras de cards ficam numa grade só (o bloco de dentro usa
+          display:contents), pra não sobrar coluna vazia à direita. */}
       <div className="metrics-grid" style={{marginBottom:12}}>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-robot"/> Só IA resolveu</div>
@@ -520,9 +522,8 @@ function TabMetricas({ metricas, loading, erro }) {
           <div className="metric-value" style={{color:semResposta.total>0?"var(--alert)":undefined}}>{semResposta.total}</div>
           <div className="metric-delta" style={{color:"var(--muted)"}}>leads parados</div>
         </div>
-      </div>
 
-      {funilReferencia && <div className="metrics-grid" style={{marginBottom:12}}>
+      {funilReferencia && <div style={{display:"contents"}}>
         <div className="metric-card">
           <div className="metric-label"><i className="ti ti-bolt"/> Contatado em até 5min</div>
           <div className="metric-value">{funilReferencia.contatados5min.pct}%</div>
@@ -539,6 +540,7 @@ function TabMetricas({ metricas, loading, erro }) {
           <div className="metric-delta" style={{color:"var(--muted)"}}>{funilReferencia.fechamentoPorFollowup.comFollowup} de {funilReferencia.fechamentoPorFollowup.totalFechadas} vendas</div>
         </div>
       </div>}
+      </div>
 
       {funilReferencia && <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-filter"/> Funil de referência (lead → venda)</div>
@@ -821,7 +823,7 @@ export default function Dashboard() {
   return (
     <div>
       <div className="page-header">
-        <div>
+        <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap"}}>
           <h1 className="page-title"><i className="ti ti-layout-dashboard"/> Dashboard</h1>
           {roleLabel && <span style={{fontSize:12,color:"var(--muted)",marginLeft:2}}>{roleLabel}</span>}
           {/* Refetch em segundo plano (ver comentário no `if(loading && !data)` acima) —
@@ -833,6 +835,19 @@ export default function Dashboard() {
             não se confundirem com as abas de conteúdo logo abaixo — antes eram três
             fileiras de botões dourados iguais. "Trimestre" virou "90 dias", que é o que
             o filtro sempre fez (90 dias corridos, não o trimestre do calendário). */}
+        {/* 2026-10-07 (Felipe: menos espaço em branco): loja e período na mesma linha do
+            título; as abas descem pra linha do recorte. Só mudou a posição dos controles. */}
+        <div className="dash-filtros">
+        {isAdminMaster && (
+          <div className="seg" role="group" aria-label="Loja">
+            {[{id:null,l:"Todas as lojas"},{id:1,l:"Curitibanos"},{id:2,l:"Campos Novos"}].map(o=>(
+              <button key={String(o.id)} type="button" className={`seg-btn ${lojaFiltro===o.id?"active":""}`} aria-pressed={lojaFiltro===o.id}
+                onClick={()=>setLojaFiltro(o.id)}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="seg" role="group" aria-label="Período">
           {[{k:"hoje",l:"Hoje"},{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"trimestre",l:"90 dias"}].map(p=>(
             <button key={p.k} type="button" className={`seg-btn ${periodo===p.k?"active":""}`} aria-pressed={periodo===p.k}
@@ -845,27 +860,7 @@ export default function Dashboard() {
             <i className="ti ti-calendar"/> Datas
           </button>
         </div>
-      </div>
-
-      <div className="dash-bar">
-        {isAdminMaster && (
-          <div className="seg" role="group" aria-label="Loja">
-            {[{id:null,l:"Todas as lojas"},{id:1,l:"Curitibanos"},{id:2,l:"Campos Novos"}].map(o=>(
-              <button key={String(o.id)} type="button" className={`seg-btn ${lojaFiltro===o.id?"active":""}`} aria-pressed={lojaFiltro===o.id}
-                onClick={()=>setLojaFiltro(o.id)}>
-                {o.l}
-              </button>
-            ))}
-          </div>
-        )}
-        {/* Diz exatamente o recorte que os números abaixo cobrem e com o que comparam. */}
-        {data.periodo?.desde && (
-          <div className="dash-escopo">
-            {diaMes(data.periodo.desde)===diaMes(data.periodo.ate) ? diaMes(data.periodo.desde) : `${diaMes(data.periodo.desde)} a ${diaMes(data.periodo.ate)}`}
-            {lojaEscopo ? `, ${lojaEscopo}` : ""}
-            {aba==="oportunidades" && data.periodo.anterior_desde ? `. Comparado com ${diaMes(data.periodo.anterior_desde)} a ${diaMes(data.periodo.anterior_ate)}.` : ""}
-          </div>
-        )}
+        </div>
       </div>
 
       {seletorAberto && (
@@ -924,14 +919,25 @@ export default function Dashboard() {
           usado em Follow-ups/Disparador). Antes forçava largura igual entre as 4 e
           cortava "Oportunidades" com "...": agora cada aba tem a largura do próprio
           texto e a faixa rola horizontalmente se não couber, sem nunca truncar. */}
-      <div className="tabs-wrap">
-        {ABAS.map(a=>(
-          <button key={a.id} className={`tab-btn ${aba===a.id?"active":""}`}
-            onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}>
-            {a.label}
-          </button>
-        ))}
+      <div className="dash-bar">
+        <div className="tabs-wrap">
+          {ABAS.map(a=>(
+            <button key={a.id} className={`tab-btn ${aba===a.id?"active":""}`}
+              onClick={()=>a.id==="metricas"?abrirMetricas():setAba(a.id)}>
+              {a.label}
+            </button>
+          ))}
+        </div>
+        {/* Diz exatamente o recorte que os números abaixo cobrem e com o que comparam. */}
+        {data.periodo?.desde && (
+          <div className="dash-escopo">
+            {diaMes(data.periodo.desde)===diaMes(data.periodo.ate) ? diaMes(data.periodo.desde) : `${diaMes(data.periodo.desde)} a ${diaMes(data.periodo.ate)}`}
+            {lojaEscopo ? `, ${lojaEscopo}` : ""}
+            {aba==="oportunidades" && data.periodo.anterior_desde ? `. Comparado com ${diaMes(data.periodo.anterior_desde)} a ${diaMes(data.periodo.anterior_ate)}.` : ""}
+          </div>
+        )}
       </div>
+
 
       {aba==="oportunidades" && <TabOportunidades data={data} periodo={periodo} onMidiaSaved={recarregarDashboard} onAbrirCrm={()=>navigate("/crm")}/>}
       {aba==="jornada"       && <TabJornada data={data}/>}

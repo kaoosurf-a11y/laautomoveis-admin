@@ -1074,20 +1074,22 @@ export default function CRM(){
 
   return(
     <div>
+      {/* 2026-10-07 (Felipe: menos espaço em branco): busca, loja e contador subiram pra
+          linha do título; o quadro ganha a altura que essas duas linhas ocupavam. */}
       <div className="page-header">
         <h1 className="page-title"><i className="ti ti-target"/> CRM Pipeline</h1>
+        <div className="crm-filtros">
+          <input className="form-input" style={{maxWidth:220,marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
+          {role==="admin_master"&&lojas.length>1&&
+            <select className="form-input" style={{maxWidth:200,marginBottom:0,fontSize:13,padding:"7px 12px"}} value={lojaFiltro} onChange={e=>setLojaFiltro(e.target.value)}>
+              <option value="">Todas as lojas</option>
+              {lojas.map(l=><option key={l.id} value={l.id}>{l.nome}</option>)}
+            </select>
+          }
+          <span className="crm-contador" title={!readOnly&&!isMobile?"Arraste o card pra mudar o estágio":undefined}>{todos.length} leads · {filtrados.length} exibidos</span>
+        </div>
         {!readOnly&&<button className="btn btn-primary" onClick={()=>setNovoModal(true)}><i className="ti ti-plus" style={{fontSize:16}}/> Novo lead</button>}
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        <input className="form-input" style={{maxWidth:220,marginBottom:0,fontSize:13,padding:"7px 12px"}} placeholder="Buscar..." value={busca} onChange={e=>setBusca(e.target.value)}/>
-        {role==="admin_master"&&lojas.length>1&&
-          <select className="form-input" style={{maxWidth:200,marginBottom:0,fontSize:13,padding:"7px 12px"}} value={lojaFiltro} onChange={e=>setLojaFiltro(e.target.value)}>
-            <option value="">Todas as lojas</option>
-            {lojas.map(l=><option key={l.id} value={l.id}>{l.nome}</option>)}
-          </select>
-        }
-      </div>
-      <div style={{fontSize:13,color:"var(--muted)",marginBottom:12}}>{todos.length} leads · {filtrados.length} exibidos{!readOnly&&!isMobile&&" · arraste o card pra mudar o estágio"}</div>
 
       {/* 2026-07-27: board único (colunas lado a lado + scroll horizontal) em qualquer
       viewport, mesmo padrão do Follow-ups (FollowUps.jsx .fu-kanban-board) — antes o

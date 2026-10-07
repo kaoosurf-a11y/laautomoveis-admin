@@ -683,3 +683,51 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .ajuste-loja-campos{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);align-items:end}
 @media(min-width:600px){.ajuste-loja-campos{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}}
 .dash-col{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+/* ── Compactação (07/10/2026, Felipe): menos espaço em branco e controles mais perto do
+   topo. Vale a partir de 1024px (uso com mouse). Abaixo disso nada muda: os alvos de
+   toque continuam com 44px. Só medida e posição; nenhuma regra de dado ou de loja. ── */
+.dash-filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dash-bar .tabs-wrap{margin-bottom:0;min-width:0}
+.crm-filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
+.crm-contador{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:640px){.dash-bar .tabs-wrap{width:100%}.crm-filtros{order:3}.crm-filtros .form-input{max-width:none!important;flex:1 1 140px}}
+@media(min-width:1024px){
+  .main-content{padding:16px 24px 24px}
+  .page-header{margin-bottom:12px;min-height:36px;gap:8px 14px}
+  .page-title{font-size:22px}.page-title i{font-size:22px}
+  .btn{min-height:36px;padding:7px 14px;font-size:13px;border-radius:10px}
+  .btn i{font-size:16px}
+  .btn-icon{min-height:36px;min-width:36px;padding:6px}
+  .btn-sm{min-height:30px;padding:5px 11px;border-radius:9px}
+  .btn-wa,.btn-chatwoot{min-height:32px;padding:5px 12px}
+  .seg-btn{min-height:30px;padding:0 12px}
+  .tab-btn{min-height:32px;padding:5px 14px;font-size:13px}
+  .tabs-wrap{margin-bottom:12px;gap:6px}
+  .dash-bar{margin-bottom:12px}
+  .card{padding:14px 16px}
+  .card-title,.card-head{margin-bottom:10px}
+  .metrics-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+  .metric-card{padding:12px 14px}
+  /* Rótulo comprido quebra em duas linhas em vez de cortar; o número fica alinhado embaixo. */
+  .metric-card{display:flex;flex-direction:column}
+  .metric-label{margin-bottom:5px;white-space:normal;line-height:1.25;align-items:flex-start}
+  .metric-label i{margin-top:1px}
+  .metric-value{font-size:22px;margin-top:auto}
+  .metric-delta{margin-top:3px}
+  .dash-grid,.dash-col{gap:10px}
+  .funnel-step{margin-bottom:9px}
+  .sec-label{margin:14px 0 8px}
+  .empty-state{padding:28px 20px}
+  .empty-state i{width:56px;height:56px;font-size:26px;margin-bottom:10px}
+  th{padding:8px 12px}td{padding:8px 12px}
+  .form-group{margin-bottom:10px}
+  .form-input,.form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),.form-group select{min-height:36px;padding:7px 12px;font-size:14px}
+  .sidebar-header{padding:14px 16px 8px}
+  .nav-section{padding:12px 12px 4px}
+  .nav-item{min-height:34px;padding:6px 12px;font-size:14px;margin-bottom:1px;border-radius:10px}
+  .nav-item i{font-size:18px}
+  .sidebar-footer{padding:6px 8px}
+  .user-info{padding:6px 8px}
+  .kanban-board{height:calc(100vh - 92px)}
+  .fu-kanban-cards{max-height:calc(100vh - 210px)}
+}
