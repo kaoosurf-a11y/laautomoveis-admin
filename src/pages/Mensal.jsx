@@ -115,12 +115,12 @@ export default function Mensal() {
         </div>
         <div className="metric-card">
           <div className="metric-label">Verba de anúncios</div>
-          <div className="metric-value">{brl(m.verba)}</div>
-          <div className="metric-delta">{div(m.verba, m.leads_anuncio)} por lead</div>
+          <div className="metric-value">{emAndamento ? brl(m.verba) : "—"}</div>
+          <div className="metric-delta">{emAndamento ? `${div(m.verba, m.leads_anuncio)} por lead` : "sem histórico de verba neste mês"}</div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Anúncio por venda</div>
-          <div className="metric-value">{div(m.verba, m.vendas)}</div>
+          <div className="metric-value">{emAndamento ? div(m.verba, m.vendas) : "—"}</div>
           <div className="metric-delta">{pct(m.vendas, m.leads)} de conversão</div>
         </div>
       </div>
@@ -179,8 +179,8 @@ export default function Mensal() {
                   <td style={{ fontWeight: 600 }}>{num(x.vendas)}</td>
                   <td style={{ whiteSpace: "nowrap" }}>{brl(x.valor_vendido)}</td>
                   <td style={{ whiteSpace: "nowrap" }}>{div(x.valor_vendido, x.vendas)}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>{brl(x.verba)}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>{div(x.verba, x.vendas)}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{x.mes === dados.mes_atual ? brl(x.verba) : "—"}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{x.mes === dados.mes_atual ? div(x.verba, x.vendas) : "—"}</td>
                   <td>{pct(x.vendas, x.leads)}</td>
                 </tr>
               ))}
@@ -190,8 +190,8 @@ export default function Mensal() {
       </div>
 
       <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 12, lineHeight: 1.5 }}>
-        Venda é todo veículo removido do estoque como "Venda feita". Até setembro as vendas vieram do histórico do estoque:
-        valem pelo preço anunciado e pela loja que cadastrou o veículo. A verba é a cadastrada hoje no Dashboard, repetida em todos os meses.
+        Venda é o veículo removido do estoque como "Venda feita", na loja que vendeu. Até setembro o valor é o preço anunciado
+        e a loja é a que cadastrou o carro. A verba de anúncio só entra no mês em andamento: é o valor cadastrado hoje, de cada loja.
       </p>
     </div>
   );

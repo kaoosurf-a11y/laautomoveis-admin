@@ -144,7 +144,7 @@ function FunilMeta({ lojas }) {
       {lojas.map((l) => (
         <div key={l.loja_id}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,fontSize:13,fontWeight:600}}>
-            {l.nome}
+            {l.cidade || l.nome}
             <span className={`badge ${l.ativo?"badge-success":"badge-muted"}`}>{l.ativo?"Ligada":"Desligada"}</span>
             {l.erros > 0 && <span className="badge badge-danger">{l.erros} com erro</span>}
           </div>
@@ -152,7 +152,7 @@ function FunilMeta({ lojas }) {
             <div className="metric-card">
               <div className="metric-label"><i className="ti ti-user-plus"/> Leads novos</div>
               <div className="metric-value">{l.leads}</div>
-              <div className="metric-delta">{l.enviados} eventos entregues à Meta</div>
+              <div className="metric-delta">entregues à Meta</div>
             </div>
             <div className="metric-card">
               <div className="metric-label"><i className="ti ti-user-check"/> Qualificados</div>
@@ -178,22 +178,23 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
   const metaMes = resumo.meta_vendas_mes ?? midia?.meta_vendas_mes ?? null;
   const pctMeta = ehMes && metaMes > 0 ? Math.min(Math.round(resumo.vendas / metaMes * 100), 100) : null;
   // Ticket médio: só existe com valor preenchido na venda. Sem nenhum, não mostra "R$ 0".
-  const comValor = resumo.vendas_com_valor;
-  const semValor = comValor === 0 || (comValor === undefined && !resumo.ticket_medio);
+  const comValor = Number(resumo.vendas_com_valor || 0);
+  const semValor = resumo.vendas > 0 && comValor === 0;
   const metrics = [
     { icon:"ti-target",        label:"Total leads",  value:resumo.total_leads,
       delta:`${comSinal(resumo.total_leads_delta)} vs período anterior`, tom:tomDelta(resumo.total_leads_delta) },
     { icon:"ti-check",         label:"Vendas",       value:resumo.vendas,
-      delta: ehMes && metaMes != null ? `meta do mês: ${metaMes}` : "fechadas no período",
+      delta: ehMes && metaMes != null ? `meta do mês: ${metaMes} · saída do estoque` : "saídas do estoque no período",
       tom: ehMes && metaMes > 0 && resumo.vendas >= metaMes ? "up" : "", pct:pctMeta },
     { icon:"ti-percent",       label:"Conversão",    value:`${resumo.conversao}%`,
       delta:`${comSinal(resumo.conversao_delta)} pontos vs anterior`, tom:tomDelta(resumo.conversao_delta) },
     { icon:"ti-x",             label:"Perdidas",     value:resumo.perdidas,              delta:"perdidas no período", tom:"" },
     { icon:"ti-clock",         label:"Resp. média",  value:fmtMin(resumo.resp_media_min),delta:"até o vendedor responder", tom:"",
       title:"Tempo entre o lead ser atribuído e a primeira resposta do vendedor. Conta o relógio corrido, inclusive noite e fim de semana." },
-    { icon:"ti-currency-real", label:"Ticket médio", value:semValor ? "—" : fmtR(resumo.ticket_medio),
-      delta: semValor ? "vendas sem valor"
-        : comValor != null && comValor < resumo.vendas ? `${comValor} de ${resumo.vendas} vendas com valor`
+    { icon:"ti-currency-real", label:"Ticket médio", value:resumo.vendas === 0 || semValor || resumo.ticket_medio == null ? "—" : fmtR(resumo.ticket_medio),
+      delta: resumo.vendas === 0 ? "nenhuma saída no período"
+        : semValor ? "sem valor de venda preenchido"
+        : comValor < resumo.vendas ? `${comValor} de ${resumo.vendas} com valor`
         : `receita: ${fmtR(resumo.receita_total)}`, tom:"" },
   ];
   const lojasNoRanking = [...new Set(vendedores.map(v => v.loja_id).filter(Boolean))].sort((a, b) => a - b);
