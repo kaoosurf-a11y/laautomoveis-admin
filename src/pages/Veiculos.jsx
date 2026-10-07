@@ -95,6 +95,8 @@ export default function Veiculos() {
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [arrastando, setArrastando] = useState(null);
+  const [soltando, setSoltando] = useState(null);
   const [leituras, setLeituras] = useState({});
   const [releituras, setReleituras] = useState([]);
   const [sugeridos, setSugeridos] = useState([]);
@@ -181,6 +183,16 @@ export default function Veiculos() {
 
   function removerFoto(idx) {
     setForm(f => ({ ...f, fotos: f.fotos.filter((_, i) => i !== idx) }));
+  }
+
+  function moverFoto(de, para) {
+    setForm(f => {
+      const fotos = [...(f.fotos || [])];
+      if (de < 0 || para < 0 || de >= fotos.length || para >= fotos.length || de === para) return f;
+      const [item] = fotos.splice(de, 1);
+      fotos.splice(para, 0, item);
+      return { ...f, fotos };
+    });
   }
 
   function aplicarLeitura(f, data) {
@@ -468,15 +480,33 @@ export default function Veiculos() {
                 </button>
               </div>
               {temFotos && (
+                <>
+                <p className="ficha-nota">Arraste para ordenar. A primeira é a capa do site.</p>
                 <div className="foto-grid ficha-minis">
                   {form.fotos.map((url, i) => (
-                    <div key={url} className="foto-item">
-                      <img src={url} alt=""/>
-                      {i === 0 && <div className="ficha-capa">Capa</div>}
+                    <div
+                      key={url}
+                      className={"foto-item" + (arrastando === i ? " arrastando" : "") + (soltando === i ? " soltando" : "")}
+                      draggable
+                      onDragStart={e => { setArrastando(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }}
+                      onDragOver={e => { e.preventDefault(); setSoltando(i); }}
+                      onDragLeave={() => setSoltando(s => s === i ? null : s)}
+                      onDrop={e => { e.preventDefault(); moverFoto(Number(e.dataTransfer.getData("text/plain")), i); setArrastando(null); setSoltando(null); }}
+                      onDragEnd={() => { setArrastando(null); setSoltando(null); }}
+                    >
+                      <img src={url} alt="" draggable={false}/>
+                      {i === 0
+                        ? <div className="ficha-capa">Capa</div>
+                        : <button type="button" className="ficha-capa ficha-virar-capa" onClick={() => moverFoto(i, 0)}>Capa</button>}
+                      <div className="ficha-ordem">
+                        <button type="button" aria-label="Mover para trás" disabled={i === 0} onClick={() => moverFoto(i, i - 1)}>‹</button>
+                        <button type="button" aria-label="Mover para frente" disabled={i === form.fotos.length - 1} onClick={() => moverFoto(i, i + 1)}>›</button>
+                      </div>
                       <button type="button" className="foto-remove" onClick={() => removerFoto(i)}>×</button>
                     </div>
                   ))}
                 </div>
+                </>
               )}
               {releituras.length > 0 && (
                 <p className="ficha-nota">{releituras.map(r => `${CAMPOS_LEITURA[r.slot] || r.slot}: ${r.motivo}`).join(" · ")}</p>
