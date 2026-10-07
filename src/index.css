@@ -731,3 +731,40 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .kanban-board{height:calc(100vh - 92px)}
   .fu-kanban-cards{max-height:calc(100vh - 210px)}
 }
+/* ── Kanban no padrão Kommo (07/10/2026, Felipe aprovou a prévia) ──
+   Coluna: sai a caixa com contorno; fica o título com uma linha fina NA COR do estágio
+   (a cor continua identificando a coluna) e os cards direto no fundo da página.
+   Card: inicial do cliente com selo de origem, nome pequeno, carro em destaque, preço e
+   etiquetas de contorno fino, rodapé com quem atende e o follow-up. */
+.kanban-col{width:272px}
+.kanban-col-header{background:none;border:none;border-bottom:3px solid var(--cor,var(--border));border-radius:0;padding:4px 2px 9px}
+.kanban-col-header::after{display:none}
+.kanban-col-title{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+.kanban-col-count{background:none;padding:0;font-weight:500;white-space:nowrap}
+.kanban-cards{background:none;border:none;border-radius:8px;padding:10px 1px 8px;gap:8px}
+.kanban-card.kc{display:grid;grid-template-columns:36px minmax(0,1fr);column-gap:10px;padding:10px 10px 8px;border-radius:10px}
+.kc-av{position:relative;width:36px;height:36px;grid-row:1}
+.kc-ini{width:36px;height:36px;border-radius:50%;background:var(--surface2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.kc-ch{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;box-shadow:0 0 0 2px var(--surface)}
+.kc-main{min-width:0}
+.kc-top{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted)}
+.kc-top span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.kc-top time{flex-shrink:0;font-variant-numeric:tabular-nums}
+.kc-car{font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--fg);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-meta{grid-column:2;display:flex;align-items:center;gap:5px;margin-top:6px;min-width:0;flex-wrap:wrap}
+.kc-meta:empty{display:none}
+.kc-price{font-size:12px;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap;margin-right:2px}
+.kc-tag{font-size:10.5px;line-height:1;padding:3px 5px;border-radius:4px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.kc-tag.vip{color:var(--brand);border-color:var(--brand-line);font-weight:600}
+.kc-tag.hot{color:var(--danger);border-color:var(--danger-line)}
+.kc-meta .badge{padding:2px 6px;border-radius:4px}
+.kc-linha{grid-column:1/-1;font-size:11px;margin-top:6px;display:flex;align-items:center;gap:4px;min-width:0}
+.kc-linha i{font-size:12px;flex-shrink:0}
+.kc-foot{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);min-width:0}
+.kc-foot .badge{padding:2px 7px;font-size:10px}
+.kc-tempo{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kc-tempo i{font-size:12px}
+.kc-dir{margin-left:auto;display:flex;align-items:center;gap:6px;min-width:0}
+.kc-st{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kc-st::after{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.kc-st.ok{color:var(--success)}.kc-st.late{color:var(--danger)}

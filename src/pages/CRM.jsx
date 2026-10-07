@@ -222,6 +222,46 @@ function followupAtrasado(lead){return lead.followup_tipo&&lead.followup_horario
 // depende de telefone), mas ninguém consegue contatar automaticamente — sinaliza pro
 // vendedor que esse acompanhamento precisa ser manual/presencial, não vai sair sozinho.
 function followupSemContato(lead){return lead.followup_tipo&&!lead.telefone;}
+// ── Card no padrão Kommo (2026-10-07, Felipe) ──
+// Preço do card: o lead guarda o carro de interesse só como texto. O valor vem de
+// crm_leads.valor quando alguém preencheu; senão é casado NA TELA com o estoque que o
+// painel já carrega (mesma regra do backend em lib/estoqueMatch.js: modelo como palavra
+// inteira, pra "Fox" não casar com "CrossFox"). Nada é gravado no lead. O estoque é
+// compartilhado entre as lojas (decisão do Felipe), por isso casa com veículo de qualquer loja.
+const semAcento=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const escRe=t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function indexarEstoque(veiculos){
+  return (veiculos||[]).map(v=>{
+    const modelo=semAcento(v.modelo).trim();const preco=Number(v.preco);
+    if(!modelo||!(preco>0))return null;
+    return {re:new RegExp(`(^|[^a-z0-9])${escRe(modelo)}([^a-z0-9]|$)`),ano:String(v.ano||""),preco,tam:modelo.length};
+  }).filter(Boolean);
+}
+// Devolve {valor, desde}: desde=true quando há mais de um veículo desse modelo com preços diferentes.
+function precoDoLead(lead,indice){
+  if(Number(lead.valor)>0)return {valor:Number(lead.valor),desde:false};
+  const txt=semAcento(lead.veiculo_interesse);
+  if(!txt||!indice.length)return null;
+  let ms=indice.filter(v=>v.re.test(txt));
+  if(!ms.length)return null;
+  // "Onix Sedã" ganha de "Onix" quando os dois casam
+  const maior=Math.max(...ms.map(v=>v.tam));ms=ms.filter(v=>v.tam===maior);
+  const ano=(txt.match(/(19|20)\d{2}/)||[])[0];
+  if(ano&&ms.some(v=>v.ano===ano))ms=ms.filter(v=>v.ano===ano);
+  const precos=[...new Set(ms.map(v=>v.preco))];
+  return {valor:Math.min(...precos),desde:precos.length>1};
+}
+const fmtR0=n=>"R$ "+Math.round(n).toLocaleString("pt-BR");
+function diaMesCurto(iso){if(!iso)return "";const d=new Date(iso);if(isNaN(d))return "";return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0");}
+const iniciaisDe=n=>String(n||"?").trim().split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
+// Selo de canal em cima da foto/inicial: de onde o lead veio (mesmas origens do seletor).
+const CANAL={anuncio:["#1877F2","ti-brand-meta","Anúncio"],site:["#5b6b7f","ti-world","Site"],organico:["#25D366","ti-brand-whatsapp","Orgânico (WhatsApp)"],presencial:["#b08a2e","ti-building-store","Presencial (loja)"],reativacao:["#8E44AD","ti-refresh","Campanha de reativação"],particular:["#128a43","ti-brand-whatsapp","WhatsApp particular do vendedor"]};
+// Status do follow-up no rodapé: bolinha vermelha (atrasado), verde (em dia). Sem follow-up não mostra nada.
+function StatusFollowup({lead}){
+  if(!lead.followup_tipo)return null;
+  const atrasado=followupAtrasado(lead);
+  return <span className={`kc-st ${atrasado?"late":"ok"}`} title={`Follow-up: ${FOLLOWUP_LABEL[lead.followup_tipo]||lead.followup_tipo}${atrasado?" (atrasado)":""}`}>{atrasado?`atrasado ${tempoDesde(lead.followup_horario)}`:diaMesCurto(lead.followup_horario)}</span>;
+}
 // DATE input precisa YYYY-MM-DD; Postgres/JSON costuma devolver ISO com hora.
 function toDateInput(v){if(!v)return"";return String(v).slice(0,10);}
 const ORIGEM_OPTS=[
@@ -979,6 +1019,10 @@ export default function CRM(){
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   },[lojaFiltro]);
   useEffect(()=>{load();},[load]);
+  // Estoque (compartilhado) só pra mostrar o preço no card; falha em silêncio: o card sai sem preço.
+  const[estoqueCards,setEstoqueCards]=useState([]);
+  useEffect(()=>{veiculosApi.getVeiculos().then(v=>setEstoqueCards(Array.isArray(v)?v:[])).catch(()=>{});},[]);
+  const indiceEstoque=useMemo(()=>indexarEstoque(estoqueCards),[estoqueCards]);
 
   // silent=true nos refreshes pós-ação: evita desmontar a página (e fechar o modal
   // aberto) toda vez que mover um card — antes voltava pro spinner de tela cheia
@@ -1105,6 +1149,8 @@ export default function CRM(){
         >
           {estagiosKanban.map(est=>{
             const leads=leadsDaColuna(est,kanban).filter(l=>leadBate(l,busca));
+            const precos=leads.map(l=>precoDoLead(l,indiceEstoque));
+            const soma=precos.reduce((t,p)=>t+(p?p.valor:0),0);
             return(
               <div key={est.key} className="kanban-col" style={{"--cor":est.cor}}>
                 <div
@@ -1121,7 +1167,7 @@ export default function CRM(){
                     <i className="ti ti-grip-vertical" style={{fontSize:13,color:"var(--muted)",flexShrink:0}}/>
                     <span className="kanban-col-title">{est.label}</span>
                   </span>
-                  <span className="kanban-col-count">{leads.length}</span>
+                  <span className="kanban-col-count" title={soma>0?"Soma do valor dos carros de interesse com preço conhecido (preenchido no lead ou casado com o estoque)":undefined}>{leads.length}{soma>0?` · ${fmtR0(soma)}`:""}</span>
                 </div>
                 <div
                   className="kanban-cards"
@@ -1133,52 +1179,64 @@ export default function CRM(){
                   onDrop={readOnly?undefined:e=>onColDrop(e,est.key)}
                 >
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
-                  {leads.map(lead=>(
+                  {leads.map((lead,li)=>{
+                    const preco=precos[li];
+                    const canal=CANAL[lead.origem];
+                    const corVend=AV[lead.vendedor_iniciais]||"#C8A84B";
+                    return(
                     <div
                       key={lead.id}
-                      className="kanban-card"
+                      className="kanban-card kc"
                       draggable={!readOnly}
                       onDragStart={readOnly?undefined:e=>onCardDragStart(e,lead)}
                       onDragEnd={readOnly?undefined:pararAutoScroll}
                       onClick={()=>setLeadSel(lead)}
                       style={{cursor:readOnly?"pointer":"grab"}}
                     >
-                      <div className="kanban-card-nome">{lead.nome}</div>
-                      {lead.codigo_vip!=null&&
-                        <div style={{fontSize:11,color:"var(--brand)",fontWeight:700,marginBottom:4,letterSpacing:".04em"}}>VIP #{lead.codigo_vip}</div>
-                      }
-                      <div className="kanban-card-veiculo">{lead.veiculo_interesse}</div>
+                      {/* Sem foto de perfil guardada em lugar nenhum (conferido 07/10): inicial do cliente. */}
+                      <div className="kc-av">
+                        <div className="kc-ini">{iniciaisDe(lead.nome)}</div>
+                        {canal&&<span className="kc-ch" style={{background:canal[0]}} title={`Origem: ${canal[2]}`}><i className={`ti ${canal[1]}`}/></span>}
+                      </div>
+                      <div className="kc-main">
+                        <div className="kc-top"><span>{lead.nome}</span><time>{diaMesCurto(lead.criado_em)}</time></div>
+                        <div className="kc-car">{lead.veiculo_interesse||"Sem carro definido"}</div>
+                      </div>
+                      <div className="kc-meta">
+                        {preco&&<span className="kc-price" title={preco.desde?"Há mais de um veículo desse modelo no estoque: este é o menor preço":undefined}>{preco.desde?"desde ":""}{fmtR0(preco.valor)}</span>}
+                        {lead.codigo_vip!=null&&<span className="kc-tag vip">VIP #{lead.codigo_vip}</span>}
+                        {lead.temperatura==="quente"&&<span className="kc-tag hot">Quente</span>}
+                        {lead.temperatura==="morno"&&<span className="kc-tag">Morno</span>}
+                        {lead.troca&&<span className="kc-tag">Troca</span>}
+                        <Qualif n={lead.nota_qualificacao} c={lead.classificacao_qualificacao}/>
+                      </div>
                       {lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio&&
                         <div
-                          style={{fontSize:10,color:"var(--info)",marginBottom:4,display:"flex",alignItems:"center",gap:3}}
+                          className="kc-linha" style={{color:"var(--info)"}}
                           title={`IA sugeriu mover pra "${SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio}" — move sozinha em 24 horas úteis se ninguém mexer nesse card antes disso`}
                         >
-                          <i className="ti ti-bulb" style={{fontSize:11}}/> Sugestão: {SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio} (há {tempoDesde(lead.sugestao_estagio_em)})
+                          <i className="ti ti-bulb"/> Sugestão: {SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio} (há {tempoDesde(lead.sugestao_estagio_em)})
                         </div>
                       }
                       {lead.followup_tipo&&
-                        <div style={{fontSize:10,color:followupAtrasado(lead)?"var(--danger)":"var(--warning)",marginBottom:4,display:"flex",alignItems:"center",gap:3}}>
-                          <i className="ti ti-bell" style={{fontSize:11}}/> {FOLLOWUP_LABEL[lead.followup_tipo]}
-                          {followupAtrasado(lead)&&<span style={{width:6,height:6,borderRadius:"50%",background:"var(--danger)",display:"inline-block"}} title="Follow-up atrasado"/>}
-                          {followupSemContato(lead)&&<i className="ti ti-phone-off" style={{fontSize:11,color:"var(--danger)"}} title="Sem telefone — follow-up manual"/>}
+                        <div className="kc-linha" style={{color:followupAtrasado(lead)?"var(--danger)":"var(--warning)"}}>
+                          <i className="ti ti-bell"/> {FOLLOWUP_LABEL[lead.followup_tipo]}
+                          {followupSemContato(lead)&&<i className="ti ti-phone-off" style={{color:"var(--danger)"}} title="Sem telefone — follow-up manual"/>}
                         </div>
                       }
-                      <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:4}}>
+                      <div className="kc-foot">
                         <Resp r={lead.responsavel_atual}/>
-                        <span style={{fontSize:10,color:"var(--muted)"}}><i className="ti ti-clock" style={{fontSize:11}}/> {tempoDesde(lead.atualizado_em)}</span>
+                        {lead.vendedor_iniciais&&<div className="av" title={lead.vendedor_nome||undefined} style={{width:20,height:20,fontSize:8,background:`${corVend}22`,color:corVend}}>{lead.vendedor_iniciais}</div>}
+                        <span className="kc-tempo" title="Tempo desde a última mudança no lead"><i className="ti ti-clock"/> {tempoDesde(lead.atualizado_em)}</span>
                         {lead.agendamento_ia_status&&(lead.agendamento_ia_status==="solicitado"||lead.agendamento_ia_status==="em_andamento")&&
-                          <i className="ti ti-calendar-time" style={{fontSize:11,color:"var(--info)"}} title="Lara tentando agendar"/>}
-                      </div>
-                      <div className="kanban-card-footer">
-                        <div style={{display:"flex",gap:4,alignItems:"center"}}><Temp t={lead.temperatura}/>{lead.origem&&<Orig o={lead.origem}/>}<Qualif n={lead.nota_qualificacao} c={lead.classificacao_qualificacao}/></div>
-                        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                          <i className="ti ti-calendar-time" style={{fontSize:13,color:"var(--info)"}} title="Lara tentando agendar"/>}
+                        <span className="kc-dir">
+                          <StatusFollowup lead={lead}/>
                           <LeadPhoneChatwoot lead={lead} compact onClick={e=>e.stopPropagation()}/>
-                          <Score s={lead.score}/>
-                          <div className="av" style={{width:24,height:24,fontSize:9,background:`${AV[lead.vendedor_iniciais]||"#C8A84B"}22`,color:AV[lead.vendedor_iniciais]||"#C8A84B"}}>{lead.vendedor_iniciais}</div>
-                        </div>
+                        </span>
                       </div>
                     </div>
-                  ))}
+                  );})}
                 </div>
               </div>
             );
