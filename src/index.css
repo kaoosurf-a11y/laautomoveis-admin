@@ -814,11 +814,11 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .ficha-scroll{overflow:hidden;min-height:0;flex:1 1 auto}
 .modal-acoes{flex-shrink:0;display:flex;gap:10px;justify-content:flex-end;padding-top:14px;background:var(--surface)}
 .modal-form .modal-acoes .btn{flex:0 0 180px;min-height:42px}
-.ficha-corpo{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-height:0}
+.ficha-corpo{display:flex;flex-direction:column;gap:16px;min-height:0}
 .ficha-fotos-lado{min-width:0}
 .ficha-campos{min-width:0}
-.ficha-minis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.ficha-minis .foto-item{width:auto;height:auto;aspect-ratio:4/3;cursor:grab}
+.ficha-minis{display:flex;flex-wrap:nowrap;gap:8px;margin-top:10px;overflow-x:auto;overflow-y:hidden}
+.ficha-minis .foto-item{width:148px;height:110px;flex:0 0 auto;aspect-ratio:auto;cursor:grab}
 .ficha-minis .foto-item.arrastando{opacity:.45}
 .ficha-minis .foto-item.soltando{outline:2px solid var(--brand);outline-offset:-2px}
 .ficha-capa{position:absolute;top:4px;left:4px;background:var(--brand-fill);color:var(--on-brand);font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700}
@@ -836,16 +836,13 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .modal-form .ficha-bloco{margin-bottom:14px}
 .modal-form .form-group{margin-bottom:0}
 .modal-form .form-label,.modal-form .form-group label{margin-bottom:5px;font-size:12px;line-height:1.25}
-.modal-form .form-input,.modal-form .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),.modal-form .form-group select{min-height:42px;padding:8px 12px;font-size:14px}
-.modal-form .ficha-lote{align-items:stretch}
-.modal-form .ficha-lote label,.modal-form .ficha-lote .btn{min-height:42px;padding:8px 12px;font-size:13px}
+.modal-form .form-input,.modal-form .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),.modal-form .form-group select{height:42px;min-height:42px;max-height:42px;padding:8px 12px;font-size:14px;box-sizing:border-box}
+.modal-form .ficha-lote{align-items:stretch;width:fit-content}
+.modal-form .ficha-lote label,.modal-form .ficha-lote .btn{flex:0 0 180px;width:180px;min-height:42px;height:42px;padding:8px 12px;font-size:13px;box-sizing:border-box}
 @media(min-width:768px){
-  .ficha-grade{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 14px}
-  .ficha-grade-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .ficha-grade-7{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ficha-grade,.ficha-grade-3,.ficha-grade-7{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 14px}
 }
 @media(min-width:1100px){
-  .ficha-corpo{grid-template-columns:340px minmax(0,1fr);gap:28px;align-items:start}
   .ficha-opcionais{grid-template-columns:minmax(0,1fr) auto}
 }
 
