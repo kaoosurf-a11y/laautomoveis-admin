@@ -455,43 +455,34 @@ export default function Veiculos() {
             </div>
 
             <div className="ficha-scroll">
-            <section className="ficha-bloco">
-              <div className="ficha-titulo">Fotos do anúncio</div>
-              <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 10px" }}>
-                Envie as fotos de uma vez. A IA preenche o que conseguir ler. Você confere e completa o que ficar em branco.
-              </p>
+            <div className="ficha-corpo">
+            <aside className="ficha-fotos-lado">
+              <div className="ficha-titulo">Fotos</div>
               <div className="ficha-lote">
                 <label>
                   <i className="ti ti-photo"/> {uploading ? "Enviando..." : "Enviar fotos"}
                   <input type="file" accept="image/*" multiple disabled={!!uploading || lendo} onChange={e => { uploadFotos(e.target.files); e.target.value = ""; }}/>
                 </label>
+                <button type="button" className="btn btn-primary" disabled={!temFotos || lendo || !!uploading} onClick={lerFotos}>
+                  {lendo ? <span className="spinner"/> : <><i className="ti ti-sparkles"/> Ler</>}
+                </button>
               </div>
               {temFotos && (
-                <div className="foto-grid">
+                <div className="foto-grid ficha-minis">
                   {form.fotos.map((url, i) => (
                     <div key={url} className="foto-item">
                       <img src={url} alt=""/>
-                      {i === 0 && <div style={{ position: "absolute", bottom: 4, left: 4, background: "var(--brand-fill)", color: "var(--on-brand)", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>CAPA</div>}
+                      {i === 0 && <div className="ficha-capa">Capa</div>}
                       <button type="button" className="foto-remove" onClick={() => removerFoto(i)}>×</button>
                     </div>
                   ))}
                 </div>
               )}
-              <button type="button" className="btn btn-primary" style={{ width: "100%", marginTop: 10 }} disabled={!temFotos || lendo || !!uploading} onClick={lerFotos}>
-                {lendo ? <span className="spinner"/> : <><i className="ti ti-sparkles"/> Ler as fotos e preencher a ficha</>}
-              </button>
-              {Object.keys(leituras).length > 0 && (
-                <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>
-                  A IA preencheu o que deu para ler. Complete na ficha o que ficou em branco. Ano e preço continuam com você.
-                </p>
-              )}
               {releituras.length > 0 && (
-                <div style={{ marginTop: 10, fontSize: 13, color: "var(--fg)", background: "var(--surface2)", borderRadius: 8, padding: "8px 10px" }}>
-                  {releituras.map(r => <div key={r.slot}>{CAMPOS_LEITURA[r.slot] || r.slot}: {r.motivo}. Complete o campo.</div>)}
-                </div>
+                <p className="ficha-nota">{releituras.map(r => `${CAMPOS_LEITURA[r.slot] || r.slot}: ${r.motivo}`).join(" · ")}</p>
               )}
-            </section>
-
+            </aside>
+            <div className="ficha-campos">
             <section className="ficha-bloco">
               <div className="ficha-titulo">Veículo</div>
               <div className="ficha-grade">
@@ -510,7 +501,7 @@ export default function Veiculos() {
 
             <section className="ficha-bloco">
               <div className="ficha-titulo">Ficha técnica</div>
-              <div className="ficha-grade">
+              <div className="ficha-grade ficha-grade-7">
                 <div className="form-group"><label className="form-label">Ano *</label><input className="form-input" type="number" value={form.ano} onChange={e=>set("ano",e.target.value)}/></div>
                 <div className="form-group"><CampoLabel campo="km">KM *</CampoLabel><input className="form-input" type="number" value={form.km} onChange={e=>set("km",e.target.value)} placeholder="18500"/></div>
                 <div className="form-group"><CampoLabel campo="cambio">Câmbio</CampoLabel><select className="form-input" value={form.cambio} onChange={e=>set("cambio",e.target.value)}>{CAMBIOS.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -530,40 +521,41 @@ export default function Veiculos() {
               </div>
             </section>
 
-            <div className="form-group span-all">
-              <label className="form-label">Opcionais (Enter para adicionar)</label>
-              <div className="tag-input-wrap">
-                {form.opcionais.map((op,i) => (
-                  <span key={i} className="tag">{op}<button onClick={()=>removerOpcional(i)}>×</button></span>
-                ))}
-                <input className="tag-input" value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={addOpcional} placeholder="Ex: Câmera de ré..."/>
+            <div className="ficha-opcionais">
+              <div className="form-group">
+                <label className="form-label">Opcionais (Enter para adicionar)</label>
+                <div className="tag-input-wrap">
+                  {form.opcionais.map((op,i) => (
+                    <span key={i} className="tag">{op}<button type="button" onClick={()=>removerOpcional(i)}>×</button></span>
+                  ))}
+                  <input className="tag-input" value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={addOpcional} placeholder="Ex: Câmera de ré..."/>
+                </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+              <div className="ficha-checks">
                 {VALORIZA.map(v => {
                   const ligado = (form.opcionais || []).includes(v.item);
                   return (
-                    <div key={v.id}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--fg)", cursor: "pointer" }}>
-                        <input type="checkbox" checked={ligado} onChange={() => toggleValor(v.item)} style={{ width: 16, height: 16, accentColor: "var(--brand)" }}/>
-                        {v.item}
-                      </label>
-                    </div>
+                    <label key={v.id}>
+                      <input type="checkbox" checked={ligado} onChange={() => toggleValor(v.item)}/>
+                      {v.item}
+                    </label>
                   );
                 })}
+                <label>
+                  <input type="checkbox" checked={form.ativo} onChange={e=>set("ativo",e.target.checked)}/>
+                  Publicado no site
+                </label>
               </div>
             </div>
 
-            <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:16,padding:"10px 0"}}>
-              <input type="checkbox" checked={form.ativo} onChange={e=>set("ativo",e.target.checked)} style={{width:18,height:18,accentColor:"var(--brand)"}}/>
-              <span style={{fontSize:14,color:"var(--fg)"}}>Publicado no site</span>
-            </label>
-
-            {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:12,padding:"10px 12px",background:"var(--danger-soft)",borderRadius:8}}>{erro}</div>}
+            {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:8,padding:"8px 10px",background:"var(--danger-soft)",borderRadius:8}}>{erro}</div>}
+            </div>
+            </div>
             </div>
 
             <div className="modal-acoes">
-              <button type="button" className="btn btn-ghost" onClick={fechar} style={{flex:1}}>Cancelar</button>
-              <button type="button" className="btn btn-primary" onClick={salvar} disabled={loading} style={{flex:1}}>
+              <button type="button" className="btn btn-ghost" onClick={fechar}>Cancelar</button>
+              <button type="button" className="btn btn-primary" onClick={salvar} disabled={loading}>
                 {loading ? <span className="spinner"/> : <><i className="ti ti-device-floppy"/> Salvar</>}
               </button>
             </div>
