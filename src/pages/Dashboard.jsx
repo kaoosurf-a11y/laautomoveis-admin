@@ -196,7 +196,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
         : comValor != null && comValor < resumo.vendas ? `${comValor} de ${resumo.vendas} vendas com valor`
         : `receita: ${fmtR(resumo.receita_total)}`, tom:"" },
   ];
-  const lojasNoRanking = [...new Set(vendedores.map(v => v.loja_id).filter(Boolean))];
+  const lojasNoRanking = [...new Set(vendedores.map(v => v.loja_id).filter(Boolean))].sort((a, b) => a - b);
   const maxLeads = Math.max(...vendedores.map(x=>x.total_leads), 1);
   const totalCanais = canais.reduce((a,x)=>a+x.total,0) || 1;
   const linhaVendedor = (v,i) => {
@@ -275,7 +275,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
             <div key={i} className="lista-row">
               <div style={{flex:1,minWidth:0}}>
                 <div className="lista-nome">{o.nome}</div>
-                <div className="lista-sub">{[o.veiculo, o.vendedor].filter(Boolean).join(", ") || "sem veículo informado"}</div>
+                <div className="lista-sub">{[o.veiculo, o.vendedor, o.loja].filter(Boolean).join(", ") || "sem veículo informado"}</div>
               </div>
               <span className="badge badge-muted">{o.estagio}</span>
               <span className="badge badge-brand">{o.score}</span>
@@ -852,7 +852,7 @@ export default function Dashboard() {
           </div>
         )}
         <div className="seg" role="group" aria-label="Período">
-          {[{k:"hoje",l:"Hoje"},{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"trimestre",l:"90 dias"}].map(p=>(
+          {[{k:"hoje",l:"Hoje"},{k:"semana",l:"7 dias"},{k:"mes",l:"Este mês"},{k:"vendedor",l:"Fecha dia 5"},{k:"trimestre",l:"90 dias"}].map(p=>(
             <button key={p.k} type="button" className={`seg-btn ${periodo===p.k?"active":""}`} aria-pressed={periodo===p.k}
               onClick={()=>{setPeriodo(p.k);setSeletorAberto(false);}}>
               {p.l}
@@ -914,7 +914,7 @@ export default function Dashboard() {
             <i className="ti ti-check"/> Aplicar
           </button>
           <button className="btn btn-ghost" style={{minHeight:44}} onClick={()=>setSeletorAberto(false)}>Cancelar</button>
-          <div style={{flexBasis:"100%",fontSize:11,color:"var(--muted)"}}>Dica: pra ver um ano inteiro, escolha 01/01 até 31/12 do ano desejado.</div>
+          <div style={{flexBasis:"100%",fontSize:11,color:"var(--muted)"}}>O mês do vendedor vai do dia 6 até o dia 5. O botão Fecha dia 5 puxa o ciclo aberto. Pra outro intervalo, preencha De e Até (ex.: 06/09 até 05/10).</div>
         </div>
       )}
 
@@ -935,6 +935,7 @@ export default function Dashboard() {
         {data.periodo?.desde && (
           <div className="dash-escopo">
             {diaMes(data.periodo.desde)===diaMes(data.periodo.ate) ? diaMes(data.periodo.desde) : `${diaMes(data.periodo.desde)} a ${diaMes(data.periodo.ate)}`}
+            {data.periodo.fecha_em ? ` (mês do vendedor, fecha ${diaMes(data.periodo.fecha_em)})` : ""}
             {lojaEscopo ? `, ${lojaEscopo}` : ""}
             {aba==="oportunidades" && data.periodo.anterior_desde ? `. Comparado com ${diaMes(data.periodo.anterior_desde)} a ${diaMes(data.periodo.anterior_ate)}.` : ""}
           </div>
