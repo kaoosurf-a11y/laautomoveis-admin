@@ -191,14 +191,14 @@ export default function Veiculos() {
   async function uploadFotos(files) {
     let lista = [...(files || [])].filter(Boolean);
     if (!lista.length) return;
-    const cabe = 24 - (form.fotos?.length || 0);
+    const cabe = 12 - (form.fotos?.length || 0);
     if (cabe <= 0) {
-      await alertDialog("Este anúncio já tem 24 fotos.");
+      await alertDialog("Este anúncio já tem 12 fotos.");
       return;
     }
     if (lista.length > cabe) {
       lista = lista.slice(0, cabe);
-      await alertDialog(`O anúncio aceita 24 fotos. Vou enviar ${cabe}.`);
+      await alertDialog(`O anúncio aceita 12 fotos. Vou enviar ${cabe}.`);
     }
     setUploading(true);
     try {
@@ -208,7 +208,7 @@ export default function Veiculos() {
         const fd = new FormData();
         prontas.forEach(f => fd.append("fotos", f));
         const { urls } = await api.uploadFotos(fd);
-        if (urls?.length) setForm(f => ({ ...f, fotos: [...(f.fotos || []), ...urls].slice(0, 24) }));
+        if (urls?.length) setForm(f => ({ ...f, fotos: [...(f.fotos || []), ...urls].slice(0, 12) }));
       }
     } catch(e) { await alertDialog("Erro no upload: " + e.message); }
     finally { setUploading(false); }
@@ -514,7 +514,7 @@ export default function Veiculos() {
               </div>
               {temFotos && (
                 <>
-                <p className="ficha-nota">Arraste para ordenar. A primeira é a capa do site.</p>
+                <p className="ficha-nota">Até 12 fotos, todas no site. Arraste para ordenar. A primeira é a capa.</p>
                 <div className="foto-grid ficha-minis">
                   {form.fotos.map((url, i) => (
                     <div
