@@ -844,6 +844,18 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 @media(min-width:768px){
   .ficha-grade,.ficha-grade-3,.ficha-grade-7{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 14px}
 }
+/* Celular: os campos ficam um embaixo do outro e não cabem na tela, então a ficha rola
+   (cabeçalho e Salvar ficam parados). Letra de 16px no campo pro iPhone não dar zoom ao tocar. */
+@media(max-width:767px){
+  .ficha-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .modal.modal-form{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .modal-form .ficha-grade{gap:8px 0}
+  .modal-form .form-input,.modal-form .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),.modal-form .form-group select{font-size:16px}
+  .modal-form .ficha-lote{width:100%}
+  .modal-form .ficha-lote label,.modal-form .ficha-lote .btn{flex:1 1 0;width:auto;min-width:0}
+  .modal-form .modal-acoes .btn{flex:1 1 0;min-width:0}
+  .ficha-nota{white-space:normal}
+}
 @media(min-width:1100px){
   .ficha-opcionais{grid-template-columns:minmax(0,1fr) auto}
 }
