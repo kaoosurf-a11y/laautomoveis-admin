@@ -611,11 +611,11 @@ export default function Veiculos() {
               </div>
             </div>
 
-            {erro && <div style={{color:"var(--danger)",fontSize:13,marginBottom:8,padding:"8px 10px",background:"var(--danger-soft)",borderRadius:8}}>{erro}</div>}
             </div>
             </div>
             </div>
 
+            {erro && <div className="ficha-erro" role="alert">{erro}</div>}
             <div className="modal-acoes">
               <button type="button" className="btn btn-ghost" onClick={fechar}>Cancelar</button>
               <button type="button" className="btn btn-primary" onClick={salvar} disabled={loading}>

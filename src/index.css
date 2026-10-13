@@ -812,6 +812,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .modal.modal-form{display:flex;flex-direction:column;overflow:hidden;height:calc(100dvh - 8px);max-height:calc(100dvh - 8px);width:calc(100vw - 8px);max-width:none;padding:12px 16px 10px}
 .modal-form .modal-header{flex-shrink:0;background:var(--surface);margin-bottom:8px}
 .ficha-scroll{overflow:hidden;min-height:0;flex:1 1 auto}
+.ficha-erro{flex-shrink:0;color:var(--danger);font-size:13px;margin-top:8px;padding:8px 10px;background:var(--danger-soft);border-radius:8px}
 .modal-acoes{flex-shrink:0;display:flex;gap:10px;justify-content:flex-end;padding-top:8px;background:var(--surface)}
 .modal-form .modal-acoes .btn{flex:0 0 180px;min-height:42px}
 .ficha-corpo{display:flex;flex-direction:column;gap:8px;min-height:0}
