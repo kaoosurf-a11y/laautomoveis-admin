@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, getMetricasDashboard, updateInvestimentoAnuncios, updateMetaVendas } from "../api.js";
 import { getUser } from "../auth.js";
-import { NEON, NEON_TOM, BarrasNeon, ColunasNeon, AnelNeon, RoscaNeon } from "../components/Graficos.jsx";
+import { NEON_CANAL, NEON_VENDEDOR, NEON_TOM, BarrasNeon, ColunasNeon, AnelNeon, RoscaNeon } from "../components/Graficos.jsx";
 
 /* ─── helpers ─── */
 const fmtR = v => `R$ ${Number(v).toLocaleString("pt-BR")}`;
@@ -202,6 +202,8 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
   const maxLeads = Math.max(...vendedores.map(x=>x.total_leads), 1);
   const totalCanais = canais.reduce((a,x)=>a+x.total,0) || 1;
   const linhaVendedor = (v,i) => {
+    // Cor pela posição na lista inteira (não dentro da loja): cada vendedor tem a sua.
+    const corV = NEON_VENDEDOR[vendedores.indexOf(v) % NEON_VENDEDOR.length];
     const cor = AV_CORES[i % AV_CORES.length];
     return (
       <div key={`${v.nome}-${i}`} className="rank-row">
@@ -211,7 +213,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
             <span className="rank-nome">{v.nome}</span>
             <span className="rank-num"><strong>{v.vendas}</strong> {v.vendas===1?"venda":"vendas"}, {v.total_leads} {v.total_leads===1?"lead":"leads"}</span>
           </div>
-          <div className="nx-trilho" style={{"--c1":NEON[i%NEON.length][0],"--c2":NEON[i%NEON.length][1]}}><span className="nx-cheio" style={{width:`${Math.max(2,Math.round(v.total_leads/maxLeads*100))}%`}}/></div>
+          <div className="nx-trilho" style={{"--c1":corV[0],"--c2":corV[1]}}><span className="nx-cheio" style={{width:`${Math.max(2,Math.round(v.total_leads/maxLeads*100))}%`}}/></div>
         </div>
       </div>
     );
@@ -256,7 +258,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
             venda FECHADA no período). O funil completo fica na aba Métricas. */}
         <div className="card dash-canais">
           <div className="card-title"><i className="ti ti-chart-pie"/> Leads por canal</div>
-          <BarrasNeon vazio="Nenhum lead no período." itens={canais.map(c=>({label:c.nome, valor:c.total, texto:`${c.total} · ${Math.round(c.total/totalCanais*100)}%`}))}/>
+          <BarrasNeon paleta={NEON_CANAL} vazio="Nenhum lead no período." itens={canais.map(c=>({label:c.nome, valor:c.total, texto:`${c.total} · ${Math.round(c.total/totalCanais*100)}%`}))}/>
         </div>
       </div>
 

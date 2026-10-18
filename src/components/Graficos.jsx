@@ -15,6 +15,29 @@ export const NEON = [
   ["#3ff0e0", "#0891b2"], // ciano
   ["#c6f24e", "#16a34a"], // lima
 ];
+// 2026-10-18 (Felipe: "cores diferentes em leads por canal e vendedores"): canal e
+// vendedor têm paletas próprias, sem cor em comum, e nenhuma cor se repete dentro de
+// cada uma (até 8 itens).
+export const NEON_CANAL = [
+  ["#ff4fd8", "#c026d3"], // magenta
+  ["#ffc23d", "#ff5e1a"], // laranja
+  ["#3ff0e0", "#0891b2"], // ciano
+  ["#c6f24e", "#16a34a"], // lima
+  ["#ff8a8a", "#e11d48"], // coral
+  ["#fff27a", "#eab308"], // amarelo
+  ["#d8b4fe", "#9333ea"], // lilás
+  ["#fdba74", "#c2410c"], // cobre
+];
+export const NEON_VENDEDOR = [
+  ["#4cc9ff", "#2563eb"], // azul
+  ["#b77cff", "#6d28d9"], // roxo
+  ["#6ee7b7", "#059669"], // esmeralda
+  ["#f9a8d4", "#db2777"], // rosa
+  ["#a5b4fc", "#4338ca"], // anil
+  ["#fcd34d", "#b45309"], // âmbar
+  ["#fca5a5", "#b91c1c"], // vermelho
+  ["#67e8f9", "#0e7490"], // turquesa
+];
 // Cores com sentido (temperatura do lead, perda).
 export const NEON_TOM = {
   quente: ["#ffb23d", "#ff2d55"],
@@ -29,13 +52,13 @@ const doisDig = (n) => String(n).padStart(2, "0");
 
 // Barras horizontais numeradas (01, 02...). itens: {label, valor, texto?, cor?}
 // `max` opcional (padrão: maior valor). `numerar=false` tira o número.
-export function BarrasNeon({ itens, max, numerar = true, vazio = "Sem dados no período." }) {
+export function BarrasNeon({ itens, max, numerar = true, vazio = "Sem dados no período.", paleta = NEON }) {
   if (!itens?.length) return <p className="vazio">{vazio}</p>;
   const teto = max || Math.max(...itens.map((x) => Number(x.valor) || 0), 1);
   return (
     <div className={`nx-barras${numerar ? "" : " sem-num"}`}>
       {itens.map((x, i) => {
-        const c = corDe(i, x.cor);
+        const c = x.cor || paleta[i % paleta.length];
         const pct = Math.max(2, Math.round(((Number(x.valor) || 0) / teto) * 100));
         return (
           <div key={i} className="nx-barra" style={vars(c)}>
