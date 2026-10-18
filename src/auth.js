@@ -71,6 +71,25 @@ export function voltarParaMim() {
   s.removeItem(TOKEN_ORIG); s.removeItem(USER_ORIG);
   return true;
 }
+// 2026-10-18 (Felipe: foto de perfil): troca campos do usuário guardado na sessão (hoje só a foto),
+// pra lateral e o "Meu perfil" mostrarem a foto nova sem precisar sair e entrar.
+export function atualizarUsuario(changes) {
+  const u = getUser(); if (!u) return null;
+  const novo = { ...u, ...changes };
+  store().setItem(USER_KEY, JSON.stringify(novo));
+  return novo;
+}
+// Sessão aberta antes da foto existir (ou foto trocada em outro aparelho): busca a foto atual uma vez.
+export async function sincronizarFoto() {
+  try {
+    const res = await fetch(`${API}/api/admin/me`, { headers: authHeaders() });
+    if (!res.ok) return null;
+    const { admin } = await res.json();
+    const u = getUser();
+    if (!admin || !u || admin.id !== u.id || (admin.foto_url || null) === (u.foto_url || null)) return null;
+    return atualizarUsuario({ foto_url: admin.foto_url || null });
+  } catch { return null; }
+}
 export function getToken()   { return store().getItem(TOKEN_KEY); }
 export function getUser()    { try { return JSON.parse(store().getItem(USER_KEY)||""); } catch { return null; } }
 export function isLoggedIn() { return !!getToken() && !!getUser(); }

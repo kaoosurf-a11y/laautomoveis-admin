@@ -278,3 +278,22 @@ export async function uploadFotoCampanha(file) {
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
+
+// 2026-10-18 (Felipe): foto de perfil do próprio usuário (Meu perfil). O backend recorta em 400px.
+export async function enviarMinhaFoto(file) {
+  const headers = { ...authHeaders() };
+  delete headers["Content-Type"];
+  const fd = new FormData();
+  fd.append("foto", file);
+  const res = await fetch(`${API}/api/upload/minha-foto`, { method: "POST", headers, body: fd })
+    .catch(() => { throw new Error("Sem conexão com o servidor. Tente de novo."); });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Não foi possível enviar a foto.");
+  return data;
+}
+export async function removerMinhaFoto() {
+  const res = await fetch(`${API}/api/upload/minha-foto`, { method: "DELETE", headers: authHeaders() })
+    .catch(() => { throw new Error("Sem conexão com o servidor. Tente de novo."); });
+  if (!res.ok) throw new Error("Não foi possível tirar a foto.");
+  return res.json();
+}

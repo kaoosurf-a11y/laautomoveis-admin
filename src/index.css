@@ -990,3 +990,12 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .btn-chatwoot{border-color:color-mix(in srgb,var(--cw) 45%,transparent)}
 @media(hover:hover){.nav-item:not(.active):hover{background:var(--acao-soft);color:var(--acao)}.nav-item:not(.active):hover i{color:var(--acao)}}
 .btn-chatwoot-compact{display:inline-flex;align-items:center;justify-content:center;width:26px;height:24px;border-radius:6px;color:var(--cw);background:var(--cw-soft);border:1px solid color-mix(in srgb,var(--cw) 45%,transparent);font-size:14px;text-decoration:none;cursor:pointer;flex-shrink:0}
+/* Foto de perfil do usuário (18/10/2026, Felipe): lateral, topo do celular e "Meu perfil". */
+.avatar{overflow:hidden}
+.avatar img,.perfil-foto img{width:100%;height:100%;object-fit:cover;display:block}
+.topbar-foto{width:30px;height:30px;border-radius:50%;object-fit:cover;display:block}
+.perfil-foto{position:relative;width:64px;height:64px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;cursor:pointer;overflow:visible}
+.perfil-foto img{border-radius:50%}
+.perfil-foto-cam{position:absolute;right:-2px;bottom:-2px;width:24px;height:24px;border-radius:50%;background:var(--acao);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 0 2px var(--surface)}
+.perfil-foto-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.perfil-foto-acoes .btn{min-height:32px;padding:5px 10px;font-size:12.5px}

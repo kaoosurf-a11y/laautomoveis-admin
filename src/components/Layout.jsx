@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { getUser, logout, isManager, isOwner, estaVendoComo, getDono, voltarParaMim } from "../auth.js";
-import { getAgenda } from "../api.js";
+import { getUser, logout, isManager, isOwner, estaVendoComo, getDono, voltarParaMim, atualizarUsuario, sincronizarFoto } from "../auth.js";
+import { getAgenda, enviarMinhaFoto, removerMinhaFoto } from "../api.js";
 import { getTema, alternarTema } from "../theme.js";
 
 export default function Layout({ children }) {
@@ -10,6 +10,9 @@ export default function Layout({ children }) {
   const [notif, setNotif] = useState(null);
   const [notifDismissed, setNotifDismissed] = useState(false);
   const [perfilModal, setPerfilModal] = useState(false);
+  // Foto de perfil: re-renderiza quando a foto muda (o usuário fica guardado na sessão, não em estado).
+  const [, setFotoVersao] = useState(0);
+  useEffect(() => { sincronizarFoto().then(u => { if (u) setFotoVersao(v => v + 1); }); }, []);
   const [tema, setTema] = useState(getTema);
   const navigate = useNavigate();
   const user = getUser();
@@ -135,7 +138,7 @@ export default function Layout({ children }) {
             <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/><span>{tema==="light"?"Tema escuro":"Tema claro"}</span>
           </button>
           <div className="user-info" onClick={() => setPerfilModal(true)} style={{cursor:"pointer"}}>
-            <div className="avatar">{user?.iniciais||"??"}</div>
+            <div className="avatar">{user?.foto_url?<img src={user.foto_url} alt=""/>:(user?.iniciais||"??")}</div>
             <div style={{flex:1,minWidth:0}}>
               <div className="user-name">{user?.nome}</div>
               <div className="user-role">{user?.role==="admin_master"?"Proprietário":user?.role==="gerente"?"Gerente":"Vendedor"}</div>
@@ -158,7 +161,7 @@ export default function Layout({ children }) {
             <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/>
           </button>
           <button className="icon-btn" title="Meu perfil" aria-label="Meu perfil" onClick={() => setPerfilModal(true)}>
-            <i className="ti ti-user-circle"/>
+            {user?.foto_url?<img className="topbar-foto" src={user.foto_url} alt=""/>:<i className="ti ti-user-circle"/>}
           </button>
           <button className="menu-btn" onClick={() => setMenuOpen(o=>!o)}>
             <i className={`ti ti-${menuOpen?"x":"menu-2"}`}/>
@@ -204,12 +207,29 @@ export default function Layout({ children }) {
       </nav>
 
       {/* Modal Perfil / Trocar senha */}
-      {perfilModal && <PerfilModal user={user} onClose={() => setPerfilModal(false)} onLogout={handleLogout}/>}
+      {perfilModal && <PerfilModal user={user} onClose={() => setPerfilModal(false)} onLogout={handleLogout} onFoto={() => setFotoVersao(v => v + 1)}/>}
     </div>
   );
 }
 
-function PerfilModal({ user, onClose, onLogout }) {
+function PerfilModal({ user, onClose, onLogout, onFoto }) {
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [msgFoto, setMsgFoto] = useState(null);
+  async function escolherFoto(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setMsgFoto(null); setEnviandoFoto(true);
+    try { const { foto_url } = await enviarMinhaFoto(file); atualizarUsuario({ foto_url }); onFoto(); setMsgFoto({ tipo: "ok", texto: "Foto atualizada." }); }
+    catch (err) { setMsgFoto({ tipo: "erro", texto: err.message }); }
+    setEnviandoFoto(false);
+  }
+  async function tirarFoto() {
+    setMsgFoto(null); setEnviandoFoto(true);
+    try { await removerMinhaFoto(); atualizarUsuario({ foto_url: null }); onFoto(); }
+    catch (err) { setMsgFoto({ tipo: "erro", texto: err.message }); }
+    setEnviandoFoto(false);
+  }
   const [senhaAtual, setSenhaAtual] = useState("");
   const [senhaNova, setSenhaNova] = useState("");
   const [confirmar, setConfirmar] = useState("");
@@ -254,13 +274,24 @@ function PerfilModal({ user, onClose, onLogout }) {
 
         {/* Info do usuário */}
         <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0 20px",borderBottom:"1px solid var(--border)",marginBottom:20}}>
-          <div style={{width:52,height:52,borderRadius:"50%",background:"var(--brand-soft)",color:"var(--brand)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,flexShrink:0}}>
-            {user?.iniciais}
-          </div>
-          <div>
+          {/* 2026-10-18 (Felipe): foto escolhida da galeria (no celular, accept="image/*" abre galeria ou câmera). */}
+          <label className="perfil-foto" title="Escolher foto da galeria">
+            {user?.foto_url?<img src={user.foto_url} alt=""/>:<span>{user?.iniciais}</span>}
+            <i className="ti ti-camera perfil-foto-cam"/>
+            <input type="file" accept="image/*" onChange={escolherFoto} disabled={enviandoFoto} hidden/>
+          </label>
+          <div style={{minWidth:0}}>
             <div style={{fontSize:16,fontWeight:700,color:"var(--fg)"}}>{user?.nome}</div>
             <div style={{fontSize:13,color:"var(--muted)",marginTop:2}}>@{user?.usuario}</div>
             <div style={{fontSize:12,color:"var(--brand)",marginTop:2}}>{user?.role==="admin_master"?"Proprietário":user?.role==="gerente"?"Gerente":"Vendedor"}</div>
+            <div className="perfil-foto-acoes">
+              <label className="btn btn-ghost btn-sm" style={{opacity:enviandoFoto?.6:1}}>
+                {enviandoFoto?<span className="spinner"/>:<i className="ti ti-photo"/>} {user?.foto_url?"Trocar foto":"Escolher foto"}
+                <input type="file" accept="image/*" onChange={escolherFoto} disabled={enviandoFoto} hidden/>
+              </label>
+              {user?.foto_url&&<button type="button" className="btn btn-ghost btn-sm" onClick={tirarFoto} disabled={enviandoFoto}>Remover foto</button>}
+            </div>
+            {msgFoto&&<div style={{fontSize:12,marginTop:6,color:msgFoto.tipo==="erro"?"var(--danger)":"var(--success)"}}>{msgFoto.texto}</div>}
           </div>
         </div>
 
