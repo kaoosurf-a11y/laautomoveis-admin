@@ -339,6 +339,12 @@ export default function Veiculos() {
     catch (e) { await alertDialog("Erro ao reordenar: " + e.message); }
     finally { setMovendo(null); }
   }
+  // 2026-10-18 (Felipe): a capa do site (laautomoveis.com.br) é o veículo mais novo
+  // publicado no site 1 e com foto. Mesma regra de getUltimoVeiculo no frontend do site.
+  const capaId = veiculos
+    .filter(v => v.ativo && v.publicar_site1 !== false && (v.fotos || []).some(Boolean))
+    .reduce((m, v) => (!m || Date.parse(v.criado_em) > Date.parse(m.criado_em) ? v : m), null)?.id;
+
   function diasRestantes(v) {
     if (!v.excluido_em) return null;
     const passados = (Date.now() - new Date(v.excluido_em).getTime()) / 86400000;
@@ -398,6 +404,11 @@ export default function Veiculos() {
                     <td>
                       <div style={{fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                         {v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}
+                        {v.id===capaId && (
+                          <span className="badge badge-brand" style={{fontSize:10}} title="Último carro cadastrado: é a foto da capa do site">
+                            <i className="ti ti-photo-star" style={{fontSize:11}}/> Capa do site
+                          </span>
+                        )}
                         {!v.ativo && (
                           <span className="badge badge-muted" style={{fontSize:10}}>
                             <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d
@@ -452,6 +463,11 @@ export default function Veiculos() {
                 ? <img src={v.fotos[0]} alt="" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
                 : <div style={{width:"100%",height:v.badge||!v.ativo?60:0,background:"var(--surface2)"}}/>}
               {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
+              {v.id===capaId && (
+                <span className="badge badge-brand" style={{position:"absolute",top:10,left:10,fontSize:11}}>
+                  <i className="ti ti-photo-star" style={{fontSize:11}}/> Capa do site
+                </span>
+              )}
               {!v.ativo && (
                 <span className="badge badge-muted" style={{position:"absolute",top:10,left:10}}>
                   <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d{v.removido_por_nome ? ` · ${v.removido_motivo==="vendido" ? "vendido" : "removido"} por ${v.removido_por_nome}` : ""}
