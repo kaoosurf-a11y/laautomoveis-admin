@@ -405,7 +405,7 @@ export default function Veiculos() {
                         )}
                         {!v.ativo && v.removido_por_nome && (
                           <span style={{marginLeft:"auto",fontSize:13,fontWeight:600,color:"var(--fg)",display:"inline-flex",alignItems:"center",gap:4}}>
-                            <i className="ti ti-user" style={{fontSize:13}}/> Removido por {v.removido_por_nome}
+                            <i className="ti ti-user" style={{fontSize:13}}/> {v.removido_motivo==="vendido" ? "Vendido por" : "Removido por"} {v.removido_por_nome}
                           </span>
                         )}
                       </div>
@@ -454,7 +454,7 @@ export default function Veiculos() {
               {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
               {!v.ativo && (
                 <span className="badge badge-muted" style={{position:"absolute",top:10,left:10}}>
-                  <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d{v.removido_por_nome ? ` · por ${v.removido_por_nome}` : ""}
+                  <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d{v.removido_por_nome ? ` · ${v.removido_motivo==="vendido" ? "vendido" : "removido"} por ${v.removido_por_nome}` : ""}
                 </span>
               )}
             </div>
