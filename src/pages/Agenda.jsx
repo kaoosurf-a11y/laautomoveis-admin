@@ -557,7 +557,7 @@ export default function Agenda(){
   const[erro,setErro]=useState(null);
   const[veiculos,setVeiculos]=useState([]);
   const[vendaFeitaAviso,setVendaFeitaAviso]=useState(null);
-  const[visao,setVisao]=useState("semana");
+  const[visao,setVisao]=useState("mes");
   const[mesAtual,setMesAtual]=useState(()=>{const d=new Date();d.setDate(1);return d;});
   const[resumoMes,setResumoMes]=useState([]);
   // Bloco clicado na grade de horários abre o card completo (com as ações de
