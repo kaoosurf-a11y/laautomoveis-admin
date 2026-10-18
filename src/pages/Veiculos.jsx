@@ -420,7 +420,7 @@ export default function Veiculos() {
                         {v.ativo ? (
                           <>
                             <button className="btn btn-ghost btn-icon" onClick={() => abrirEditar(v)} title="Editar"><i className="ti ti-edit"/></button>
-                            <button className="btn btn-danger btn-icon" onClick={() => abrirExcluir(v)} title="Excluir"><i className="ti ti-trash"/></button>
+                            <button className="btn" style={{background:"var(--success-soft)",color:"var(--success)",border:"1px solid var(--success-line)",fontWeight:600,padding:"6px 12px",fontSize:13}} onClick={() => abrirExcluir(v)} title="Marcar como vendido"><i className="ti ti-check"/> Vendido</button>
                           </>
                         ) : (
                           <button className="btn btn-primary btn-icon" onClick={() => restaurar(v)} disabled={restaurando===v.id} title="Restaurar">
@@ -477,8 +477,8 @@ export default function Veiculos() {
                       <button className="btn btn-ghost" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirEditar(v)}>
                         <i className="ti ti-edit"/> Editar
                       </button>
-                      <button className="btn btn-danger" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirExcluir(v)}>
-                        <i className="ti ti-trash"/>
+                      <button className="btn" style={{background:"var(--success-soft)",color:"var(--success)",border:"1px solid var(--success-line)",fontWeight:600,padding:"8px 14px",fontSize:13}} onClick={() => abrirExcluir(v)}>
+                        <i className="ti ti-check"/> Vendido
                       </button>
                     </>
                   ) : (
