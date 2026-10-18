@@ -105,6 +105,8 @@ Rótulos em CAIXA ALTA com espaçamento (`.nav-section`, `.metric-label`, `.sec-
 
 Profundidade vem da troca de fundo (ground → surface → surface2) e de uma borda fina de 1px, e não de sombra. Sombra (`--float`) só onde algo realmente flutua: gaveta do menu, modal e aviso de agendamento. Barra do topo e menu de baixo no celular são translúcidos com desfoque, porque o conteúdo rola por baixo deles. **Sem degradê e sem brilho colorido**: botão primário e aba ativa são dourado chapado.
 
+**Exceção: gráficos do Dashboard e do Mensal (Felipe, 18/10/2026).** Só os gráficos (barras numeradas 01-05, colunas, anéis com %, rosca e área com ondas) usam o visual neon da referência dele: degradê magenta, roxo, azul, laranja, ciano e lima, com brilho leve (mais fraco no tema claro). Ficam em `src/components/Graficos.jsx` e nas classes `.nx-*` do `index.css`. Cards, botões, abas e o resto do painel continuam dourado chapado. Gráfico novo nessas duas telas usa esses componentes; nas outras telas, não.
+
 ## Shapes
 
 `--radius-sm` 6px, `--radius` 12px, `--radius-lg` 16px, botões 12px (`--radius-btn`), modal 20 a 22px, **pill 99px** para badges, abas e chips. Regra: pílula = filtro ou estado; canto de 10 a 14px = conteúdo (card, input, modal).

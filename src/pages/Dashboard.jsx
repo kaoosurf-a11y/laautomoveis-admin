@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, getMetricasDashboard, updateInvestimentoAnuncios, updateMetaVendas } from "../api.js";
 import { getUser } from "../auth.js";
+import { NEON, NEON_TOM, BarrasNeon, ColunasNeon, AnelNeon, RoscaNeon } from "../components/Graficos.jsx";
 
 /* ─── helpers ─── */
 const fmtR = v => `R$ ${Number(v).toLocaleString("pt-BR")}`;
@@ -210,7 +211,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
             <span className="rank-nome">{v.nome}</span>
             <span className="rank-num"><strong>{v.vendas}</strong> {v.vendas===1?"venda":"vendas"}, {v.total_leads} {v.total_leads===1?"lead":"leads"}</span>
           </div>
-          <div className="funnel-track"><div className="funnel-bar" style={{width:`${Math.round(v.total_leads/maxLeads*100)}%`}}/></div>
+          <div className="nx-trilho" style={{"--c1":NEON[i%NEON.length][0],"--c2":NEON[i%NEON.length][1]}}><span className="nx-cheio" style={{width:`${Math.max(2,Math.round(v.total_leads/maxLeads*100))}%`}}/></div>
         </div>
       </div>
     );
@@ -255,18 +256,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
             venda FECHADA no período). O funil completo fica na aba Métricas. */}
         <div className="card dash-canais">
           <div className="card-title"><i className="ti ti-chart-pie"/> Leads por canal</div>
-          {canais.length===0 && <p className="vazio">Nenhum lead no período.</p>}
-          <div className="canais-lista">
-          {canais.map((c,i)=>(
-            <div key={i} className="funnel-step">
-              <div style={{width:10,height:10,borderRadius:"50%",background:c.cor,flexShrink:0}}/>
-              <div className="funnel-label">{c.nome}</div>
-              <div className="funnel-track"><div className="funnel-bar" style={{width:`${Math.round(c.total/totalCanais*100)}%`,background:c.cor}}/></div>
-              <div className="funnel-num">{c.total}</div>
-              <div className="funnel-pct">{Math.round(c.total/totalCanais*100)}%</div>
-            </div>
-          ))}
-          </div>
+          <BarrasNeon vazio="Nenhum lead no período." itens={canais.map(c=>({label:c.nome, valor:c.total, texto:`${c.total} · ${Math.round(c.total/totalCanais*100)}%`}))}/>
         </div>
       </div>
 
@@ -356,16 +346,7 @@ function TabJornada({ data }) {
           {data.motivos_perda?.length > 0 && (
             <div className="card">
               <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Motivos de perda</div>
-              {data.motivos_perda.map((m,i)=>{
-                const max = Math.max(...data.motivos_perda.map(x=>x.total));
-                return (
-                  <div key={i} className="perda-linha">
-                    <div className="perda-nome">{m.motivo}</div>
-                    <div className="perda-track"><div style={{width:`${Math.round(m.total/max*100)}%`}}/></div>
-                    <div className="perda-num">{m.total}</div>
-                  </div>
-                );
-              })}
+              <BarrasNeon itens={data.motivos_perda.map(m=>({label:m.motivo, valor:m.total}))}/>
             </div>
           )}
         </div>
@@ -373,19 +354,7 @@ function TabJornada({ data }) {
         {data.leads_7dias && (
           <div className="card jornada-chart">
             <div className="card-title"><i className="ti ti-chart-bar"/> Leads últimos 7 dias</div>
-            <div className="dias-chart">
-              {data.leads_7dias.map((d,i)=>{
-                const max = Math.max(...data.leads_7dias.map(x=>x.total), 1);
-                const pct = Math.max(6, Math.round(d.total/max*100));
-                return (
-                  <div key={i} className="dias-col">
-                    <span className="dias-num">{d.total}</span>
-                    <div className="dias-track"><div className="dias-bar" style={{height:`${pct}%`}}/></div>
-                    <span className="dias-dia">{d.dia}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <ColunasNeon altura={200} itens={data.leads_7dias.map(d=>({label:d.dia, valor:d.total}))}/>
           </div>
         )}
       </div>
@@ -432,18 +401,7 @@ function TabEstoque({ data }) {
       {/* Estoque por marca */}
       <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-chart-bar"/> Estoque por marca</div>
-        {estoque.por_marca.map((m,i)=>{
-          const max = Math.max(...estoque.por_marca.map(x=>x.total));
-          return (
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-              <div style={{minWidth:80,fontSize:13,color:"var(--fg)"}}>{m.marca}</div>
-              <div style={{flex:1,height:8,background:"var(--border)",borderRadius:4}}>
-                <div style={{height:"100%",width:`${Math.round(m.total/max*100)}%`,background:"var(--brand-fill)",borderRadius:4}}/>
-              </div>
-              <div style={{fontSize:12,color:"var(--muted)",minWidth:16,textAlign:"right"}}>{m.total}</div>
-            </div>
-          );
-        })}
+        <BarrasNeon vazio="Nenhum veículo no pátio." itens={estoque.por_marca.map(m=>({label:m.marca, valor:m.total}))}/>
       </div>
 
       {/* 2026-07-15 (auditoria): renomeado de "Sugestão da IA" — é um alerta gerado por
@@ -461,7 +419,6 @@ function TabEstoque({ data }) {
   );
 }
 
-const TEMP_CORES = { quente:"#e07b7b", morno:"#C8A84B", frio:"#7ba7e0" };
 
 // Consome GET /api/metrics/dashboard (Fase 4) — só owner/manager (o backend já bloqueia
 // agent com 403). Carregado à parte do resto do Dashboard porque é uma rota separada
@@ -471,7 +428,6 @@ function TabMetricas({ metricas, loading, erro }) {
   if (loading || !metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
 
   const { iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups, funilReferencia } = metricas;
-  const totalTemp = temperatura.reduce((s,t)=>s+Number(t.total),0) || 1;
   // Funil de referência (leads->contatados->agendaram->compareceram->fecharam), cada
   // etapa desenhada como % do total de leads (barra decrescente). 2026-07-23 (auditoria):
   // esse é o único funil na aba Métricas agora — "Funil completo (estagio_funil)" foi
@@ -545,14 +501,8 @@ function TabMetricas({ metricas, loading, erro }) {
 
       {funilReferencia && <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-filter"/> Funil de referência (lead → venda)</div>
-        {ETAPAS_FUNIL_REF.map((e,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <div style={{minWidth:120,fontSize:13,color:"var(--fg)"}}>{e.label}</div>
-            <div className="funnel-track" style={{flex:1}}><div className="funnel-bar" style={{width:`${e.pct}%`}}/></div>
-            <div style={{fontSize:12,color:"var(--muted)",minWidth:70,textAlign:"right"}}>{e.total} · {e.pct}%</div>
-          </div>
-        ))}
-        <div style={{fontSize:11,color:"var(--muted)",marginTop:4}}>% sobre o total de leads gerados no período · "Agendaram"/"Compareceram" usam compromissos reais da Agenda, não o card "Agendados" do Kanban.</div>
+        <BarrasNeon max={100} itens={ETAPAS_FUNIL_REF.map(e=>({label:e.label, valor:e.pct, texto:`${e.total} · ${e.pct}%`}))}/>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:12}}>% sobre o total de leads gerados no período · "Agendaram"/"Compareceram" usam compromissos reais da Agenda, não o card "Agendados" do Kanban.</div>
       </div>}
 
       {/* 2026-07-23 (auditoria): "Resumo por etapa" (tabela) removida daqui — repetia os
@@ -565,19 +515,10 @@ function TabMetricas({ metricas, loading, erro }) {
         <div className="card-title"><i className="ti ti-percentage"/> Taxas de conversão por etapa</div>
         {/* Taxas etapa-a-etapa (não % do total) — respondem "qual etapa específica está
             vazando", diferente das barras acima que mostram a perda acumulada. */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
-          <div>
-            <div style={{fontSize:11,color:"var(--muted)"}}>% Agendou (de contatados)</div>
-            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.agendaram.pctEtapaAnterior}%</div>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:"var(--muted)"}}>% Compareceu (de agendou)</div>
-            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.compareceram.pctEtapaAnterior}%</div>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:"var(--muted)"}}>% Fechou (de compareceu)</div>
-            <div style={{fontSize:18,fontWeight:700,color:"var(--fg)"}}>{funilReferencia.fecharam.pctEtapaAnterior}%</div>
-          </div>
+        <div className="nx-aneis">
+          <AnelNeon i={0} pct={funilReferencia.agendaram.pctEtapaAnterior} label="Agendou" sub="dos contatados"/>
+          <AnelNeon i={1} pct={funilReferencia.compareceram.pctEtapaAnterior} label="Compareceu" sub="de quem agendou"/>
+          <AnelNeon i={3} pct={funilReferencia.fecharam.pctEtapaAnterior} label="Fechou" sub="de quem compareceu"/>
         </div>
       </div>}
 
@@ -642,13 +583,7 @@ function TabMetricas({ metricas, loading, erro }) {
           vendedor dependendo da aba. Ver Oportunidades pra esses dois. */}
       <div className="card">
         <div className="card-title"><i className="ti ti-temperature"/> Temperatura</div>
-        {temperatura.map((t,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <div style={{width:10,height:10,borderRadius:"50%",background:TEMP_CORES[t.temperatura]||"var(--muted)",flexShrink:0}}/>
-            <div style={{flex:1,fontSize:13,color:"var(--fg)",textTransform:"capitalize"}}>{t.temperatura}</div>
-            <div style={{fontSize:12,color:"var(--muted)"}}>{t.total} ({Math.round(t.total/totalTemp*100)}%)</div>
-          </div>
-        ))}
+        <RoscaNeon centroSub="leads" itens={temperatura.map(t=>({label:t.temperatura, valor:Number(t.total), cor:NEON_TOM[t.temperatura]}))}/>
       </div>
     </>
   );

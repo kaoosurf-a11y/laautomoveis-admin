@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getResultadoMensal } from "../api.js";
+import { AreaNeon, ColunasNeon, NEON } from "../components/Graficos.jsx";
 
 // Tela "Resultado mensal" (2026-10-07, Felipe: "faz o painel mensal"), só admin_master.
 // Um mês por vez nos cards e o histórico na tabela, por loja ou somando as duas.
@@ -124,6 +125,26 @@ export default function Mensal() {
           <div className="metric-delta">{pct(m.vendas, m.leads)} de conversão</div>
         </div>
       </div>
+
+      {/* 2026-10-18: gráficos neon (Felipe), do mês mais antigo pro mais novo. */}
+      {meses.length > 1 && (() => {
+        const ordem = [...meses].sort((a, b) => a.mes.localeCompare(b.mes)).slice(-12);
+        return (
+          <div className="mensal-graficos">
+            <div className="card">
+              <div className="card-title"><i className="ti ti-chart-bar" /> Leads mês a mês</div>
+              <AreaNeon rotulos={ordem.map(x => nomeMes(x.mes))} series={[
+                { nome: "Leads novos", valores: ordem.map(x => x.leads), cor: NEON[0] },
+                { nome: "De anúncio", valores: ordem.map(x => x.leads_anuncio), cor: NEON[2] },
+              ]} />
+            </div>
+            <div className="card">
+              <div className="card-title"><i className="ti ti-car" /> Vendas mês a mês</div>
+              <ColunasNeon altura={210} itens={ordem.map(x => ({ label: nomeMes(x.mes), valor: x.vendas }))} />
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-head">
