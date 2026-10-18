@@ -403,6 +403,11 @@ export default function Veiculos() {
                             <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d
                           </span>
                         )}
+                        {!v.ativo && v.removido_por_nome && (
+                          <span style={{marginLeft:"auto",fontSize:13,fontWeight:600,color:"var(--fg)",display:"inline-flex",alignItems:"center",gap:4}}>
+                            <i className="ti ti-user" style={{fontSize:13}}/> Removido por {v.removido_por_nome}
+                          </span>
+                        )}
                       </div>
                       <div style={{color:"var(--muted)",fontSize:12}}>{v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel} · {v.cor}</div>
                     </td>
@@ -449,7 +454,7 @@ export default function Veiculos() {
               {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
               {!v.ativo && (
                 <span className="badge badge-muted" style={{position:"absolute",top:10,left:10}}>
-                  <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d
+                  <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d{v.removido_por_nome ? ` · por ${v.removido_por_nome}` : ""}
                 </span>
               )}
             </div>
