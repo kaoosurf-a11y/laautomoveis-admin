@@ -66,6 +66,7 @@ Dois temas, trocados pelo atributo `data-theme` no `<html>` (`src/theme.js`, esc
 | `--brand` | `#C8A84B` | `#8a6500` | dourado **como texto/ícone** (no claro escurece pra dar contraste) |
 | `--brand-fill` + `--on-brand` | `#C8A84B` + `#0c0c0a` | `#C8A84B` + `#1c1c1e` | dourado **como preenchimento** (botão primário, aba ativa) |
 | `--danger` `--success` `--warning` `--alert` `--info` | tons claros | tons escuros | estado; cada um tem par `-soft` (fundo) e alguns `-line` (borda) |
+| `--acao` (+ `-soft`, `-line`) | `#f0883e` | `#b4500f` | laranja de **clicável**: botão secundário (`.btn-ghost`), aba/filtro não ativo, ícone de ação (`.icon-btn`), menu ao passar o mouse |
 
 Regras: tela nenhuma escreve cor em hex para texto ou fundo de interface; usa o token. As cores de **categoria** (estágio do kanban, origem, vendedor) continuam em hex nas telas porque são dado, e o `index.css` as escurece sozinho no tema claro (regra `.badge/.score-pill/.av/.cal-chip/.tone`). Elemento novo com cor de categoria como texto leva a classe `tone`.
 
@@ -76,6 +77,7 @@ Regras: tela nenhuma escreve cor em hex para texto ou fundo de interface; usa o 
 - **Ink `#f0ede6`:** texto principal. 16,75:1 no fundo.
 - **Muted `#8a8a84`:** texto secundário. Foi clareado de `#6b6b66` em 24/09/2026 porque estava em 3,65:1 (abaixo do mínimo AA de 4,5:1). Não escurecer de novo.
 - **Signal `#C8A84B` (dourado):** tem um trabalho só: **o que o usuário pode fazer ou o que está ativo**. Botão primário, item ativo do menu, aba ativa, contorno de foco. Número de métrica e preço usam a cor do texto (`--fg`), não dourado. Não usar como cor de categoria nem de enfeite.
+- **Laranja de ação `--acao` (18/10/2026, pedido do Felipe):** "os botões e opções que o usuário pode clicar devem ficar bem definidos em todas as áreas, menus e submenus". Tudo que é clicável e não é o botão principal tem contorno e texto laranja (bloco "Laranja de ação" no fim do `index.css`). Dourado continua só no botão principal e no item/aba ativo. Chatwoot continua azul, com contorno.
 - **Danger, Success, Warning:** só para estado (erro, ok, atenção). Nunca como cor de marca ou de decoração.
 - **Lacuna conhecida:** `danger` sobre `surface2` dá 4,37:1, um pouco abaixo de 4,5:1. Em texto pequeno sobre surface2, preferir um fundo `surface`.
 
@@ -128,7 +130,7 @@ Reusar as classes existentes, sem criar variação nova dentro de uma página.
 - **Do** garantir contraste mínimo de 4,5:1 em qualquer texto e alvos de toque de 44px.
 - **Do** mostrar erro de carga com mensagem clara (como a tela Envios faz), e não dado de exemplo no lugar.
 - **Don't change sem pedir ao Felipe:** o dourado `#C8A84B` e o escuro como tema padrão.
-- **Don't use:** emoji como ícone; degradê ou brilho colorido novos; faixa colorida só na lateral do card; efeito de vidro (blur) sem sobreposição real; segunda cor de destaque; rótulo novo em caixa alta com espaçamento; seta `→` colada em botão; textos "A · B · C" como enfeite.
+- **Don't use:** emoji como ícone; degradê ou brilho colorido novos; faixa colorida só na lateral do card; efeito de vidro (blur) sem sobreposição real; segunda cor de destaque além do laranja de ação; rótulo novo em caixa alta com espaçamento; seta `→` colada em botão; textos "A · B · C" como enfeite.
 - **Pendências herdadas (não são regra):** faixas laterais coloridas em `index.css` (linhas ~313 e 468), sombras douradas e blur do overlay da sidebar. Só mexer com pedido explícito, junto de uma tela específica.
 
 ## Como conferir

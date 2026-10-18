@@ -970,3 +970,23 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .fu-janela .fu-fluxo{max-height:46vh;overflow-y:auto}
 .fu-janela .fu-msg-txt{font-size:13px}
 .fu-j-acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+
+/* ── Laranja de ação (18/10/2026, Felipe: "os botões e opções que o usuário pode clicar devem
+   ficar bem definidos em todas as áreas do painel, menus e submenus; use o laranja pra
+   sinalizar"). Dourado continua só pro botão principal e pro item/aba ativo; laranja marca
+   todo o resto que é clicável: botão secundário, aba e filtro não ativos, ícone de ação,
+   item de menu ao passar o mouse. Chatwoot fica azul (cor do app), com contorno. ── */
+:root{--acao:#f0883e;--acao-soft:rgba(240,136,62,.12);--acao-line:rgba(240,136,62,.5)}
+:root[data-theme="light"]{--acao:#b4500f;--acao-soft:rgba(180,80,15,.08);--acao-line:rgba(180,80,15,.42)}
+.btn-ghost{background:var(--acao-soft);color:var(--acao);border-color:var(--acao-line)}
+@media(hover:hover){.btn-ghost:hover{background:var(--acao-soft);border-color:var(--acao)}}
+.tab-btn:not(.active){border-color:var(--acao-line)}
+@media(hover:hover){.tab-btn:not(.active):hover{border-color:var(--acao);color:var(--acao)}.seg-btn:not(.active):hover{color:var(--acao)}}
+.icon-btn,.fu-ico{color:var(--acao)}
+.icon-btn:hover,.fu-ico:hover{background:var(--acao-soft);color:var(--acao)}
+.modal-x:hover{background:var(--acao-soft);color:var(--acao)}
+.fu-resp{background:var(--acao-soft);color:var(--acao);border-color:var(--acao-line);font-weight:600}
+@media(hover:hover){.fu-resp:hover{border-color:var(--acao);color:var(--acao)}}
+.btn-chatwoot{border-color:color-mix(in srgb,var(--cw) 45%,transparent)}
+@media(hover:hover){.nav-item:not(.active):hover{background:var(--acao-soft);color:var(--acao)}.nav-item:not(.active):hover i{color:var(--acao)}}
+.btn-chatwoot-compact{display:inline-flex;align-items:center;justify-content:center;width:26px;height:24px;border-radius:6px;color:var(--cw);background:var(--cw-soft);border:1px solid color-mix(in srgb,var(--cw) 45%,transparent);font-size:14px;text-decoration:none;cursor:pointer;flex-shrink:0}

@@ -287,7 +287,7 @@ function FuJanela({f,role,readOnly,onAtualizado,onRespondeu,onClose}){
         </div>
         {f.mensagens&&f.mensagens.length>0&&<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={onAtualizado}/>}
         <div className="fu-j-acoes">
-          {!readOnly&&!editando&&<button className="btn btn-ghost" onClick={()=>setEditando(true)}><i className="ti ti-pencil"/> Editar nome/carro</button>}
+          {!readOnly&&!editando&&<button className="btn btn-ghost" onClick={()=>setEditando(true)}><i className="ti ti-pencil"/> Editar</button>}
           {role==="admin_master"&&<button className="btn btn-ghost" style={{color:"var(--danger)"}} onClick={remover}><i className="ti ti-trash"/> Remover</button>}
           <span style={{flex:1}}/>
           {!f.respondeu&&!readOnly&&<button className="btn btn-ghost" onClick={()=>{onRespondeu(f.id);onClose();}}>Marcar respondido</button>}
