@@ -83,11 +83,11 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
         {!readOnly && (
           <div style={{ display: "flex", gap: 4 }}>
             {followup.status_fluxo === "ativo"
-              ? <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => mudarFluxo("pausado")}><i className="ti ti-player-pause" style={{ fontSize: 12 }} /> Pausar</button>
+              ? <button className="fu-resp" onClick={() => mudarFluxo("pausado")}><i className="ti ti-player-pause" /> Pausar tudo</button>
               : followup.status_fluxo === "pausado"
-              ? <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => mudarFluxo("ativo")}><i className="ti ti-player-play" style={{ fontSize: 12 }} /> Retomar</button>
+              ? <button className="fu-resp" onClick={() => mudarFluxo("ativo")}><i className="ti ti-player-play" /> Retomar</button>
               : <span className="badge" style={{ fontSize: 10, background: "var(--danger)22", color: "var(--danger)" }}>Cancelado</span>}
-            {followup.status_fluxo !== "cancelado" && <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 11, color: "var(--danger)" }} onClick={async () => { if (await confirmDialog("Cancelar todo o fluxo de mensagens desse follow-up?",{title:"Cancelar fluxo?",confirmLabel:"Cancelar fluxo"})) mudarFluxo("cancelado"); }}><i className="ti ti-x" style={{ fontSize: 12 }} /></button>}
+            {followup.status_fluxo !== "cancelado" && <button className="fu-ico" style={{ color: "var(--danger)" }} title="Cancelar o fluxo todo" onClick={async () => { if (await confirmDialog("Cancelar todo o fluxo de mensagens desse follow-up?",{title:"Cancelar fluxo?",confirmLabel:"Cancelar fluxo"})) mudarFluxo("cancelado"); }}><i className="ti ti-x" /></button>}
           </div>
         )}
       </div>
@@ -95,26 +95,26 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
         const [cor, label] = MSG_STATUS_INFO[m.status] || ["var(--muted)", m.status];
         const editavel = !readOnly && m.status !== "enviada";
         return (
-          <div key={m.id} style={{ display: "flex", gap: 6, alignItems: "flex-start", padding: "4px 0", borderTop: "1px solid var(--border)" }}>
-            <span className="badge" style={{ fontSize: 10, background: `${cor}22`, color: cor, flexShrink: 0, marginTop: 2 }}>{label}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, color: "var(--muted)" }}>{fmtData(m.agendado_para)}</div>
-              {editandoId === m.id ? (
-                <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
-                  <textarea className="form-input" style={{ marginBottom: 0, fontSize: 12, minHeight: 50 }} value={textoEdit} onChange={e => setTextoEdit(e.target.value)} />
-                  <button className="btn btn-primary" style={{ padding: "4px 8px" }} onClick={() => salvarTexto(m.id)} disabled={salvando}>{salvando ? <span className="spinner" /> : <i className="ti ti-check" />}</button>
-                </div>
-              ) : (
-                <div style={{ fontSize: 12, color: "var(--fg)", cursor: editavel ? "pointer" : "default" }}
-                  onClick={() => { if (editavel) { setEditandoId(m.id); setTextoEdit(m.conteudo); } }}
-                  title={editavel ? "Clique pra editar" : ""}>
-                  {m.conteudo} {editavel && <i className="ti ti-pencil" style={{ fontSize: 11, color: "var(--muted)" }} />}
-                </div>
-              )}
+          <div key={m.id} className="fu-msg">
+            <div className="fu-msg-top">
+              <span className="badge" style={{ fontSize: 10, background: `${cor}22`, color: cor }}>{label}</span>
+              <span className="fu-msg-data">{fmtData(m.agendado_para)}</span>
+              {editavel && m.status === "agendada" && <button className="fu-ico" onClick={() => mudarStatusMsg(m.id, "pausada")} title="Pausar essa mensagem"><i className="ti ti-player-pause" /></button>}
+              {editavel && m.status === "pausada" && <button className="fu-ico" onClick={() => mudarStatusMsg(m.id, "agendada")} title="Retomar essa mensagem"><i className="ti ti-player-play" /></button>}
+              {editavel && <button className="fu-ico" style={{ color: "var(--danger)" }} onClick={() => mudarStatusMsg(m.id, "cancelada")} title="Cancelar essa mensagem"><i className="ti ti-x" /></button>}
             </div>
-            {editavel && m.status === "agendada" && <button className="btn btn-ghost" style={{ padding: "2px 6px", fontSize: 10 }} onClick={() => mudarStatusMsg(m.id, "pausada")} title="Pausar essa mensagem"><i className="ti ti-player-pause" style={{ fontSize: 11 }} /></button>}
-            {editavel && m.status === "pausada" && <button className="btn btn-ghost" style={{ padding: "2px 6px", fontSize: 10 }} onClick={() => mudarStatusMsg(m.id, "agendada")} title="Retomar essa mensagem"><i className="ti ti-player-play" style={{ fontSize: 11 }} /></button>}
-            {editavel && <button className="btn btn-ghost" style={{ padding: "2px 6px", fontSize: 10, color: "var(--danger)" }} onClick={() => mudarStatusMsg(m.id, "cancelada")} title="Cancelar essa mensagem"><i className="ti ti-x" style={{ fontSize: 11 }} /></button>}
+            {editandoId === m.id ? (
+              <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                <textarea className="form-input" style={{ marginBottom: 0, fontSize: 12, minHeight: 70 }} value={textoEdit} onChange={e => setTextoEdit(e.target.value)} />
+                <button className="btn btn-primary" style={{ padding: "4px 8px" }} onClick={() => salvarTexto(m.id)} disabled={salvando}>{salvando ? <span className="spinner" /> : <i className="ti ti-check" />}</button>
+              </div>
+            ) : (
+              <div className="fu-msg-txt" style={{ cursor: editavel ? "pointer" : "default" }}
+                onClick={() => { if (editavel) { setEditandoId(m.id); setTextoEdit(m.conteudo); } }}
+                title={editavel ? "Clique pra editar" : ""}>
+                {m.conteudo} {editavel && <i className="ti ti-pencil" style={{ fontSize: 11, color: "var(--muted)" }} />}
+              </div>
+            )}
           </div>
         );
       })}
@@ -150,21 +150,6 @@ function fmtData(iso){
   return new Date(iso).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"});
 }
 
-// Classificação do estágio: manual (vendedor arrastou o card) vs automática (Observador
-// pós-handoff classificou por IA, com nível de confiança) — usa estagio_definido_por
-// (fonte confiável) e extrai a confiança do texto de motivo quando disponível.
-function ClassificacaoBadge({f}){
-  if(f.estagio_definido_por==="humano"){
-    return <span className="badge" style={{fontSize:10,background:"var(--brand)22",color:"var(--brand)",display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-user" style={{fontSize:11}}/>Definido manualmente</span>;
-  }
-  if(f.estagio_definido_por==="ia_observador"){
-    const m=/confianca[:\s]*([0-9.]+)/i.exec(f.motivo||"");
-    const conf=m?Math.round(parseFloat(m[1])*100):null;
-    return <span className="badge" style={{fontSize:10,background:"var(--info-soft)",color:"var(--info)",display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-robot" style={{fontSize:11}}/>IA{conf!==null?` · ${conf}% confiança`:""}</span>;
-  }
-  return null;
-}
-
 // Card no mesmo padrão do Kanban do CRM (CRM.jsx, classes .kc): foto do cliente com selo
 // de origem, nome e data em cima, carro em destaque, selos, e o rodapé com vendedor e
 // Chatwoot. Editar nome/veículo e remover (só owner) continuam aqui (2026-07-16).
@@ -178,6 +163,18 @@ function FotoLead({nome,foto}){
   return <img className="kc-foto" src={foto} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
 }
 
+// Classificação do estágio: manual (vendedor arrastou o card) vs automática (Observador
+// pós-handoff classificou por IA, com nível de confiança): usa estagio_definido_por
+// (fonte confiável) e extrai a confiança do texto de motivo quando disponível.
+function ClassificacaoTag({f}){
+  if(f.estagio_definido_por==="humano")return <span className="kc-tag" title="Vendedor moveu o card pra essa coluna"><i className="ti ti-user"/> Manual</span>;
+  if(f.estagio_definido_por==="ia_observador"){
+    const m=/confianca[:\s]*([0-9.]+)/i.exec(f.motivo||"");
+    const conf=m?Math.round(parseFloat(m[1])*100):null;
+    return <span className="kc-tag" style={{color:"var(--info)"}} title="A IA classificou pela conversa"><i className="ti ti-robot"/> IA{conf!==null?` ${conf}%`:""}</span>;
+  }
+  return null;
+}
 function FuCard({f,role,readOnly,onAtualizado,onRespondeu}){
   const[editando,setEditando]=useState(false);
   const[nome,setNome]=useState(f.cliente_nome||"");
@@ -221,18 +218,18 @@ function FuCard({f,role,readOnly,onAtualizado,onRespondeu}){
       <div className="kc-meta">
         {f.temperatura==="quente"&&<span className="kc-tag hot">Quente</span>}
         {f.temperatura==="morno"&&<span className="kc-tag">Morno</span>}
-        <ClassificacaoBadge f={f}/>
+        <ClassificacaoTag f={f}/>
         {f.respondeu&&<span className="badge badge-success"><i className="ti ti-check" style={{fontSize:11}}/> Respondeu</span>}
       </div>
       {f.mensagens&&f.mensagens.length>0
         ?<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={onAtualizado}/>
-        :<div className="kc-linha" style={{color:"var(--muted)"}}><i className="ti ti-message-off"/> Sem mensagem automática nesse estágio</div>}
+        :<div className="kc-linha" style={{color:"var(--muted)"}}><i className="ti ti-message-off"/> Sem mensagem automática</div>}
       <div className="kc-foot">
         {f.vendedor_iniciais&&<div className="av" title={f.vendedor_nome||undefined} style={{width:20,height:20,fontSize:8,background:"var(--brand-soft)",color:"var(--brand)"}}>{f.vendedor_iniciais}</div>}
         {!readOnly&&<button className="fu-ico" onClick={()=>setEditando(true)} title="Editar nome/veículo" aria-label="Editar nome/veículo"><i className="ti ti-pencil"/></button>}
         {role==="admin_master"&&<button className="fu-ico" style={{color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)" aria-label="Remover lead"><i className="ti ti-trash"/></button>}
         <span className="kc-dir">
-          {!f.respondeu&&!readOnly&&<button className="fu-resp" onClick={()=>onRespondeu(f.id)} title="O cliente respondeu: para o fluxo de mensagens">Respondido</button>}
+          {!f.respondeu&&!readOnly&&<button className="fu-resp" onClick={()=>onRespondeu(f.id)} title="O cliente respondeu: para o fluxo de mensagens">Marcar respondido</button>}
           <LeadPhoneChatwoot lead={lead} compact/>
         </span>
       </div>
@@ -363,18 +360,11 @@ export default function FollowUps(){
             </button>
           </div>
       </div>
-          {/* Board horizontal, uma coluna por tipo de follow-up, SEMPRE todas
-          (mesmo vazias, igual ao Kanban do CRM). TIPO_ORDEM já bate 1:1 com os
-          estágios-motivo do CRM (sem_credito/vai_pensar/nao_achou_carro/
-          parou_responder são o mesmo estágio, não uma categoria à parte; só
-          pos_venda_satisfacao não é coluna do Kanban). match_estoque não tem
-          coluna própria — ver comentário perto de TIPO_COR.
-          Diferenciação visual do Kanban do CRM (mesmas abas, telas diferentes):
-          aqui a cor do estágio vira um acento (barra no topo da coluna + borda
-          lateral no card) em vez do contorno completo que o CRM usa — o card é
-          mais alto/detalhado (mostra a mensagem real), então um contorno inteiro
-          ficaria pesado. Card sem duplicar informação: ClassificacaoBadge já
-          resume o "motivo" (IA+confiança ou manual), não repete o texto cru. */}
+          {/* Board horizontal, uma coluna por tipo de follow-up, SEMPRE todas (mesmo
+          vazias). 2026-10-18 (Felipe): mesmas classes do Kanban do CRM (.kanban-board/
+          .kanban-col/.kanban-card.kc), então coluna, card, altura da tela e a barra de
+          rolagem embaixo ficam iguais nas duas telas. match_estoque não tem coluna
+          própria: ver comentário perto de TIPO_COR. */}
           <div className="kanban-board fu-board" ref={boardRef}
             onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
             onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}>
