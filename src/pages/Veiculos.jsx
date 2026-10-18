@@ -652,7 +652,8 @@ export default function Veiculos() {
         <div className="modal-overlay" onClick={() => setConfirmarDel(null)}>
           <div className="modal" style={{maxWidth:400,maxHeight:"92vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
             <div className="modal-handle"/>
-            <div style={{textAlign:"center",padding:"10px 0 16px"}}>
+            <div className="modal-header" style={{marginBottom:0}}><span/><button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={() => setConfirmarDel(null)}><i className="ti ti-x"/></button></div>
+            <div style={{textAlign:"center",padding:"0 0 16px"}}>
               <i className="ti ti-alert-triangle" style={{fontSize:52,color:"var(--danger)",marginBottom:12,display:"block"}}/>
               <h2 style={{fontSize:17,fontWeight:700,color:"var(--fg)",marginBottom:8}}>{saida.motivo==="vendido" ? "Registrar venda?" : "Excluir veículo?"}</h2>
               <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.5}}>

@@ -46,9 +46,50 @@ async function pedirFechar(ov) {
   fecharDeVerdade(ov);
 }
 
+// 2026-10-18 (Felipe: "qualquer submenu fecha com ESC no PC, com o voltar no celular, e sempre o X"):
+// camadas que abrem por cima da tela = janelas (.modal-overlay, inclusive avisos) e a gaveta do menu
+// no celular (.sidebar-overlay.show). Cada camada aberta ganha uma entrada no histórico do navegador;
+// o voltar do Android (ou o gesto de voltar do iPhone) fecha a camada de cima em vez de sair da tela.
+const camadasAbertas = () => [...document.querySelectorAll(".modal-overlay, .sidebar-overlay.show")];
+let empilhadas = 0;       // entradas que este código pôs no histórico e ainda não saíram
+let ignorarVolta = 0;     // history.back() feitos por nós (camada fechada pelo X/ESC/clique)
+function fecharCamada(ov) {
+  if (ov.classList.contains("sidebar-overlay")) { ov.click(); return; }
+  if (ehDialogo(ov)) { (ov.querySelector(".btn-ghost") || ov.querySelector(".btn"))?.click(); return; }
+  pedirFechar(ov);
+}
+function sincronizarHistorico() {
+  const abertas = camadasAbertas().length;
+  while (empilhadas < abertas) {
+    history.pushState({ ...(history.state || {}), laCamada: true }, "");
+    empilhadas++;
+  }
+  while (empilhadas > abertas) {
+    empilhadas--;
+    // só volta se ainda estamos na entrada que nós criamos (se a tela mudou de rota, não mexe)
+    if (history.state?.laCamada) { ignorarVolta++; history.back(); }
+  }
+}
+
 export function instalarModalGuard() {
   if (window.__laModalGuard) return;
   window.__laModalGuard = true;
+
+  let agendado = false;
+  new MutationObserver(() => {
+    if (agendado) return;
+    agendado = true;
+    requestAnimationFrame(() => { agendado = false; sincronizarHistorico(); });
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+
+  window.addEventListener("popstate", () => {
+    if (ignorarVolta > 0) { ignorarVolta--; return; }
+    if (empilhadas === 0) return;
+    empilhadas--;
+    const ov = janelaDeCima() || document.querySelector(".sidebar-overlay.show");
+    // se a pessoa desistir de fechar (dado não salvo), o observador empilha de novo
+    if (ov) fecharCamada(ov);
+  });
 
   document.addEventListener("input", e => {
     const ov = e.target.closest?.(".modal-overlay");
@@ -58,7 +99,7 @@ export function instalarModalGuard() {
   document.addEventListener("keydown", e => {
     if (e.key !== "Escape" || e.defaultPrevented) return;
     const ov = janelaDeCima();
-    if (!ov) return;
+    if (!ov) { document.querySelector(".sidebar-overlay.show")?.click(); return; }
     if (ehDialogo(ov)) {
       // confirmação: ESC = cancelar; aviso simples: ESC = OK
       const cancelar = ov.querySelector(".btn-ghost") || ov.querySelector(".btn");

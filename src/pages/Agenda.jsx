@@ -654,7 +654,7 @@ export default function Agenda(){
         <div className="modal-overlay" onClick={()=>setAgAberto(null)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
             <div className="modal-handle"/>
-            <div className="modal-header"><h2 className="modal-title">Compromisso</h2><button onClick={()=>setAgAberto(null)} style={{background:"none",border:"none",color:"var(--muted)",fontSize:22,cursor:"pointer"}}><i className="ti ti-x"/></button></div>
+            <div className="modal-header"><h2 className="modal-title">Compromisso</h2><button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={()=>setAgAberto(null)}><i className="ti ti-x"/></button></div>
             <AgendaCard ag={agAbertoAtual} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>
           </div>
         </div>
@@ -663,7 +663,7 @@ export default function Agenda(){
         <div className="modal-overlay" onClick={()=>setVendaFeitaAviso(null)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
             <div className="modal-handle"/>
-            <div className="modal-header"><h2 className="modal-title"><i className="ti ti-check" style={{color:"var(--success)"}}/> Venda registrada!</h2></div>
+            <div className="modal-header"><h2 className="modal-title"><i className="ti ti-check" style={{color:"var(--success)"}}/> Venda registrada!</h2><button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={()=>setVendaFeitaAviso(null)}><i className="ti ti-x"/></button></div>
             <p style={{fontSize:14,color:"var(--fg)",marginBottom:16}}>
               Não esqueça de remover o anúncio do <strong>{vendaFeitaAviso.veiculo?`${vendaFeitaAviso.veiculo.marca} ${vendaFeitaAviso.veiculo.modelo}`:vendaFeitaAviso.ag.veiculo}</strong> do site e dos portais.
             </p>
