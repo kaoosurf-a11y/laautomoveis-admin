@@ -106,9 +106,11 @@ export default function Veiculos() {
   const [erro, setErro] = useState("");
   const [confirmarDel, setConfirmarDel] = useState(null);
   // Saída do veículo (2026-10-07, Felipe): ao excluir, o painel pergunta se foi venda,
-  // ou erro de cadastro; se foi venda, por quanto, qual vendedor vendeu e qual lead comprou. Vai junto no DELETE e fica
+  // ou erro de cadastro; se foi venda, por quanto e qual lead comprou. Vai junto no DELETE e fica
   // guardado em veiculos_saidas, que não é apagada na purga dos 7 dias.
-  const SAIDA_VAZIA = { motivo:"", valor:"", loja:"1", vendedor:"", lead:null, semLead:false, busca:"" };
+  // 2026-10-18 (Felipe): a venda fica sempre com quem removeu e confirmou (o servidor
+  // grava req.admin.id); por isso não há mais escolha de vendedor, só a confirmação.
+  const SAIDA_VAZIA = { motivo:"", valor:"", loja:"1", lead:null, semLead:false, busca:"", confirmo:false };
   const [saida, setSaida] = useState(SAIDA_VAZIA);
   const [vendaOpcoes, setVendaOpcoes] = useState({ vendedores:[], leads:[] });
   const souMaster = getUser()?.role === "admin_master";
@@ -120,7 +122,6 @@ export default function Veiculos() {
       ...SAIDA_VAZIA,
       valor: String(Math.round(Number(v.preco) || 0) || ""),
       loja: String(eu?.loja_id || v.loja_id || 1),
-      vendedor: eu?.role === "vendedor" ? String(eu.id) : "",
     });
     setConfirmarDel(v);
   }
@@ -137,7 +138,7 @@ export default function Veiculos() {
   }, [confirmarDel, saida.motivo, saida.loja, saida.busca]);
 
   const vendaCompleta = saida.motivo === "erro" ||
-    (saida.motivo === "vendido" && Number(saida.valor) > 0 && saida.vendedor && (saida.lead || saida.semLead));
+    (saida.motivo === "vendido" && Number(saida.valor) > 0 && saida.confirmo && (saida.lead || saida.semLead));
 
   async function load() {
     const data = await api.getVeiculos().catch(() => []);
@@ -306,7 +307,6 @@ export default function Veiculos() {
       motivo: saida.motivo,
       valor_venda: vendido ? Number(saida.valor) || null : null,
       loja_venda_id: vendido ? Number(saida.loja) : null,
-      vendedor_id: vendido ? Number(saida.vendedor) || null : null,
       crm_lead_id: vendido && saida.lead ? saida.lead.id : null,
       comprador_sem_lead: vendido && !saida.lead && saida.semLead,
     }).catch(() => {});
@@ -633,7 +633,7 @@ export default function Veiculos() {
             <div className="modal-handle"/>
             <div style={{textAlign:"center",padding:"10px 0 16px"}}>
               <i className="ti ti-alert-triangle" style={{fontSize:52,color:"var(--danger)",marginBottom:12,display:"block"}}/>
-              <h2 style={{fontSize:17,fontWeight:700,color:"var(--fg)",marginBottom:8}}>Excluir veículo?</h2>
+              <h2 style={{fontSize:17,fontWeight:700,color:"var(--fg)",marginBottom:8}}>{saida.motivo==="vendido" ? "Registrar venda?" : "Excluir veículo?"}</h2>
               <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.5}}>
                 <strong style={{color:"var(--fg)"}}>{confirmarDel.marca} {confirmarDel.modelo} {confirmarDel.ano}</strong><br/>
                 será removido do estoque e do site.<br/>
@@ -658,19 +658,12 @@ export default function Veiculos() {
                 {souMaster && (
                   <div className="form-group">
                     <label className="form-label">Loja que vendeu *</label>
-                    <select className="form-input" value={saida.loja} onChange={e=>setSaida(s=>({...s,loja:e.target.value,vendedor:"",lead:null,busca:""}))}>
+                    <select className="form-input" value={saida.loja} onChange={e=>setSaida(s=>({...s,loja:e.target.value,lead:null,busca:""}))}>
                       <option value="1">Curitibanos</option>
                       <option value="2">Campos Novos</option>
                     </select>
                   </div>
                 )}
-                <div className="form-group">
-                  <label className="form-label">Vendedor que fez a venda *</label>
-                  <select className="form-input" value={saida.vendedor} onChange={e=>setSaida(s=>({...s,vendedor:e.target.value}))}>
-                    <option value="">Selecione</option>
-                    {vendaOpcoes.vendedores.map(u => <option key={u.id} value={u.id}>{u.nome}{u.role==="gerente"?" (gerente)":""}</option>)}
-                  </select>
-                </div>
                 <div className="form-group">
                   <label className="form-label">Lead que comprou *</label>
                   {saida.lead ? (
@@ -707,12 +700,16 @@ export default function Veiculos() {
                     </>
                   )}
                 </div>
+                <label style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px",marginBottom:14,border:`1px solid ${saida.confirmo?"var(--primary)":"var(--border)"}`,borderRadius:10,cursor:"pointer",fontSize:14,color:"var(--fg)",lineHeight:1.4}}>
+                  <input type="checkbox" style={{marginTop:3}} checked={saida.confirmo} onChange={e=>setSaida(s=>({...s,confirmo:e.target.checked}))}/>
+                  <span>Confirmo que este carro foi <strong>vendido</strong>. A venda fica registrada no nome de <strong>{getUser()?.nome || "quem está logado"}</strong>.</span>
+                </label>
               </div>
             )}
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-ghost" onClick={() => setConfirmarDel(null)} style={{flex:1}}>Cancelar</button>
-              <button className="btn btn-danger" onClick={confirmarRemover} disabled={!vendaCompleta} style={{flex:1,background:"var(--danger)",color:"white",opacity:vendaCompleta?1:.45}}>
-                <i className="ti ti-trash"/> Excluir
+              <button className={saida.motivo==="vendido"?"btn btn-primary":"btn btn-danger"} onClick={confirmarRemover} disabled={!vendaCompleta} style={{flex:1,...(saida.motivo==="vendido"?{}:{background:"var(--danger)",color:"white"}),opacity:vendaCompleta?1:.45}}>
+                {saida.motivo==="vendido" ? <><i className="ti ti-check"/> Confirmar venda</> : <><i className="ti ti-trash"/> Excluir</>}
               </button>
             </div>
           </div>
