@@ -927,13 +927,8 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
    do CRM (.kanban-board, .kc). Aqui so o que e proprio do follow-up: a linha recolhida do
    fluxo de mensagens, a lista aberta e os botoes pequenos do rodape. */
 .fu-card .kc-meta .badge{font-size:10px}
-.fu-fluxo-resumo{grid-column:1/-1;display:flex;align-items:center;gap:5px;width:100%;margin-top:7px;padding:5px 7px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);font:inherit;font-size:11px;cursor:pointer;text-align:left;min-width:0}
-.fu-fluxo-resumo i{font-size:13px;flex-shrink:0}
-.fu-fluxo-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fu-fluxo-n{color:var(--muted);font-variant-numeric:tabular-nums;flex-shrink:0}
-@media(hover:hover){.fu-fluxo-resumo:hover{border-color:var(--brand-line)}}
 .fu-fluxo{grid-column:1/-1;background:var(--surface2);border-radius:8px;padding:6px 8px;margin-top:7px;min-width:0}
-.fu-fluxo-fechar{white-space:nowrap;border:none;background:none;padding:2px 0;font:inherit;font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
+.fu-fluxo-fechar{white-space:nowrap;font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .fu-ico{border:none;background:none;width:24px;height:24px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;font-size:14px;padding:0}
 @media(hover:hover){.fu-ico:hover{background:var(--fill);color:var(--fg)}}
 .fu-resp{border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:2px 7px;font:inherit;font-size:10.5px;color:var(--fg);cursor:pointer;white-space:nowrap}
@@ -948,3 +943,30 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .fu-msg-data{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-right:auto}
 .fu-msg-txt{font-size:12px;line-height:1.4;color:var(--fg);margin-top:4px;overflow-wrap:anywhere}
 .fu-resp i{font-size:11px;vertical-align:-1px}
+/* 2026-10-18 (Felipe): card so com o resumo e quantas mensagens o lead recebeu; as mensagens
+   ficam na janela que abre ao clicar no card. */
+.fu-card{cursor:pointer}
+.fu-sit{grid-column:1/-1;margin-top:7px;padding:6px 8px;border-radius:7px;background:var(--surface2);display:flex;flex-direction:column;gap:3px;min-width:0}
+.fu-sit-l1{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--fg)}
+.fu-sit-n b{font-weight:700;font-variant-numeric:tabular-nums}
+.fu-sit-l2{display:flex;align-items:center;gap:4px;font-size:11px;min-width:0}
+.fu-sit-l2 i{font-size:12px;flex-shrink:0}
+.fu-sit-l2 span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fu-dots{display:inline-flex;gap:4px;flex-shrink:0}
+.fu-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--info);display:inline-block}
+.fu-dot.ok{background:var(--success);border-color:var(--success)}
+.fu-dot.late{border-color:var(--danger);background:var(--danger-soft,transparent)}
+.fu-dot.pause{border-color:var(--warning)}
+.fu-dot.off{border-color:var(--scroll);background:linear-gradient(135deg,transparent 42%,var(--scroll) 42%,var(--scroll) 58%,transparent 58%)}
+.fu-janela{max-width:560px}
+.fu-j-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.fu-j-av,.fu-j-av .kc-ini,.fu-j-av .kc-foto{width:52px;height:52px}
+.fu-j-av .kc-ini{font-size:16px}
+.fu-j-nome{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fu-j-car{font-size:14px;color:var(--muted);margin-top:2px}
+.fu-j-info{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);margin-bottom:10px;align-items:center}
+.fu-j-info span{display:inline-flex;align-items:center;gap:4px}
+.fu-j-sit{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-bottom:4px}
+.fu-janela .fu-fluxo{max-height:46vh;overflow-y:auto}
+.fu-janela .fu-msg-txt{font-size:13px}
+.fu-j-acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
