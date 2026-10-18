@@ -112,7 +112,11 @@ export default function Layout({ children }) {
       {/* Sidebar */}
       <aside className={`sidebar ${menuOpen?"open":""}`}>
         <div className="sidebar-header">
-          <div className="logo-wrap">
+          {/* 2026-10-18 (Felipe): clicar na logo leva à tela inicial do perfil ("/" já
+              redireciona: painel para gerente/admin, CRM para vendedor). */}
+          <div className="logo-wrap" role="link" tabIndex={0} title="Tela inicial" style={{cursor:"pointer"}}
+            onClick={() => { setMenuOpen(false); navigate("/"); }}
+            onKeyDown={e => { if (e.key === "Enter") { setMenuOpen(false); navigate("/"); } }}>
             <div className="logo-badge">LA</div>
             <div><div className="logo-name">LA AUTOMÓVEIS</div><div className="logo-sub">Multimarcas</div></div>
           </div>
@@ -145,7 +149,7 @@ export default function Layout({ children }) {
 
       {/* Topbar mobile */}
       <header className="topbar-mobile">
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} role="link" title="Tela inicial" onClick={() => navigate("/")}>
           <div className="logo-badge" style={{width:32,height:32,fontSize:12}}>LA</div>
           <span style={{fontSize:15,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em"}}>LA AUTOMÓVEIS</span>
         </div>
