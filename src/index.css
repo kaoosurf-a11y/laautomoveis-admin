@@ -1027,12 +1027,13 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 /* faixa de luz à esquerda: dá o volume das barras 3D da referência */
 .nx-col-cheio::after{content:"";position:absolute;inset:0 55% 0 0;background:linear-gradient(90deg,rgba(255,255,255,.28),rgba(255,255,255,0))}
 .nx-col-label{font-size:11px;color:var(--muted);white-space:nowrap}
-.nx-aneis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;justify-items:center}
+.nx-aneis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));justify-items:center;gap:18px 12px}
 .nx-anel{position:relative;width:100%;max-width:132px;text-align:center}
 .nx-anel svg{width:100%;display:block;overflow:visible}
 .nx-anel-trilho{fill:none;stroke:var(--nx-trilho);stroke-width:9}
 .nx-anel-cheio{fill:none;stroke-width:9;stroke-linecap:round;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--c1) calc(var(--nx-brilho)*100%),transparent))}
-.nx-anel-meio{position:absolute;left:0;right:0;top:0;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--fg);font-variant-numeric:tabular-nums}
+.nx-anel-graf{position:relative}
+.nx-anel-meio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--fg);font-variant-numeric:tabular-nums}
 .nx-anel-label{margin-top:8px;font-size:12px;font-weight:600;color:var(--fg);line-height:1.3}
 .nx-anel-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .nx-rosca{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
@@ -1060,11 +1061,77 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .nx-area-eixo{position:relative;height:18px;margin:8px 6px 0}
 .nx-area-eixo span{position:absolute;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap}
 @media(max-width:520px){
-  .nx-barras{grid-template-columns:auto minmax(60px,1fr) 1.4fr auto;gap:12px 8px}
-  .nx-barras.sem-num{grid-template-columns:minmax(60px,1fr) 1.4fr auto}
+  /* celular: nome e número na linha de cima, barra embaixo (nome inteiro, sem cortar) */
+  .nx-barras,.nx-barras.sem-num{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+  .nx-barra{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"num label valor" "num trilho trilho";gap:5px 8px;align-items:center}
+  .nx-barras.sem-num .nx-barra{grid-template-columns:1fr auto;grid-template-areas:"label valor" "trilho trilho"}
+  .nx-num{grid-area:num;align-self:start}
+  .nx-label{grid-area:label}
+  .nx-trilho{grid-area:trilho;height:8px}
+  .nx-valor{grid-area:valor}
   .nx-rosca{justify-content:center}
   .nx-anel-meio{font-size:19px}
 }
 .mensal-graficos{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin:12px 0 18px}
 .mensal-graficos .card{min-width:0}
 @media(max-width:900px){.mensal-graficos{grid-template-columns:1fr}}
+/* 2026-10-18 gráficos que se ajustam: entram crescendo e, ao trocar período/loja/medida,
+   vão do valor antigo pro novo (só transform/largura/altura de poucos elementos). */
+@keyframes nx-cresce-x{from{transform:scaleX(0)}}
+@keyframes nx-cresce-y{from{transform:scaleY(0)}}
+@keyframes nx-surge{from{opacity:0}}
+.nx-cheio{transform-origin:left center;animation:nx-cresce-x .7s cubic-bezier(.2,.8,.2,1) both}
+.nx-col-cheio{transform-origin:center bottom;animation:nx-cresce-y .7s cubic-bezier(.2,.8,.2,1) both;transition:height .6s cubic-bezier(.2,.8,.2,1),opacity .25s}
+.nx-anel-cheio,.nx-rosca-fatia{transition:stroke-dasharray .7s cubic-bezier(.2,.8,.2,1),stroke-dashoffset .7s cubic-bezier(.2,.8,.2,1)}
+.nx-anel svg,.nx-rosca-graf svg,.nx-area-graf svg{animation:nx-surge .5s ease both}
+.nx-area-graf path{transition:d .6s cubic-bezier(.2,.8,.2,1)}
+.nx-area-ponto{transition:top .6s cubic-bezier(.2,.8,.2,1),left .6s cubic-bezier(.2,.8,.2,1),opacity .25s,transform .25s}
+.nx-col.apagado .nx-col-cheio{opacity:.35}
+.nx-col.apagado .nx-col-valor{color:var(--muted)}
+.nx-col.ativo .nx-col-label,.nx-area-eixo span.ativo{color:var(--fg);font-weight:700}
+.nx-col.clicavel{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nx-col.clicavel:focus-visible{outline:2px solid var(--brand-line);outline-offset:3px;border-radius:8px}
+.nx-area-ponto.apagado{opacity:.4}
+.nx-area-ponto.ativo{transform:scale(1.35)}
+.nx-area-guia{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--muted);opacity:.5;transition:left .4s ease}
+.nx-faixa{padding-top:26px}
+.nx-faixa-trilho{position:relative;height:10px;border-radius:99px;background:var(--nx-trilho)}
+.nx-faixa-zona{position:absolute;top:-3px;bottom:-3px;border-radius:6px;background:rgba(74,222,128,.18);border:1px dashed rgba(74,222,128,.55)}
+.nx-faixa-cheio{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--c2),var(--c1));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.nx-faixa-ponto{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--surface);border:3px solid var(--c1);box-shadow:0 0 10px color-mix(in srgb,var(--c1) calc(var(--nx-brilho)*100%),transparent);transition:left .6s cubic-bezier(.2,.8,.2,1)}
+.nx-faixa-ponto b{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:var(--fg);white-space:nowrap}
+.nx-faixa-legenda{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--muted)}
+.nx-faixa-amostra{width:14px;height:8px;border-radius:3px;background:rgba(74,222,128,.18);border:1px dashed rgba(74,222,128,.55)}
+.nx-compara{display:flex;flex-direction:column;gap:4px;margin-top:9px}
+.nx-compara>div{display:flex;align-items:center;gap:6px}
+.nx-compara-r{font-size:10px;color:var(--muted);width:34px;flex-shrink:0}
+.nx-compara-t{flex:1;height:5px;border-radius:99px;background:var(--nx-trilho);overflow:hidden}
+.nx-compara-t span{display:block;height:100%;border-radius:99px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.nx-compara-t .atual{background:linear-gradient(90deg,#c026d3,#ff4fd8)}
+.nx-compara-t .antes{background:var(--muted);opacity:.45}
+@media(prefers-reduced-motion:reduce){
+  .nx-cheio,.nx-col-cheio,.nx-anel svg,.nx-rosca-graf svg,.nx-area-graf svg{animation:none}
+  .nx-cheio,.nx-col-cheio,.nx-anel-cheio,.nx-rosca-fatia,.nx-area-ponto,.nx-faixa-cheio,.nx-faixa-ponto,.nx-compara-t span,.nx-area-graf path{transition:none}
+}
+/* cards de número que mudam o gráfico */
+.metric-card.clicavel{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s,box-shadow .15s}
+@media(hover:hover){.metric-card.clicavel:hover{border-color:var(--brand-line)}}
+.metric-card.ativo{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.metric-card.clicavel:focus-visible{outline:2px solid var(--brand-line);outline-offset:2px}
+.seg-mini .seg-btn{min-height:30px;padding:0 10px;font-size:12px}
+/* enquanto busca o período novo, o que está na tela fica mais claro (sem trocar a tela) */
+.dash-conteudo{transition:opacity .2s}
+.dash-conteudo.atualizando{opacity:.55;pointer-events:none}
+/* duas colunas que não esticam (Jornada, Estoque): sem espaço vazio dentro dos cards */
+.dash-colunas{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;align-items:start;margin-bottom:12px}
+.dash-pilha{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dash-pilha>.card{margin:0}
+.nx-anel-lado{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center;max-width:none;text-align:left}
+.nx-anel-lado .nx-anel-label{margin-top:0;font-size:14px}
+.nx-anel-lado .nx-anel-sub{font-size:12px;line-height:1.4}
+.dash-canal-rosca{display:flex;justify-content:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.dash-canal-rosca .nx-rosca-graf{width:170px}
+.dash-anuncios{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:center}
+.dash-anuncio-num{font-size:12px;color:var(--muted);margin-bottom:2px}
+.dash-anuncio-num strong{display:block;font-size:22px;font-weight:700;color:var(--fg);letter-spacing:-.02em}
+@media(max-width:900px){.dash-colunas,.dash-anuncios{grid-template-columns:1fr}}

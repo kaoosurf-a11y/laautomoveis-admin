@@ -129,18 +129,21 @@ export default function Mensal() {
       {/* 2026-10-18: gráficos neon (Felipe), do mês mais antigo pro mais novo. */}
       {meses.length > 1 && (() => {
         const ordem = [...meses].sort((a, b) => a.mes.localeCompare(b.mes)).slice(-12);
+        // O mês escolhido (botões lá em cima ou clique na coluna) fica em destaque.
+        const ativo = ordem.findIndex(x => x.mes === m.mes);
         return (
           <div className="mensal-graficos">
             <div className="card">
               <div className="card-title"><i className="ti ti-chart-bar" /> Leads mês a mês</div>
-              <AreaNeon rotulos={ordem.map(x => nomeMes(x.mes))} series={[
+              <AreaNeon ativo={ativo < 0 ? null : ativo} rotulos={ordem.map(x => nomeMes(x.mes))} series={[
                 { nome: "Leads novos", valores: ordem.map(x => x.leads), cor: NEON[0] },
                 { nome: "De anúncio", valores: ordem.map(x => x.leads_anuncio), cor: NEON[2] },
               ]} />
             </div>
             <div className="card">
               <div className="card-title"><i className="ti ti-car" /> Vendas mês a mês</div>
-              <ColunasNeon altura={210} itens={ordem.map(x => ({ label: nomeMes(x.mes), valor: x.vendas }))} />
+              <ColunasNeon altura={210} ativo={ativo < 0 ? null : ativo} onEscolher={i => setMesSel(ordem[i].mes)}
+                itens={ordem.map(x => ({ label: nomeMes(x.mes), valor: x.vendas }))} />
             </div>
           </div>
         );

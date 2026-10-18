@@ -74,7 +74,7 @@ export function BarrasNeon({ itens, max, numerar = true, vazio = "Sem dados no p
 }
 
 // Colunas verticais com degradê e brilho, valor em cima. itens: {label, valor, texto?, cor?}
-export function ColunasNeon({ itens, altura = 180, mesmaCor }) {
+export function ColunasNeon({ itens, altura = 180, mesmaCor, ativo = null, onEscolher }) {
   if (!itens?.length) return <p className="vazio">Sem dados no período.</p>;
   const teto = Math.max(...itens.map((x) => Number(x.valor) || 0), 1);
   return (
@@ -83,7 +83,8 @@ export function ColunasNeon({ itens, altura = 180, mesmaCor }) {
         const c = x.cor || mesmaCor || corDe(i);
         const pct = Math.max(4, Math.round(((Number(x.valor) || 0) / teto) * 100));
         return (
-          <div key={i} className="nx-col" style={vars(c)}>
+          <div key={i} className={`nx-col${ativo == null ? "" : ativo === i ? " ativo" : " apagado"}${onEscolher ? " clicavel" : ""}`} style={vars(c)}
+            {...(onEscolher ? { role: "button", tabIndex: 0, onClick: () => onEscolher(i), onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEscolher(i); } } } : {})}>
             <span className="nx-col-valor">{x.texto ?? x.valor}</span>
             <span className="nx-col-trilho"><span className="nx-col-cheio" style={{ height: `${pct}%` }} /></span>
             <span className="nx-col-label">{x.label}</span>
@@ -95,14 +96,15 @@ export function ColunasNeon({ itens, altura = 180, mesmaCor }) {
 }
 
 // Anel de progresso com o % no meio. pct 0-100 (null = sem dado).
-export function AnelNeon({ pct, label, sub, cor, i = 0 }) {
+export function AnelNeon({ pct, label, sub, cor, i = 0, lado = false }) {
   const c = corDe(i, cor);
   const r = 40;
   const volta = 2 * Math.PI * r;
   const v = pct == null || isNaN(pct) ? null : Math.max(0, Math.min(100, Number(pct)));
   const id = useId().replace(/:/g, "");
   return (
-    <div className="nx-anel" style={vars(c)}>
+    <div className={`nx-anel${lado ? " nx-anel-lado" : ""}`} style={vars(c)}>
+      <div className="nx-anel-graf">
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
@@ -117,14 +119,17 @@ export function AnelNeon({ pct, label, sub, cor, i = 0 }) {
         )}
       </svg>
       <div className="nx-anel-meio">{v == null ? "—" : `${Math.round(v)}%`}</div>
-      {label && <div className="nx-anel-label">{label}</div>}
-      {sub && <div className="nx-anel-sub">{sub}</div>}
+      </div>
+      {(label || sub) && <div className="nx-anel-texto">
+        {label && <div className="nx-anel-label">{label}</div>}
+        {sub && <div className="nx-anel-sub">{sub}</div>}
+      </div>}
     </div>
   );
 }
 
 // Rosca com legenda. itens: {label, valor, cor?}
-export function RoscaNeon({ itens, centro, centroSub }) {
+export function RoscaNeon({ itens, centro, centroSub, semLegenda = false }) {
   const uid = useId().replace(/:/g, "");
   const total = itens.reduce((s, x) => s + (Number(x.valor) || 0), 0);
   if (!total) return <p className="vazio">Sem dados no período.</p>;
@@ -163,7 +168,7 @@ export function RoscaNeon({ itens, centro, centroSub }) {
         </svg>
         <div className="nx-rosca-meio"><strong>{centro ?? total}</strong>{centroSub && <span>{centroSub}</span>}</div>
       </div>
-      <div className="nx-legenda">
+      {!semLegenda && <div className="nx-legenda">
         {itens.map((x, i) => {
           const c = corDe(i, x.cor);
           return (
@@ -174,7 +179,7 @@ export function RoscaNeon({ itens, centro, centroSub }) {
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }
@@ -198,7 +203,7 @@ function curva(pts) {
 // Área com ondas (uma ou mais séries na mesma escala). series: {nome, valores[], cor?}
 // rotulos: textos do eixo de baixo. Os números ficam em HTML por cima do SVG, então não
 // encolhem no celular.
-export function AreaNeon({ series, rotulos, altura = 190 }) {
+export function AreaNeon({ series, rotulos, altura = 190, ativo = null }) {
   const uid = useId().replace(/:/g, "");
   const n = rotulos.length;
   if (!n) return <p className="vazio">Sem dados no período.</p>;
@@ -248,15 +253,48 @@ export function AreaNeon({ series, rotulos, altura = 190 }) {
             );
           })}
         </svg>
+        {ativo != null && <span className="nx-area-guia" style={{ left: `${xDe(ativo)}%` }} />}
         {series.map((s, si) => s.valores.map((v, i) => (
-          <span key={`${si}-${i}`} className="nx-area-ponto" style={{ ...vars(corDe(si, s.cor)), left: `${xDe(i)}%`, top: `${yDe(v)}%` }}>
+          <span key={`${si}-${i}`} className={`nx-area-ponto${ativo == null ? "" : ativo === i ? " ativo" : " apagado"}`} style={{ ...vars(corDe(si, s.cor)), left: `${xDe(i)}%`, top: `${yDe(v)}%` }}>
             <b>{s.textos?.[i] ?? v}</b>
           </span>
         )))}
       </div>
       <div className="nx-area-eixo">
-        {rotulos.map((r, i) => <span key={i} style={{ left: `${xDe(i)}%` }}>{r}</span>)}
+        {rotulos.map((r, i) => <span key={i} className={ativo === i ? "ativo" : undefined} style={{ left: `${xDe(i)}%` }}>{r}</span>)}
       </div>
+    </div>
+  );
+}
+
+// Régua com a faixa boa marcada e o valor como um ponto (ex.: custo por lead x faixa do
+// setor, tempo no pátio x meta). faixa: [min, max] da zona boa.
+export function FaixaNeon({ valor, faixa, escala, texto, rotuloFaixa, cor, i = 0 }) {
+  const c = corDe(i, cor);
+  const teto = escala || Math.max(faixa[1] * 1.4, (Number(valor) || 0) * 1.1, 1);
+  const pos = (v) => `${Math.max(0, Math.min(100, (v / teto) * 100))}%`;
+  const tem = valor != null && !isNaN(valor);
+  return (
+    <div className="nx-faixa" style={vars(c)}>
+      <div className="nx-faixa-trilho">
+        <span className="nx-faixa-zona" style={{ left: pos(faixa[0]), width: `calc(${pos(faixa[1])} - ${pos(faixa[0])})` }} title={rotuloFaixa} />
+        {tem && <span className="nx-faixa-cheio" style={{ width: pos(valor) }} />}
+        {tem && <span className="nx-faixa-ponto" style={{ left: pos(valor) }}><b>{texto ?? valor}</b></span>}
+      </div>
+      {rotuloFaixa && <div className="nx-faixa-legenda"><span className="nx-faixa-amostra" />{rotuloFaixa}</div>}
+    </div>
+  );
+}
+
+// Duas barrinhas dentro de um card de número: período atual x anterior.
+export function ComparaMini({ atual, anterior, rotuloAtual = "agora", rotuloAnterior = "antes" }) {
+  const a = Math.max(0, Number(atual) || 0), b = Math.max(0, Number(anterior) || 0);
+  const teto = Math.max(a, b, 1e-9);
+  if (!a && !b) return null;
+  return (
+    <div className="nx-compara" aria-label={`${rotuloAtual} ${a}, ${rotuloAnterior} ${b}`}>
+      <div><span className="nx-compara-r">{rotuloAtual}</span><span className="nx-compara-t"><span className="atual" style={{ width: `${(a / teto) * 100}%` }} /></span></div>
+      <div><span className="nx-compara-r">{rotuloAnterior}</span><span className="nx-compara-t"><span className="antes" style={{ width: `${(b / teto) * 100}%` }} /></span></div>
     </div>
   );
 }

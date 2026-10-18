@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, getMetricasDashboard, updateInvestimentoAnuncios, updateMetaVendas } from "../api.js";
 import { getUser } from "../auth.js";
-import { NEON_CANAL, NEON_VENDEDOR, NEON_TOM, BarrasNeon, ColunasNeon, AnelNeon, RoscaNeon } from "../components/Graficos.jsx";
+import { NEON, NEON_CANAL, NEON_VENDEDOR, NEON_TOM, BarrasNeon, ColunasNeon, AnelNeon, RoscaNeon, FaixaNeon, ComparaMini } from "../components/Graficos.jsx";
 
 /* ─── helpers ─── */
 const fmtR = v => `R$ ${Number(v).toLocaleString("pt-BR")}`;
@@ -104,22 +104,17 @@ function Anuncios({ midia, onSaved }) {
           </button>
         )}
       </div>
-      <div className="metrics-grid cols-3">
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-coin"/> Custo por lead</div>
-          <div className="metric-value">{cpl==null?"sem dados":fmtR(cpl)}</div>
-          <div className={`metric-delta ${cplLeitura.c}`}>{cplLeitura.t}</div>
+      {/* 2026-10-18 (Felipe: "o que der, em gráfico"): custo por lead na régua com a
+          faixa do setor marcada, e quanto da verba mensal já foi gasto no período. */}
+      <div className="dash-anuncios">
+        <div>
+          <div className="dash-anuncio-num"><i className="ti ti-coin"/> Custo por lead<strong>{cpl==null?"sem dados":fmtR(cpl)}</strong></div>
+          <FaixaNeon i={0} valor={cpl} faixa={[bm.min, bm.max]} texto={cpl==null?null:fmtR(cpl)} rotuloFaixa={`faixa do setor: ${faixa}`}/>
+          <div className={`metric-delta ${cplLeitura.c}`} style={{marginTop:6}}>{cplLeitura.t}</div>
         </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-calendar-stats"/> Gasto</div>
-          <div className="metric-value">{fmtR(midia.investimento_periodo)}</div>
-          <div className="metric-delta">no período do filtro</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-cash"/> Verba mensal</div>
-          <div className="metric-value">{fmtR(Math.round(midia.investimento_mensal))}</div>
-          <div className="metric-delta">{lojas.length > 1 ? `soma das ${lojas.length} lojas` : "anúncios, mês cheio"}</div>
-        </div>
+        <AnelNeon lado i={2} pct={midia.investimento_mensal > 0 ? Math.round(Number(midia.investimento_periodo||0) / Number(midia.investimento_mensal) * 100) : null}
+          label={`Gasto ${fmtR(midia.investimento_periodo)}`}
+          sub={`da verba mensal de ${fmtR(Math.round(midia.investimento_mensal))}${lojas.length > 1 ? ` (soma das ${lojas.length} lojas)` : ""}`}/>
       </div>
       {ajustando && (
         <div className="ajuste-lojas">
@@ -149,22 +144,13 @@ function FunilMeta({ lojas }) {
             <span className={`badge ${l.ativo?"badge-success":"badge-muted"}`}>{l.ativo?"Ligada":"Desligada"}</span>
             {l.erros > 0 && <span className="badge badge-danger">{l.erros} com erro</span>}
           </div>
-          <div className="metrics-grid cols-3">
-            <div className="metric-card">
-              <div className="metric-label"><i className="ti ti-user-plus"/> Leads novos</div>
-              <div className="metric-value">{l.leads}</div>
-              <div className="metric-delta">entregues à Meta</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label"><i className="ti ti-user-check"/> Qualificados</div>
-              <div className="metric-value">{l.qualificados}</div>
-              <div className="metric-delta">{l.custo_por_qualificado==null?"nome completo, CPF e nascimento":`${fmtR(l.custo_por_qualificado)} por qualificado`}</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label"><i className="ti ti-car"/> Vendas</div>
-              <div className="metric-value">{l.vendas}</div>
-              <div className={`metric-delta ${l.vendas_sem_valor>0?"down":""}`}>{l.vendas_sem_valor>0?`${l.vendas_sem_valor} sem valor preenchido`:l.vendas>0?"com valor informado":"no período do filtro"}</div>
-            </div>
+          <BarrasNeon numerar={false} max={Math.max(l.leads, 1)} itens={[
+            { label:"Leads novos", valor:l.leads, cor:NEON[2], texto:`${l.leads}` },
+            { label:"Qualificados", valor:l.qualificados, cor:NEON[1], texto:l.custo_por_qualificado==null?`${l.qualificados}`:`${l.qualificados} · ${fmtR(l.custo_por_qualificado)} cada` },
+            { label:"Vendas", valor:l.vendas, cor:NEON[0], texto:`${l.vendas}` },
+          ]}/>
+          <div className={`metric-delta ${l.vendas_sem_valor>0?"down":""}`} style={{marginTop:8}}>
+            {l.vendas_sem_valor>0?`${l.vendas_sem_valor} ${l.vendas_sem_valor===1?"venda":"vendas"} sem valor preenchido · `:""}qualificado = nome completo, CPF e nascimento
           </div>
         </div>
       ))}
@@ -173,8 +159,11 @@ function FunilMeta({ lojas }) {
   );
 }
 
+const FOCO_NOME = { leads:"Leads", vendas:"Vendas", conversao:"Conversão" };
+
 function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
   const { resumo, vendedores, canais, midia } = data;
+  const [foco, setFoco] = useState("leads");
   const ehMes = periodo === "mes";
   const metaMes = resumo.meta_vendas_mes ?? midia?.meta_vendas_mes ?? null;
   const pctMeta = ehMes && metaMes > 0 ? Math.min(Math.round(resumo.vendas / metaMes * 100), 100) : null;
@@ -182,13 +171,15 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
   const comValor = Number(resumo.vendas_com_valor || 0);
   const semValor = resumo.vendas > 0 && comValor === 0;
   const metrics = [
-    { icon:"ti-target",        label:"Total leads",  value:resumo.total_leads,
-      delta:`${comSinal(resumo.total_leads_delta)} vs período anterior`, tom:tomDelta(resumo.total_leads_delta) },
-    { icon:"ti-check",         label:"Vendas",       value:resumo.vendas,
+    { icon:"ti-target",        label:"Total leads",  value:resumo.total_leads, foco:"leads",
+      delta:`${comSinal(resumo.total_leads_delta)} vs período anterior`, tom:tomDelta(resumo.total_leads_delta),
+      compara: resumo.total_leads_delta != null ? [resumo.total_leads, resumo.total_leads - resumo.total_leads_delta] : null },
+    { icon:"ti-check",         label:"Vendas",       value:resumo.vendas, foco:"vendas",
       delta: ehMes && metaMes != null ? `meta do mês: ${metaMes} · saída do estoque` : "saídas do estoque no período",
       tom: ehMes && metaMes > 0 && resumo.vendas >= metaMes ? "up" : "", pct:pctMeta },
-    { icon:"ti-percent",       label:"Conversão",    value:`${resumo.conversao}%`,
-      delta:`${comSinal(resumo.conversao_delta)} pontos vs anterior`, tom:tomDelta(resumo.conversao_delta) },
+    { icon:"ti-percent",       label:"Conversão",    value:`${resumo.conversao}%`, foco:"conversao",
+      delta:`${comSinal(resumo.conversao_delta)} pontos vs anterior`, tom:tomDelta(resumo.conversao_delta),
+      compara: resumo.conversao_delta != null ? [Number(resumo.conversao), Number(resumo.conversao) - Number(resumo.conversao_delta)] : null },
     { icon:"ti-x",             label:"Perdidas",     value:resumo.perdidas,              delta:"perdidas no período", tom:"" },
     { icon:"ti-clock",         label:"Resp. média",  value:fmtMin(resumo.resp_media_min),delta:"até o vendedor responder", tom:"",
       title:"Tempo entre o lead ser atribuído e a primeira resposta do vendedor. Conta o relógio corrido, inclusive noite e fim de semana." },
@@ -199,21 +190,31 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
         : `receita: ${fmtR(resumo.receita_total)}`, tom:"" },
   ];
   const lojasNoRanking = [...new Set(vendedores.map(v => v.loja_id).filter(Boolean))].sort((a, b) => a - b);
-  const maxLeads = Math.max(...vendedores.map(x=>x.total_leads), 1);
+  // 2026-10-18 (Felipe: "o gráfico deve se ajustar conforme clicam nas métricas"): clicar
+  // em Total leads, Vendas ou Conversão troca a medida do gráfico Por vendedor e reordena.
+  const medida = v => foco === "vendas" ? Number(v.vendas) || 0
+    : foco === "conversao" ? (v.total_leads > 0 ? Math.round(v.vendas / v.total_leads * 1000) / 10 : 0)
+    : Number(v.total_leads) || 0;
+  const maxMedida = Math.max(...vendedores.map(medida), foco === "conversao" ? 1 : 1);
+  const ordenados = [...vendedores].sort((a, b) => medida(b) - medida(a));
   const totalCanais = canais.reduce((a,x)=>a+x.total,0) || 1;
   const linhaVendedor = (v,i) => {
     // Cor pela posição na lista inteira (não dentro da loja): cada vendedor tem a sua.
     const corV = NEON_VENDEDOR[vendedores.indexOf(v) % NEON_VENDEDOR.length];
     const cor = AV_CORES[i % AV_CORES.length];
     return (
-      <div key={`${v.nome}-${i}`} className="rank-row">
+      <div key={`${v.nome}-${v.loja_id}`} className="rank-row">
         <div className="av" style={{background:`${cor}22`,color:cor}}>{v.iniciais}</div>
         <div style={{flex:1,minWidth:0}}>
           <div className="rank-top">
             <span className="rank-nome">{v.nome}</span>
-            <span className="rank-num"><strong>{v.vendas}</strong> {v.vendas===1?"venda":"vendas"}, {v.total_leads} {v.total_leads===1?"lead":"leads"}</span>
+            <span className="rank-num">{foco==="conversao"
+              ? <><strong>{String(medida(v)).replace(".", ",")}%</strong> de conversão</>
+              : foco==="vendas"
+              ? <><strong>{v.vendas}</strong> {v.vendas===1?"venda":"vendas"}, {v.total_leads} {v.total_leads===1?"lead":"leads"}</>
+              : <><strong>{v.total_leads}</strong> {v.total_leads===1?"lead":"leads"}, {v.vendas} {v.vendas===1?"venda":"vendas"}</>}</span>
           </div>
-          <div className="nx-trilho" style={{"--c1":corV[0],"--c2":corV[1]}}><span className="nx-cheio" style={{width:`${Math.max(2,Math.round(v.total_leads/maxLeads*100))}%`}}/></div>
+          <div className="nx-trilho" style={{"--c1":corV[0],"--c2":corV[1]}}><span className="nx-cheio" style={{width:`${Math.max(2,Math.round(medida(v)/maxMedida*100))}%`}}/></div>
         </div>
       </div>
     );
@@ -223,34 +224,38 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
     <>
       <div className="metrics-grid">
         {metrics.map((m,i)=>(
-          <div key={i} className="metric-card" title={m.title}>
+          <div key={i} className={`metric-card${m.foco?" clicavel":""}${m.foco&&m.foco===foco?" ativo":""}`} title={m.title || (m.foco ? `Mostrar ${FOCO_NOME[m.foco].toLowerCase()} no gráfico Por vendedor` : undefined)}
+            {...(m.foco ? { role:"button", tabIndex:0, "aria-pressed":m.foco===foco, onClick:()=>setFoco(m.foco), onKeyDown:e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); setFoco(m.foco); } } } : {})}>
             <div className="metric-label"><i className={`ti ${m.icon}`}/>{m.label}</div>
             <div className="metric-value">{m.value}</div>
             <div className={`metric-delta ${m.tom}`}>{m.delta}</div>
+            {m.compara && <ComparaMini atual={m.compara[0]} anterior={m.compara[1]}/>}
             {m.pct != null && <div className="meter" role="progressbar" aria-valuenow={m.pct} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da meta do mês"><span style={{width:`${m.pct}%`}}/></div>}
           </div>
         ))}
-      </div>
-
-      <div className={`dash-meio${(data.meta_capi?.length || 0) > 1 ? " varias-lojas" : ""}`}>
-        <Anuncios midia={midia} onSaved={onMidiaSaved}/>
-        <FunilMeta lojas={data.meta_capi}/>
       </div>
 
       <div className="dash-grid">
         {/* Por vendedor — barra relativa ao maior total de leads do grupo. Em "Todas" a
             lista vem separada por loja (2026-10-05): as equipes não se misturam. */}
         <div className="card">
-          <div className="card-title"><i className="ti ti-users"/> Por vendedor</div>
+          <div className="card-head">
+            <div className="card-title"><i className="ti ti-users"/> Por vendedor</div>
+            <div className="seg seg-mini" role="group" aria-label="Medida do gráfico">
+              {Object.entries(FOCO_NOME).map(([k,n])=>(
+                <button key={k} className={`seg-btn ${foco===k?"active":""}`} aria-pressed={foco===k} onClick={()=>setFoco(k)}>{n}</button>
+              ))}
+            </div>
+          </div>
           {vendedores.length===0 && <p className="vazio">Nenhum vendedor nesta loja.</p>}
           {lojasNoRanking.length > 1
             ? lojasNoRanking.map(lid => (
                 <div key={lid} className="rank-grupo">
                   <div className="rank-loja">{LOJA_NOME[lid] || `Loja ${lid}`}</div>
-                  {vendedores.filter(v => v.loja_id === lid).map(linhaVendedor)}
+                  {ordenados.filter(v => v.loja_id === lid).map(linhaVendedor)}
                 </div>
               ))
-            : vendedores.map(linhaVendedor)}
+            : ordenados.map(linhaVendedor)}
         </div>
 
         {/* "Funil de vendas" saiu daqui (2026-10-05): tinha só duas linhas e contava venda
@@ -259,7 +264,15 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
         <div className="card dash-canais">
           <div className="card-title"><i className="ti ti-chart-pie"/> Leads por canal</div>
           <BarrasNeon paleta={NEON_CANAL} vazio="Nenhum lead no período." itens={canais.map(c=>({label:c.nome, valor:c.total, texto:`${c.total} · ${Math.round(c.total/totalCanais*100)}%`}))}/>
+          {canais.length > 1 && <div className="dash-canal-rosca"><RoscaNeon semLegenda centroSub="leads" itens={canais.map((c,i)=>({label:c.nome, valor:c.total, cor:NEON_CANAL[i%NEON_CANAL.length]}))}/></div>}
         </div>
+      </div>
+
+      {/* Ordem por importância (Felipe 18/10): números do período, vendedores e canais,
+          anúncios e Meta, e por último a lista de leads quentes. */}
+      <div className={`dash-meio${(data.meta_capi?.length || 0) > 1 ? " varias-lojas" : ""}`}>
+        <Anuncios midia={midia} onSaved={onMidiaSaved}/>
+        <FunilMeta lojas={data.meta_capi}/>
       </div>
 
       <div className="card">
@@ -303,46 +316,38 @@ function TabJornada({ data }) {
           desses campos. */}
       {/* Agente IA — 2026-07-15 (auditoria): "LEADS QUALIF." removido, sempre mostrava 0
           (qualificado_ia nunca é escrito por nenhum processo real do sistema hoje). */}
-      <div className="sec-label">Agente IA</div>
-      <div className="metrics-grid jornada-ia" style={{marginBottom:12}}>
-        {[
-          { label:"LEADS QUENTES",  value:agente_ia.leads_quentes,  sub:"temperatura" },
-          { label:"SCORE QUENTE",   value:agente_ia.score_quente,   sub:"≥60 pts" },
-          { label:"MORNOS",         value:agente_ia.mornos_reat,    sub:"nutrição" },
-          { label:"HANDOFFS",       value:agente_ia.handoffs,       sub:"para vendedor" },
-          { label:"FOLLOW-UPS",     value:agente_ia.followups,      sub:"enviados" },
-        ].map((m,i)=>(
-          <div key={i} className="metric-card">
-            <div className="metric-label" style={{fontSize:10}}>{m.label}</div>
-            <div className="metric-value">{m.value}</div>
-            <div className="metric-delta" style={{color:"var(--muted)"}}>{m.sub}</div>
+      {/* 2026-10-18 (Felipe: "jornada tem espaço vazio"; "o que der, em gráfico"): duas
+          colunas que não esticam, o mais importante em cima. Esquerda: entrada de leads e
+          o que a IA fez. Direita: ciclo, perdas e a agenda de follow-ups de hoje. */}
+      <div className="dash-colunas">
+        <div className="dash-pilha">
+          {data.leads_7dias && (
+            <div className="card">
+              <div className="card-title"><i className="ti ti-chart-bar"/> Leads últimos 7 dias</div>
+              <ColunasNeon altura={200} itens={data.leads_7dias.map(d=>({label:d.dia, valor:d.total}))}/>
+            </div>
+          )}
+          <div className="card">
+            <div className="card-title"><i className="ti ti-robot"/> Agente IA no período</div>
+            <BarrasNeon itens={[
+              { label:"Passados ao vendedor", valor:agente_ia.handoffs, cor:NEON[0] },
+              { label:"Leads quentes", valor:agente_ia.leads_quentes, cor:NEON[3] },
+              { label:"Score quente (60+)", valor:agente_ia.score_quente, cor:NEON[1] },
+              { label:"Mornos em nutrição", valor:agente_ia.mornos_reat, cor:NEON[2] },
+              { label:"Follow-ups enviados", valor:agente_ia.followups, cor:NEON[4] },
+            ]}/>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="dash-jornada">
-        <div className="jornada-lado">
+        <div className="dash-pilha">
           <div className="card">
             <div className="card-title"><i className="ti ti-route"/> Ciclo médio de venda</div>
             <div className="jornada-ciclo-num">
-              {jornada.ciclo_medio_dias!=null ? <>{jornada.ciclo_medio_dias}<span> dias</span></> : "—"}
+              {jornada.ciclo_medio_dias!=null ? <>{String(jornada.ciclo_medio_dias).replace(".", ",")}<span> dias</span></> : "—"}
             </div>
             <div className="metric-delta">
               {jornada.ciclo_medio_dias!=null ? "do 1º contato até fechar" : "nenhuma venda fechada completa no período"}
             </div>
-          </div>
-
-          <div className="card">
-            <div className="card-title"><i className="ti ti-clock-check"/> Follow-ups hoje</div>
-            {followups_hoje.length === 0 && <p className="vazio">Nenhum follow-up hoje.</p>}
-            {followups_hoje.map((f,i)=>(
-              <div key={i} className="fu-linha">
-                <span className="fu-hora">{f.horario}</span>
-                <span className="fu-tipo">{TIPO_LABEL[f.tipo]||f.tipo}</span>
-                <span className="fu-nome">{f.cliente_nome}</span>
-                <div className="av" style={{width:28,height:28,fontSize:11,background:`${AV_CORES[0]}22`,color:AV_CORES[0]}}>{f.vendedor_iniciais}</div>
-              </div>
-            ))}
           </div>
 
           {data.motivos_perda?.length > 0 && (
@@ -351,14 +356,20 @@ function TabJornada({ data }) {
               <BarrasNeon itens={data.motivos_perda.map(m=>({label:m.motivo, valor:m.total}))}/>
             </div>
           )}
-        </div>
 
-        {data.leads_7dias && (
-          <div className="card jornada-chart">
-            <div className="card-title"><i className="ti ti-chart-bar"/> Leads últimos 7 dias</div>
-            <ColunasNeon altura={200} itens={data.leads_7dias.map(d=>({label:d.dia, valor:d.total}))}/>
+          <div className="card">
+            <div className="card-title"><i className="ti ti-clock-check"/> Follow-ups hoje{followups_hoje.length>0 && <span className="badge badge-muted" style={{marginLeft:"auto"}}>{followups_hoje.length}</span>}</div>
+            {followups_hoje.length === 0 && <p className="vazio">Nenhum follow-up hoje.</p>}
+            {followups_hoje.map((f,i)=>(
+              <div key={i} className="fu-linha">
+                <span className="fu-hora">{f.horario}</span>
+                <span className="fu-tipo">{TIPO_LABEL[f.tipo]||f.tipo}</span>
+                <span className="fu-nome">{f.cliente_nome}</span>
+                {f.vendedor_iniciais && <div className="av" style={{width:28,height:28,fontSize:11,background:`${AV_CORES[0]}22`,color:AV_CORES[0]}}>{f.vendedor_iniciais}</div>}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
     </>
   );
@@ -369,41 +380,39 @@ function TabEstoque({ data }) {
   const metricsCores = { ok:"var(--fg)", alerta:"var(--alert)" };
   return (
     <>
-      {/* KPIs estoque */}
-      <div className="metrics-grid cols-3" style={{marginBottom:12}}>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-car"/> No Pátio</div>
-          <div className="metric-value">{estoque.no_patio}</div>
-          <div className="metric-delta">{estoque.novos_patio} novos em 7 dias</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-clock"/> Tempo Médio</div>
-          <div className="metric-value" style={{color:estoque.tempo_medio_dias>estoque.meta_dias?"var(--alert)":"var(--fg)"}}>{estoque.tempo_medio_dias!=null?`${estoque.tempo_medio_dias}d`:"sem dados"}</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>meta: {estoque.meta_dias}d</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-alert-triangle"/> Parados +30d</div>
-          <div className="metric-value" style={{color:estoque.parados_30d>0?"var(--alert)":undefined}}>{estoque.parados_30d}</div>
-          <div className="metric-delta">há mais de 30 dias no pátio</div>
-        </div>
-      </div>
-
-      {/* Parados — atenção */}
-      <div className="card" style={{marginBottom:12,border:"1px solid var(--danger-line)"}}>
-        <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Parados — atenção</div>
-        {estoque.parados_lista.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Nenhum veículo parado há mais de 30 dias.</p>}
-        {estoque.parados_lista.map((v,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
-            <span style={{flex:1,fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
-            <span style={{fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,background:"var(--danger-soft)",color:"var(--alert)"}}>{v.dias}d</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Estoque por marca */}
+      {/* 2026-10-18: números do pátio em gráfico (tempo médio na régua com a meta,
+          parados em anel) e, embaixo, marcas e a lista de parados lado a lado. */}
       <div className="card" style={{marginBottom:12}}>
-        <div className="card-title"><i className="ti ti-chart-bar"/> Estoque por marca</div>
-        <BarrasNeon vazio="Nenhum veículo no pátio." itens={estoque.por_marca.map(m=>({label:m.marca, valor:m.total}))}/>
+        <div className="card-title"><i className="ti ti-car"/> Pátio</div>
+        <div className="dash-anuncios">
+          <div>
+            <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+              <div className="dash-anuncio-num">No pátio<strong>{estoque.no_patio}</strong>{estoque.novos_patio} novos em 7 dias</div>
+              <div className="dash-anuncio-num">Tempo médio<strong style={{color:estoque.tempo_medio_dias>estoque.meta_dias?"var(--alert)":undefined}}>{estoque.tempo_medio_dias!=null?`${estoque.tempo_medio_dias} dias`:"sem dados"}</strong>meta: {estoque.meta_dias} dias</div>
+            </div>
+            <FaixaNeon i={estoque.tempo_medio_dias>estoque.meta_dias?3:4} valor={estoque.tempo_medio_dias} faixa={[0, estoque.meta_dias]}
+              texto={estoque.tempo_medio_dias!=null?`${estoque.tempo_medio_dias}d`:null} rotuloFaixa={`dentro da meta (até ${estoque.meta_dias} dias)`}/>
+          </div>
+          <AnelNeon lado i={3} pct={estoque.no_patio>0 ? Math.round(estoque.parados_30d/estoque.no_patio*100) : null}
+            label={`${estoque.parados_30d} parados +30 dias`} sub={`de ${estoque.no_patio} no pátio`}/>
+        </div>
+      </div>
+
+      <div className="dash-colunas">
+        <div className="card">
+          <div className="card-title"><i className="ti ti-chart-bar"/> Estoque por marca</div>
+          <BarrasNeon vazio="Nenhum veículo no pátio." itens={estoque.por_marca.map(m=>({label:m.marca, valor:m.total}))}/>
+        </div>
+        <div className="card" style={{border:"1px solid var(--danger-line)"}}>
+          <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Parados — atenção</div>
+          {estoque.parados_lista.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Nenhum veículo parado há mais de 30 dias.</p>}
+          {estoque.parados_lista.map((v,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
+              <span style={{flex:1,fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
+              <span style={{fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,background:"var(--danger-soft)",color:"var(--alert)"}}>{v.dias}d</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* 2026-07-15 (auditoria): renomeado de "Sugestão da IA" — é um alerta gerado por
@@ -427,7 +436,7 @@ function TabEstoque({ data }) {
 // e mais pesada (8 sub-queries) — só busca quando essa aba é aberta.
 function TabMetricas({ metricas, loading, erro }) {
   if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
-  if (loading || !metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
+  if (!metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
 
   const { iaVsHumano, tempoPorEstagio, semResposta, temperatura, followups, funilReferencia } = metricas;
   // Funil de referência (leads->contatados->agendaram->compareceram->fecharam), cada
@@ -448,59 +457,6 @@ function TabMetricas({ metricas, loading, erro }) {
 
   return (
     <>
-      {/* 2026-10-07: as duas fileiras de cards ficam numa grade só (o bloco de dentro usa
-          display:contents), pra não sobrar coluna vazia à direita. */}
-      <div className="metrics-grid" style={{marginBottom:12}}>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-robot"/> Só IA resolveu</div>
-          <div className="metric-value">{iaVsHumano.soIaPct}%</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>{iaVsHumano.soIa} de {iaVsHumano.soIa+iaVsHumano.precisouHumano}</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-user"/> Precisou humano</div>
-          <div className="metric-value">{iaVsHumano.precisouHumanoPct}%</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>{iaVsHumano.precisouHumano} leads</div>
-        </div>
-        <div className="metric-card">
-          {/* 2026-07-31 (auditoria de dashboard): rótulo antigo "cumpridos" media
-          respondeu=true (cliente respondeu ao follow-up), não "follow-up foi enviado
-          com sucesso" — nome ajustado pra bater com o que o número realmente mostra,
-          sem mudar o cálculo em si. */}
-          <div className="metric-label"><i className="ti ti-clock-check"/> Follow-ups respondidos</div>
-          <div className="metric-value">{followups.pct}%</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>{followups.cumpridos} de {followups.total} respondeu</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-alert-triangle"/> Sem resposta {semResposta.horasParametro}h+</div>
-          {/* 2026-08-10 (bug real, achado ao vivo — Felipe): a lista `leads` vem cortada em
-              LIMIT 50 no backend (proteção de payload); usar `.length` dela como contagem
-              fazia o card mostrar sempre "50" com mais de 50 parados, mascarando a
-              diferença real entre "Todas"/"Curitibanos"/"Campos Novos" — parecia que o
-              filtro de loja não tinha efeito nessa métrica. `total` vem de uma contagem
-              separada, sem LIMIT. */}
-          <div className="metric-value" style={{color:semResposta.total>0?"var(--alert)":undefined}}>{semResposta.total}</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>leads parados</div>
-        </div>
-
-      {funilReferencia && <div style={{display:"contents"}}>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-bolt"/> Contatado em até 5min</div>
-          <div className="metric-value">{funilReferencia.contatados5min.pct}%</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>{funilReferencia.contatados5min.total} de {funilReferencia.contatados.total} contatados</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-calendar-check"/> Comparecimento</div>
-          <div className="metric-value">{funilReferencia.comparecimento.pct}%</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>{funilReferencia.comparecimento.compareceram} de {funilReferencia.comparecimento.resolvidos} visitas</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label"><i className="ti ti-repeat"/> Fechamento por follow-up</div>
-          <div className="metric-value">{funilReferencia.fechamentoPorFollowup.pct}%</div>
-          <div className="metric-delta" style={{color:"var(--muted)"}}>{funilReferencia.fechamentoPorFollowup.comFollowup} de {funilReferencia.fechamentoPorFollowup.totalFechadas} vendas</div>
-        </div>
-      </div>}
-      </div>
-
       {funilReferencia && <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-filter"/> Funil de referência (lead → venda)</div>
         <BarrasNeon max={100} itens={ETAPAS_FUNIL_REF.map(e=>({label:e.label, valor:e.pct, texto:`${e.total} · ${e.pct}%`}))}/>
@@ -517,12 +473,29 @@ function TabMetricas({ metricas, loading, erro }) {
         <div className="card-title"><i className="ti ti-percentage"/> Taxas de conversão por etapa</div>
         {/* Taxas etapa-a-etapa (não % do total) — respondem "qual etapa específica está
             vazando", diferente das barras acima que mostram a perda acumulada. */}
-        <div className="nx-aneis">
+        <div className="nx-aneis" style={{maxWidth:640,margin:"0 auto"}}>
           <AnelNeon i={0} pct={funilReferencia.agendaram.pctEtapaAnterior} label="Agendou" sub="dos contatados"/>
           <AnelNeon i={1} pct={funilReferencia.compareceram.pctEtapaAnterior} label="Compareceu" sub="de quem agendou"/>
           <AnelNeon i={3} pct={funilReferencia.fecharam.pctEtapaAnterior} label="Fechou" sub="de quem compareceu"/>
         </div>
       </div>}
+
+      {/* 2026-10-18 (Felipe: "o que der, em gráfico, as mais importantes primeiro"): os
+          percentuais de atendimento, que eram cards de número, viraram anéis. */}
+      <div className="card dash-aneis-card" style={{marginBottom:12}}>
+        <div className="card-head">
+          <div className="card-title"><i className="ti ti-heart-handshake"/> Atendimento</div>
+          {semResposta.total>0 && <span className="badge badge-danger" title="Leads sem resposta há mais tempo que o limite">{semResposta.total} sem resposta há {semResposta.horasParametro}h+</span>}
+        </div>
+        <div className="nx-aneis">
+          {funilReferencia && <AnelNeon i={4} pct={funilReferencia.contatados5min.pct} label="Contatado em até 5 min" sub={`${funilReferencia.contatados5min.total} de ${funilReferencia.contatados.total}`}/>}
+          <AnelNeon i={0} pct={iaVsHumano.soIaPct} label="Só a IA resolveu" sub={`${iaVsHumano.soIa} de ${iaVsHumano.soIa+iaVsHumano.precisouHumano} (${iaVsHumano.precisouHumanoPct}% precisou humano)`}/>
+          {funilReferencia && <AnelNeon i={1} pct={funilReferencia.comparecimento.pct} label="Comparecimento" sub={`${funilReferencia.comparecimento.compareceram} de ${funilReferencia.comparecimento.resolvidos} visitas`}/>}
+          {funilReferencia && <AnelNeon i={2} pct={funilReferencia.fechamentoPorFollowup.pct} label="Venda com follow-up" sub={`${funilReferencia.fechamentoPorFollowup.comFollowup} de ${funilReferencia.fechamentoPorFollowup.totalFechadas} vendas`}/>}
+          <AnelNeon i={3} pct={followups.pct} label="Follow-ups respondidos" sub={`${followups.cumpridos} de ${followups.total}`}/>
+          {metricas.qualidade && <AnelNeon cor={NEON_TOM.perda} pct={metricas.qualidade.silencioPosHandoff.pct} label="Silêncio pós-passagem" sub={`${metricas.qualidade.silencioPosHandoff.semResposta} de ${metricas.qualidade.silencioPosHandoff.total} sem 1ª resposta do vendedor`}/>}
+        </div>
+      </div>
 
       {/* 2026-08-04: qualidade de atendimento (pedido do usuário) — tempo de resposta da
           IA e silêncio pós-handoff aparecem pra admin_master+gerente igual o resto dessa
@@ -534,11 +507,6 @@ function TabMetricas({ metricas, loading, erro }) {
             <div className="metric-label"><i className="ti ti-bolt"/> Resp. média da IA</div>
             <div className="metric-value">{metricas.qualidade.tempoRespostaIaSeg!=null?`${metricas.qualidade.tempoRespostaIaSeg}s`:"sem dados"}</div>
             <div className="metric-delta" style={{color:"var(--muted)"}}>até a 1ª resposta da Lara</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label"><i className="ti ti-message-off"/> Silêncio pós-handoff</div>
-            <div className="metric-value" style={{color:metricas.qualidade.silencioPosHandoff.pct>20?"var(--alert)":undefined}}>{metricas.qualidade.silencioPosHandoff.pct}%</div>
-            <div className="metric-delta" style={{color:"var(--muted)"}}>{metricas.qualidade.silencioPosHandoff.semResposta} de {metricas.qualidade.silencioPosHandoff.total} sem 1ª resposta do vendedor</div>
           </div>
           {metricas.qualidade.falhaTecnica && (
             <div className="metric-card">
@@ -567,14 +535,8 @@ function TabMetricas({ metricas, loading, erro }) {
       <div className="card" style={{marginBottom:12}}>
         <div className="card-title"><i className="ti ti-alert-octagon"/> Gargalo — tempo parado no estágio atual</div>
         {tempoPorEstagio.gargaloAtual?.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Sem dados suficientes.</p>}
-        {tempoPorEstagio.gargaloAtual?.map((g,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <div style={{minWidth:110,fontSize:13,color:"var(--fg)"}}>{g.estagio}</div>
-            <div style={{fontSize:12,color:"var(--muted)"}}>{g.total} leads</div>
-            <div style={{flex:1}}/>
-            <div style={{fontSize:13,fontWeight:600,color:Number(g.media_horas_parado)>72?"var(--alert)":"var(--fg)"}}>{Math.round(g.media_horas_parado)}h em média</div>
-          </div>
-        ))}
+        {tempoPorEstagio.gargaloAtual?.length>0 && <BarrasNeon itens={tempoPorEstagio.gargaloAtual.map(g=>({label:g.estagio, valor:Number(g.media_horas_parado),
+          cor:Number(g.media_horas_parado)>72?NEON_TOM.perda:undefined, texto:`${Math.round(g.media_horas_parado)}h · ${g.total} leads`}))}/>}
         <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>Até negociação: {tempoPorEstagio.ate_negociacao_horas??"—"}h · Negociação até fechar: {tempoPorEstagio.negociacao_ate_fechar_horas??"—"}h</div>
       </div>
 
@@ -878,10 +840,12 @@ export default function Dashboard() {
       </div>
 
 
+      <div className={`dash-conteudo${(aba==="metricas"?loadingMetricas:loading)?" atualizando":""}`}>
       {aba==="oportunidades" && <TabOportunidades data={data} periodo={periodo} onMidiaSaved={recarregarDashboard} onAbrirCrm={()=>navigate("/crm")}/>}
       {aba==="jornada"       && <TabJornada data={data}/>}
       {aba==="estoque"       && <TabEstoque data={data}/>}
       {aba==="metricas"      && <TabMetricas metricas={metricas} loading={loadingMetricas} erro={erroMetricas}/>}
+      </div>
     </div>
   );
 }
