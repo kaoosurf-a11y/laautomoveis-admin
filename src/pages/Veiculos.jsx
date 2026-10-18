@@ -398,7 +398,7 @@ export default function Veiculos() {
                     </td>
                     <td style={{width:70}}>
                       {v.fotos?.[0]
-                        ? <img src={v.fotos[0]} alt="" style={{width:60,height:46,objectFit:"cover",borderRadius:8}}/>
+                        ? <img src={v.fotos[0]} alt="" loading="lazy" decoding="async" style={{width:60,height:46,objectFit:"cover",borderRadius:8}}/>
                         : <div style={{width:60,height:46,background:"var(--surface2)",borderRadius:8}}/>}
                     </td>
                     <td>
@@ -460,7 +460,7 @@ export default function Veiculos() {
                 <button className="btn btn-ghost btn-icon" style={{padding:4,minHeight:0}} onClick={() => mover(v,"baixo")} disabled={i===veiculos.length-1 || movendo===v.id} title="Mover pra baixo"><i className="ti ti-chevron-down"/></button>
               </div>
               {v.fotos?.[0]
-                ? <img src={v.fotos[0]} alt="" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
+                ? <img src={v.fotos[0]} alt="" loading="lazy" decoding="async" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
                 : <div style={{width:"100%",height:v.badge||!v.ativo?60:0,background:"var(--surface2)"}}/>}
               {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
               {v.id===capaId && (
@@ -548,7 +548,7 @@ export default function Veiculos() {
                       onDrop={e => { e.preventDefault(); moverFoto(Number(e.dataTransfer.getData("text/plain")), i); setArrastando(null); setSoltando(null); }}
                       onDragEnd={() => { setArrastando(null); setSoltando(null); }}
                     >
-                      <img src={url} alt="" draggable={false}/>
+                      <img src={url} alt="" loading="lazy" decoding="async" draggable={false}/>
                       {i === 0
                         ? <div className="ficha-capa">Capa</div>
                         : <button type="button" className="ficha-capa ficha-virar-capa" onClick={() => moverFoto(i, 0)}>Capa</button>}

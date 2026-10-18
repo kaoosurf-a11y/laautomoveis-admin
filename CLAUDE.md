@@ -42,3 +42,10 @@ Three roles: `admin_master` (network-wide, e.g. Felipe/Diana), `gerente` (read-o
 ## Testing constraint (important, don't try to work around it)
 
 Claude cannot log into this admin panel — typing any password (even the shared default) into the login form, or minting a bypass JWT with the known secret, are both hard-blocked regardless of task authorization. For role-scoped verification (`gerente` vs `vendedor` vs `admin_master` behavior), either: (a) trace it via code + direct DB checks, which is usually sufficient since most bugs here are unconditional (same for every role) rather than role-dependent, or (b) ask the actual user to log in and drive the UI while Claude verifies the resulting DB state.
+
+## Leveza no celular (2026-10-18)
+
+- **Ícones**: não vêm mais do CDN. `src/assets/icones/` tem a fonte Tabler recortada só nos ícones usados (25 KB em vez de ~916 KB). **Usou um ícone `ti-*` novo? Rode `python3 scripts/icones.py`** (precisa de `fonttools`) e commite os 2 arquivos gerados; senão o ícone novo aparece em branco.
+- **Telas sob demanda**: `App.jsx` carrega cada página com `React.lazy` e baixa as outras em segundo plano 2,5 s depois. Página nova entra na lista com `tela(() => import(...))` e em `TELAS`.
+- **Fotos dos cards** (CRM e Follow-ups) usam `src/lib/useVisivel.js`; fotos de Veículos/Status com `loading="lazy"`. `.kanban-card` tem `content-visibility:auto` (card fora da tela não é desenhado).
+- Medição antes/depois (4G lento, CPU 4x, 390x844 e 820x1180): `/root/reports/painel-leveza-celular-20261018.md`.

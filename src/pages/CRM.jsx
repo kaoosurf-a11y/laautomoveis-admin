@@ -4,6 +4,7 @@ import { api as veiculosApi } from "../lib/api.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
+import { useVisivel } from "../lib/useVisivel.js";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
 // nao_achou_carro/parou_responder o rótulo é o mesmo da coluna do Kanban (o tipo
@@ -260,11 +261,14 @@ const iniciaisDe=n=>String(n||"?").trim().split(/\s+/).map(x=>x[0]).slice(0,2).j
 // Selo de canal em cima da foto/inicial: de onde o lead veio (mesmas origens do seletor).
 const CANAL={anuncio:["#1877F2","ti-brand-meta","Anúncio"],site:["#5b6b7f","ti-world","Site"],organico:["#25D366","ti-brand-whatsapp","Orgânico (WhatsApp)"],presencial:["#b08a2e","ti-building-store","Presencial (loja)"],reativacao:["#8E44AD","ti-refresh","Campanha de reativação"],particular:["#128a43","ti-brand-whatsapp","WhatsApp particular do vendedor"]};
 // Foto de perfil do cliente (a que o Chatwoot já guarda; vem em lead.foto_url). Sem foto,
-// ou se a imagem não abrir, mostra a inicial. loading="lazy": só baixa a foto do card que aparece.
+// ou se a imagem não abrir, mostra a inicial. Só baixa a foto do card que aparece (useVisivel).
 function FotoLead({lead}){
   const[falhou,setFalhou]=useState(false);
+  const[ref,visivel]=useVisivel();
   if(!lead.foto_url||falhou)return <div className="kc-ini">{iniciaisDe(lead.nome)}</div>;
-  return <img className="kc-foto" src={lead.foto_url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
+  // Até o card chegar perto da tela fica só o círculo vazio (sem baixar a foto).
+  if(!visivel)return <div ref={ref} className="kc-foto"/>;
+  return <img className="kc-foto" src={lead.foto_url} alt="" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
 }
 // Status do follow-up no rodapé: bolinha vermelha (atrasado), verde (em dia). Sem follow-up não mostra nada.
 function StatusFollowup({lead}){

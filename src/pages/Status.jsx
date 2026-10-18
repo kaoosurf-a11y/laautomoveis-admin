@@ -152,7 +152,7 @@ export default function Status() {
             {historico.map(h => (
               <div key={h.id} style={{ display: "flex", gap: 12, padding: 10, borderRadius: 8, background: "var(--surface2)", alignItems: "flex-start" }}>
                 {h.foto_url
-                  ? <img src={h.foto_url} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+                  ? <img src={h.foto_url} alt="" loading="lazy" decoding="async" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
                   : <div style={{ width: 56, height: 56, borderRadius: 8, flexShrink: 0, background: "#FFD400" }} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>

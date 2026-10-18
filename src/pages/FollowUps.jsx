@@ -3,6 +3,7 @@ import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualiza
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
+import { useVisivel } from "../lib/useVisivel.js";
 
 // Ordem das colunas — só preferência visual (mesmo padrão do CRM Kanban em CRM.jsx),
 // localStorage já basta. Uma chave só (não por role): as 7 colunas são as mesmas pra
@@ -145,8 +146,11 @@ const iniciaisDe=n=>String(n||"?").trim().split(/\s+/).map(x=>x[0]).slice(0,2).j
 const CANAL={anuncio:["#1877F2","ti-brand-meta","Anúncio"],site:["#5b6b7f","ti-world","Site"],organico:["#25D366","ti-brand-whatsapp","Orgânico (WhatsApp)"],presencial:["#b08a2e","ti-building-store","Presencial (loja)"],reativacao:["#8E44AD","ti-refresh","Campanha de reativação"],particular:["#128a43","ti-brand-whatsapp","WhatsApp particular do vendedor"]};
 function FotoLead({nome,foto}){
   const[falhou,setFalhou]=useState(false);
+  const[ref,visivel]=useVisivel();
   if(!foto||falhou)return <div className="kc-ini">{iniciaisDe(nome)}</div>;
-  return <img className="kc-foto" src={foto} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
+  // Até o card chegar perto da tela fica só o círculo vazio (sem baixar a foto).
+  if(!visivel)return <div ref={ref} className="kc-foto"/>;
+  return <img className="kc-foto" src={foto} alt="" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
 }
 
 // Classificação do estágio: manual (vendedor arrastou o card) vs automática (Observador
