@@ -525,10 +525,16 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
           const isHoje=mesmoDia(d,hoje);
           const isSel=mesmoDia(d,diaSel);
           const sobrando=total-eventos.length;
+          // 2026-10-18 (Felipe): domingo a loja fecha (célula inteira em outra cor) e
+          // sábado fecha 12h (metade de baixo pintada, a tarde fechada).
+          const dow=d.getDay();
+          const fundo=dow===0?"var(--danger-soft)"
+            :dow===6?"linear-gradient(to bottom, var(--surface2) 50%, var(--danger-soft) 50%)"
+            :"var(--surface2)";
           return(
-            <button key={i} className="cal-cel cal-cel-mes" onClick={()=>onSelecionarDia(d)} style={{
+            <button key={i} className="cal-cel cal-cel-mes" onClick={()=>onSelecionarDia(d)} title={dow===0?"Domingo: loja fechada":dow===6?"Sábado: loja até 12h":undefined} style={{
               border:isSel?"2px solid var(--brand)":isHoje?"1px solid var(--brand)":"1px solid var(--border)",
-              background:isSel?"var(--brand-soft)":"var(--surface2)",
+              background:isSel?"var(--brand-soft)":fundo,
             }}>
               <span className="cal-cel-num" style={{fontWeight:isHoje?700:500}}>{d.getDate()}</span>
               <div className="cal-cel-chips">
@@ -541,6 +547,10 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
             </button>
           );
         })}
+      </div>
+      <div style={{display:"flex",gap:16,flexWrap:"wrap",marginTop:8,fontSize:12,color:"var(--muted)"}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:6}}><span style={{width:12,height:12,borderRadius:3,background:"var(--danger-soft)",border:"1px solid var(--border)"}}/> Domingo fechado</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:6}}><span style={{width:12,height:12,borderRadius:3,background:"linear-gradient(to bottom, var(--surface2) 50%, var(--danger-soft) 50%)",border:"1px solid var(--border)"}}/> Sábado até 12h</span>
       </div>
     </div>
   );

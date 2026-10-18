@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
-import { ChatwootLink } from "../components/ChatwootLink.jsx";
+import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 
 // Ordem das colunas — só preferência visual (mesmo padrão do CRM Kanban em CRM.jsx),
@@ -29,7 +29,18 @@ const MSG_STATUS_INFO = {
 // Sequência de mensagens do fluxo automático do estágio — pausar/cancelar/editar
 // antes do envio (o sender em n8n roda a cada 15min e só manda o que ainda tá
 // "agendada" e com o fluxo em "ativo").
+// 2026-10-18 (Felipe: card no padrao do Kanban, tudo cabendo na tela): o fluxo fica
+// recolhido numa linha (quantas saíram e quando sai a próxima); clicar abre a lista.
+function resumoFluxo(f) {
+  const ms = f.mensagens || [];
+  const enviadas = ms.filter(m => m.status === "enviada").length;
+  const prox = ms.find(m => m.status === "agendada");
+  const vencida = prox && new Date(prox.agendado_para) < new Date();
+  return { total: ms.length, enviadas, prox, vencida };
+}
+
 function FluxoMensagens({ followup, readOnly, onAtualizado }) {
+  const [aberto, setAberto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [textoEdit, setTextoEdit] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -49,10 +60,26 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
     catch { await alertDialog("Erro ao atualizar fluxo."); }
   }
 
+  const r = resumoFluxo(followup);
+  const pausado = followup.status_fluxo === "pausado", cancelado = followup.status_fluxo === "cancelado";
+  const cor = cancelado ? "var(--muted)" : pausado ? "var(--warning)" : r.vencida ? "var(--danger)" : "var(--info)";
+  const resumo = cancelado ? "Fluxo cancelado" : pausado ? "Fluxo pausado"
+    : r.prox ? `Próxima ${fmtData(r.prox.agendado_para)}${r.vencida ? " (atrasada)" : ""}` : "Nada agendado";
+  if (!aberto) {
+    return (
+      <button type="button" className="fu-fluxo-resumo" style={{ color: cor }} onClick={() => setAberto(true)} title="Ver e editar as mensagens">
+        <i className="ti ti-message-circle" />
+        <span className="fu-fluxo-txt">{resumo}</span>
+        <span className="fu-fluxo-n">{r.enviadas}/{r.total}</span>
+        <i className="ti ti-chevron-down" />
+      </button>
+    );
+  }
+
   return (
-    <div style={{ background: "var(--surface2)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase" }}>Fluxo de mensagens</span>
+    <div className="fu-fluxo">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 4 }}>
+        <button type="button" className="fu-fluxo-fechar" onClick={() => setAberto(false)}><i className="ti ti-chevron-up" /> Mensagens {r.enviadas}/{r.total}</button>
         {!readOnly && (
           <div style={{ display: "flex", gap: 4 }}>
             {followup.status_fluxo === "ativo"
@@ -138,11 +165,20 @@ function ClassificacaoBadge({f}){
   return null;
 }
 
-// Editar nome/veículo do lead (mesmos campos editáveis do modal do CRM) ou remover
-// (soft-delete, só owner — mesma rota DELETE /api/crm/leads/:id já usada em CRM.jsx)
-// direto do card de Follow-ups, sem precisar ir até o Pipeline pra corrigir um nome
-// de teste/erro ou tirar um lead de teste da lista (2026-07-16).
-function LeadCardHeader({f,role,onAtualizado}){
+// Card no mesmo padrão do Kanban do CRM (CRM.jsx, classes .kc): foto do cliente com selo
+// de origem, nome e data em cima, carro em destaque, selos, e o rodapé com vendedor e
+// Chatwoot. Editar nome/veículo e remover (só owner) continuam aqui (2026-07-16).
+// 2026-10-18 (Felipe: "mesmo padrão do Kanban, com as fotinhos, tudo organizado").
+function diaMesCurto(iso){if(!iso)return "";const d=new Date(iso);if(isNaN(d))return "";return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0");}
+const iniciaisDe=n=>String(n||"?").trim().split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
+const CANAL={anuncio:["#1877F2","ti-brand-meta","Anúncio"],site:["#5b6b7f","ti-world","Site"],organico:["#25D366","ti-brand-whatsapp","Orgânico (WhatsApp)"],presencial:["#b08a2e","ti-building-store","Presencial (loja)"],reativacao:["#8E44AD","ti-refresh","Campanha de reativação"],particular:["#128a43","ti-brand-whatsapp","WhatsApp particular do vendedor"]};
+function FotoLead({nome,foto}){
+  const[falhou,setFalhou]=useState(false);
+  if(!foto||falhou)return <div className="kc-ini">{iniciaisDe(nome)}</div>;
+  return <img className="kc-foto" src={foto} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
+}
+
+function FuCard({f,role,readOnly,onAtualizado,onRespondeu}){
   const[editando,setEditando]=useState(false);
   const[nome,setNome]=useState(f.cliente_nome||"");
   const[veiculo,setVeiculo]=useState(f.veiculo||"");
@@ -159,27 +195,48 @@ function LeadCardHeader({f,role,onAtualizado}){
     try{await excluirLeadCRM(f.lead_id);onAtualizado();}
     catch{await alertDialog("Erro ao remover.");}
   }
-  if(editando){
-    return(
-      <>
-        <input className="form-input" style={{marginBottom:4,fontSize:12,padding:"4px 6px"}} value={nome} onChange={e=>setNome(e.target.value)} placeholder="Nome"/>
-        <input className="form-input" style={{marginBottom:4,fontSize:12,padding:"4px 6px"}} value={veiculo} onChange={e=>setVeiculo(e.target.value)} placeholder="Veículo de interesse"/>
-        <div style={{display:"flex",gap:4}}>
-          <button className="btn btn-primary" style={{padding:"3px 8px",fontSize:11}} onClick={salvar} disabled={salvando}>{salvando?<span className="spinner"/>:"Salvar"}</button>
-          <button className="btn btn-ghost" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditando(false);setNome(f.cliente_nome||"");setVeiculo(f.veiculo||"");}}>Cancelar</button>
-        </div>
-      </>
-    );
-  }
+  const canal=CANAL[f.origem];
+  const lead={...f,id:f.lead_id,nome:f.cliente_nome};
   return(
-    <>
-      <div style={{display:"flex",alignItems:"center",gap:3}}>
-        <div className="fu-nome">{f.cliente_nome}</div>
-        <button className="icon-btn" style={{width:34,height:34,fontSize:16}} onClick={()=>setEditando(true)} title="Editar nome/veículo" aria-label="Editar nome/veículo"><i className="ti ti-pencil"/></button>
-        {role==="admin_master"&&<button className="icon-btn" style={{width:34,height:34,fontSize:16,color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)" aria-label="Remover lead"><i className="ti ti-trash"/></button>}
+    <div className="kanban-card kc fu-card">
+      <div className="kc-av">
+        <FotoLead nome={f.cliente_nome} foto={f.foto_url}/>
+        {canal&&<span className="kc-ch" style={{background:canal[0]}} title={`Origem: ${canal[2]}`}><i className={`ti ${canal[1]}`}/></span>}
       </div>
-      <div className="fu-sub">{f.veiculo||"—"} · {f.vendedor_nome||"sem vendedor"}</div>
-    </>
+      {editando?(
+        <div className="kc-main">
+          <input className="form-input" style={{marginBottom:4,fontSize:12,padding:"4px 6px"}} value={nome} onChange={e=>setNome(e.target.value)} placeholder="Nome"/>
+          <input className="form-input" style={{marginBottom:4,fontSize:12,padding:"4px 6px"}} value={veiculo} onChange={e=>setVeiculo(e.target.value)} placeholder="Veículo de interesse"/>
+          <div style={{display:"flex",gap:4}}>
+            <button className="btn btn-primary" style={{padding:"3px 8px",fontSize:11}} onClick={salvar} disabled={salvando}>{salvando?<span className="spinner"/>:"Salvar"}</button>
+            <button className="btn btn-ghost" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditando(false);setNome(f.cliente_nome||"");setVeiculo(f.veiculo||"");}}>Cancelar</button>
+          </div>
+        </div>
+      ):(
+        <div className="kc-main">
+          <div className="kc-top"><span>{f.cliente_nome}</span><time title={`Entrou em ${fmtData(f.criado_em)}`}>{diaMesCurto(f.criado_em)}</time></div>
+          <div className="kc-car">{f.veiculo||"Sem carro definido"}</div>
+        </div>
+      )}
+      <div className="kc-meta">
+        {f.temperatura==="quente"&&<span className="kc-tag hot">Quente</span>}
+        {f.temperatura==="morno"&&<span className="kc-tag">Morno</span>}
+        <ClassificacaoBadge f={f}/>
+        {f.respondeu&&<span className="badge badge-success"><i className="ti ti-check" style={{fontSize:11}}/> Respondeu</span>}
+      </div>
+      {f.mensagens&&f.mensagens.length>0
+        ?<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={onAtualizado}/>
+        :<div className="kc-linha" style={{color:"var(--muted)"}}><i className="ti ti-message-off"/> Sem mensagem automática nesse estágio</div>}
+      <div className="kc-foot">
+        {f.vendedor_iniciais&&<div className="av" title={f.vendedor_nome||undefined} style={{width:20,height:20,fontSize:8,background:"var(--brand-soft)",color:"var(--brand)"}}>{f.vendedor_iniciais}</div>}
+        {!readOnly&&<button className="fu-ico" onClick={()=>setEditando(true)} title="Editar nome/veículo" aria-label="Editar nome/veículo"><i className="ti ti-pencil"/></button>}
+        {role==="admin_master"&&<button className="fu-ico" style={{color:"var(--danger)"}} onClick={remover} title="Remover lead (teste/erro)" aria-label="Remover lead"><i className="ti ti-trash"/></button>}
+        <span className="kc-dir">
+          {!f.respondeu&&!readOnly&&<button className="fu-resp" onClick={()=>onRespondeu(f.id)} title="O cliente respondeu: para o fluxo de mensagens">Respondido</button>}
+          <LeadPhoneChatwoot lead={lead} compact/>
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -238,7 +295,7 @@ export default function FollowUps(){
   const arrastandoBoard=useRef({ativo:false,startX:0,startScroll:0});
   function onBoardMouseDown(e){
     if(e.button!==0)return;
-    if(e.target.closest(".fu-kanban-card")||e.target.closest(".fu-kanban-col-header"))return;
+    if(e.target.closest(".kanban-card")||e.target.closest(".kanban-col-header"))return;
     const board=boardRef.current;
     if(!board)return;
     arrastandoBoard.current={ativo:true,startX:e.pageX,startScroll:board.scrollLeft};
@@ -292,18 +349,6 @@ export default function FollowUps(){
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
 
-  // Chatwoot é o único link de conversa — já leva pra thread certa, não precisa do
-  // atalho de WhatsApp Web ao lado (que abria a conversa "solta", sem contexto).
-  function AcoesLead(f){
-    return (
-      <div className="fu-actions">
-        <ChatwootLink conv_id={f.chatwoot_conv_id} inbox_id={f.chatwoot_inbox_id}> Chatwoot</ChatwootLink>
-        {!f.respondeu&&!readOnly&&<button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:12}} onClick={()=>marcarRespondeu(f.id)}>Marcar respondido</button>}
-        {f.respondeu&&<span className="badge badge-success" style={{fontSize:11}}><i className="ti ti-check" style={{fontSize:12}}/> Respondeu</span>}
-      </div>
-    );
-  }
-
   return(
     <div>
       {/* Filtro de data — substitui as antigas abas "Agenda de hoje"/"Vencidos"
@@ -330,15 +375,15 @@ export default function FollowUps(){
           mais alto/detalhado (mostra a mensagem real), então um contorno inteiro
           ficaria pesado. Card sem duplicar informação: ClassificacaoBadge já
           resume o "motivo" (IA+confiança ou manual), não repete o texto cru. */}
-          <div className="fu-kanban-board" ref={boardRef}
+          <div className="kanban-board fu-board" ref={boardRef}
             onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
             onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}>
             {tiposOrdenados.map(tipo=>{
               const leads=(data.porTipo?.[tipo]||[]).filter(passaFiltro);
               const cor=TIPO_COR[tipo];
               return (
-              <div key={tipo} className="fu-kanban-col" style={{"--cor":cor}}>
-                <div className="fu-kanban-col-header" style={{"--cor":cor,opacity:colArrastando===tipo?.4:1,cursor:"grab"}}
+              <div key={tipo} className="kanban-col" style={{"--cor":cor}}>
+                <div className="kanban-col-header" style={{"--cor":cor,opacity:colArrastando===tipo?.4:1}}
                   draggable
                   onDragStart={e=>onColHeaderDragStart(e,tipo)}
                   onDragOver={onColHeaderDragOver}
@@ -347,33 +392,13 @@ export default function FollowUps(){
                   title="Arraste pra reordenar as colunas">
                   <span style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
                     <i className="ti ti-grip-vertical" style={{fontSize:13,color:"var(--muted)",flexShrink:0}}/>
-                    <span className="fu-kanban-col-title">{TIPO_LABEL[tipo]||tipo}</span>
+                    <span className="kanban-col-title">{TIPO_LABEL[tipo]||tipo}</span>
                   </span>
                   <span className="kanban-col-count">{leads.length}</span>
                 </div>
-                <div className="fu-kanban-cards">
+                <div className="kanban-cards">
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
-                  {leads.map(f=>(
-                    <div key={f.id} className="fu-kanban-card">
-                      <div className="fu-item">
-                        <div className="av" style={{background:"var(--brand-soft)",color:"var(--brand)",flexShrink:0,fontSize:10}}>{f.vendedor_iniciais}</div>
-                        <div className="fu-info">
-                          <LeadCardHeader f={f} role={role} onAtualizado={load}/>
-                          <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>
-                            Entrou em {fmtData(f.criado_em)} · Próximo follow-up: {fmtData(f.horario)}
-                          </div>
-                          <div style={{marginTop:4}}>
-                            <ClassificacaoBadge f={f}/>
-                            {!f.estagio_definido_por&&f.motivo&&<span style={{fontSize:11,color:"var(--muted)"}}>{f.motivo}</span>}
-                          </div>
-                        </div>
-                        {AcoesLead(f)}
-                      </div>
-                      {f.mensagens&&f.mensagens.length>0
-                        ?<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={load}/>
-                        :<div style={{fontSize:11,color:"var(--muted)",fontStyle:"italic",marginTop:6,textAlign:"center"}}>Sem mensagem automática pra esse estágio</div>}
-                    </div>
-                  ))}
+                  {leads.map(f=><FuCard key={f.id} f={f} role={role} readOnly={readOnly} onAtualizado={load} onRespondeu={marcarRespondeu}/>)}
                 </div>
               </div>
               );
