@@ -740,6 +740,80 @@ function DiaModal({dia,ags,loading,erro,ocultos,ordemVend,readOnly,onClose,onAbr
   );
 }
 
+// ── Quem vem (aba Hoje) ──
+// Felipe 19/10: "em hoje eu quero igual ao modelo em lista, quem vem hoje, quem tem pra
+// atender" (referência: a lista da clínica). Uma coluna por vendedor, cada linha um
+// horário de 30 min do expediente (seg a sex 8h às 18h, sáb 8h às 12h). Horário livre
+// fica apagado; agendamento mostra cliente e interesse; bloqueio (almoço) vira uma linha
+// só com a faixa. Agendamento fora da meia hora (ex.: 12:55) entra na hora real.
+function minDoDia(iso){const d=new Date(iso);return d.getHours()*60+d.getMinutes();}
+function hhmm(m){return `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
+function linhasDoVendedor(dia,itens){
+  const dow=dia.getDay();
+  const ini=8*60,fim=dow===6?12*60:18*60;
+  const ocupa=itens.map(ag=>({ag,i:minDoDia(ag.data_hora),f:minDoDia(ag.data_hora)+(ag.duracao_min||30)}));
+  const linhas=[];
+  if(dow!==0)for(let m=ini;m<fim;m+=30){
+    if(!ocupa.some(o=>m>=o.i&&m<o.f))linhas.push({m});
+  }
+  ocupa.forEach(o=>linhas.push({m:o.i,ag:o.ag,f:o.f}));
+  linhas.sort((a,b)=>a.m-b.m||(!!b.ag)-(!!a.ag));
+  return linhas;
+}
+function QuemVem({dia,doDia,vendedores,ocultos,ordemVend,porLoja,onAbrirAg}){
+  const ativos=doDia.filter(ag=>ag.status!=="cancelado");
+  const geral=ativos.filter(ag=>!ag.vendedor_id&&ag.tipo==="bloqueio");
+  const lista=[...vendedores];
+  ativos.forEach(ag=>{if(!lista.some(v=>(v.vendedor_id||0)===(ag.vendedor_id||0))&&!(geral.includes(ag)))lista.push({vendedor_id:ag.vendedor_id,vendedor_nome:ag.vendedor_nome||"Sem vendedor",loja_id:null});});
+  if(porLoja)lista.sort((a,b)=>(a.loja_id||9)-(b.loja_id||9));
+  const colunas=lista.filter(v=>!ocultos.has(v.vendedor_id||0)).map(v=>{
+    const k=v.vendedor_id||0;
+    const itens=[...ativos.filter(ag=>(ag.vendedor_id||0)===k&&!geral.includes(ag)),...geral];
+    return {k,v,itens,linhas:linhasDoVendedor(dia,itens),qtd:itens.filter(ehCompromisso).length};
+  });
+  const agora=new Date();
+  const ehHoje=mesmoDia(dia,agora);
+  const minAgora=agora.getHours()*60+agora.getMinutes();
+  if(colunas.length===0)return <div className="empty-state"><i className="ti ti-calendar-off"/><p>{dia.getDay()===0?"Domingo a loja fica fechada.":"Nenhum vendedor com agenda neste dia."}</p></div>;
+  return(
+    <div className="agq">
+      <div className="agq-cab">
+        <h2 className="agq-tit">Quem vem</h2>
+        <span className="agq-total">{ativos.filter(ehCompromisso).length} {ativos.filter(ehCompromisso).length===1?"cliente":"clientes"} {ehHoje?"hoje":"no dia"}</span>
+      </div>
+      <div className="agq-cols">
+        {colunas.map(c=>(
+          <section key={c.k} className="agq-col">
+            <h3 className="agq-vend"><i style={{background:corDoVendedor(c.v.vendedor_id,ordemVend)}}/>{c.v.vendedor_nome}{porLoja&&c.v.loja_id&&<small>{NOME_LOJA[c.v.loja_id]}</small>}<span className="agd-cont">{c.qtd}</span></h3>
+            {c.linhas.length===0&&<div className="agq-vazio">Sem expediente</div>}
+            {c.linhas.map((l,i)=>{
+              const passou=ehHoje&&(l.f||l.m+30)<=minAgora;
+              if(!l.ag)return <div key={`l${l.m}`} className={`agq-lin livre${passou?" passou":""}`}><span className="agq-h">{hhmm(l.m)}</span></div>;
+              const ag=l.ag;
+              if(!ehCompromisso(ag))return(
+                <div key={ag.id} className={`agq-lin bloq${passou?" passou":""}`}>
+                  <span className="agq-h">{hhmm(l.m)}</span>
+                  <span className="agq-txt"><i className={`ti ${ag.recorrente?"ti-repeat":"ti-lock"}`}/> {ag.observacoes||"Bloqueado"} <em>até {hhmm(l.f)}</em></span>
+                </div>
+              );
+              const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"ti-calendar",cor:"var(--muted)"};
+              const st=getStatus(ag);
+              const sit=SITUACAO[st]||{label:ag.status,badge:"badge-muted"};
+              return(
+                <button key={ag.id} type="button" className={`agq-lin ag${passou?" passou":""}`} onClick={()=>onAbrirAg(ag)} style={{"--agq-cor":SBORDA[st]||tipo.cor}}>
+                  <span className="agq-h">{hhmm(l.m)}</span>
+                  <span className="agq-txt"><strong>{ag.cliente_nome||"Sem nome"}</strong><span className="agq-int"> · {ag.veiculo||tipo.label}</span></span>
+                  <span className={`badge ${sit.badge} agq-sit`}>{sit.label}</span>
+                </button>
+              );
+            })}
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Agenda(){
   const readOnly=getRole()==="gerente";
   const[ags,setAgs]=useState([]);
@@ -773,6 +847,8 @@ export default function Agenda(){
   useEffect(()=>{load();},[diaSel]);
   useEffect(()=>{veiculosApi.getVeiculos().then(setVeiculos).catch(()=>{});},[]);
   useEffect(()=>{if(visao==="mes")loadMes();},[visao,mesAtual]);
+  // Aba Hoje: a lista de vendedores (e a loja de cada um) vem do resumo do mês do dia.
+  useEffect(()=>{if(visao==="dia")getResumoMes(diaSel.getFullYear(),diaSel.getMonth()+1).then(setResumoMes).catch(()=>setResumoMes([]));},[visao,diaSel.getFullYear(),diaSel.getMonth()]);
 
   function mudarMes(delta){
     setMesAtual(m=>{const n=new Date(m);n.setMonth(n.getMonth()+delta);return n;});
@@ -867,15 +943,17 @@ export default function Agenda(){
             <strong>{DIAS_LONGOS[diaSel.getDay()]}, {diaSel.getDate()} de {MESES[diaSel.getMonth()].toLowerCase()}</strong>
             <button className="btn btn-ghost btn-icon" aria-label="Próximo dia" onClick={()=>mudarDia(1)}><i className="ti ti-chevron-right"/></button>
             {!mesmoDia(diaSel,hoje)&&<button className="btn btn-ghost btn-sm" onClick={()=>setDiaSel(new Date())}>Hoje</button>}
+            {vendedores.length>1&&<div className="agq-menu"><VendedoresMenu vendedores={vendedores} ocultos={ocultos} setOcultos={setOcultos} ordemVend={ordemVend} meuId={meuId} porLoja={ehDono}/></div>}
           </div>
         )}
-        <div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>{fmtDia(diaSel)} · {doDia.filter(a=>a.status!=="cancelado"&&ehCompromisso(a)).length} agendamentos</div>
+        {visao==="semana"&&<div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>{fmtDia(diaSel)} · {doDia.filter(a=>a.status!=="cancelado"&&ehCompromisso(a)).length} agendamentos</div>}
         {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
         {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
-        {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
+        {!erro&&!loading&&visao==="dia"&&<QuemVem dia={diaSel} doDia={doDia} vendedores={vendedores} ocultos={ocultos} ordemVend={ordemVend} porLoja={ehDono} onAbrirAg={ag=>setAgAberto(ag.id)}/>}
+        {!erro&&!loading&&visao==="semana"&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
         {/* 2026-07-28: grade de horários no desktop; no celular lista vertical com o card completo. */}
-        {!erro&&!loading&&doDia.length>0&&<div className="d-desktop"><GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/></div>}
-        {!erro&&!loading&&<div className="d-mobile">
+        {!erro&&!loading&&visao==="semana"&&doDia.length>0&&<div className="d-desktop"><GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/></div>}
+        {!erro&&!loading&&visao==="semana"&&<div className="d-mobile">
           {doDia.filter(ag=>ag.status!=="cancelado"&&ehCompromisso(ag)).map(ag=>(
             <AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly||ag.pode_alterar===false}/>
           ))}
