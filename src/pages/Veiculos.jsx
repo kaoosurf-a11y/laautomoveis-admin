@@ -95,6 +95,7 @@ export default function Veiculos() {
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [fotosPequenas, setFotosPequenas] = useState(0);
   const [arrastando, setArrastando] = useState(null);
   const [soltando, setSoltando] = useState(null);
   const [leituras, setLeituras] = useState({});
@@ -164,10 +165,21 @@ export default function Veiculos() {
     setReleituras([]);
     setSugeridos([]);
   }
-  function abrirCriar() { setForm(empty); limparLeitura(); setErro(""); setModal("criar"); }
-  function abrirEditar(v) { setForm({...v, valor_fipe: v.valor_fipe != null ? String(Number(v.valor_fipe)) : "", opcionais: v.opcionais || [], fotos: v.fotos || []}); limparLeitura(); setErro(""); setModal(v); }
+  function abrirCriar() { setForm(empty); limparLeitura(); setFotosPequenas(0); setErro(""); setModal("criar"); }
+  function abrirEditar(v) { setFotosPequenas(0); setForm({...v, valor_fipe: v.valor_fipe != null ? String(Number(v.valor_fipe)) : "", opcionais: v.opcionais || [], fotos: v.fotos || []}); limparLeitura(); setErro(""); setModal(v); }
   function fechar() { setModal(null); }
   function set(k, v) { setForm(f => ({...f, [k]:v})); }
+
+  // 2026-10-19 (Felipe/Diana): o catalogo do Meta pede foto com 1080 px ou mais no lado
+  // menor. Foto que veio pelo WhatsApp normal chega com 960 px: so avisa, nao bloqueia.
+  async function ladoMenor(file) {
+    if (typeof createImageBitmap !== "function") return null;
+    const b = await createImageBitmap(file).catch(() => null);
+    if (!b) return null;
+    const m = Math.min(b.width, b.height);
+    b.close?.();
+    return m;
+  }
 
   async function otimizarFoto(file) {
     if (!/^image\/(jpeg|png|webp)$/.test(file.type) || typeof createImageBitmap !== "function") return file;
@@ -203,6 +215,8 @@ export default function Veiculos() {
     }
     setUploading(true);
     try {
+      const lados = await Promise.all(lista.map(ladoMenor));
+      setFotosPequenas(n => n + lados.filter(m => m != null && m < 1080).length);
       for (let i = 0; i < lista.length; i += 8) {
         const parte = lista.slice(i, i + 8);
         const prontas = await Promise.all(parte.map(otimizarFoto));
@@ -536,6 +550,11 @@ export default function Veiculos() {
               {temFotos && (
                 <>
                 <p className="ficha-nota">Até 12 fotos, todas no site. Arraste para ordenar. A primeira é a capa.</p>
+                {fotosPequenas > 0 && (
+                  <p className="ficha-aviso-foto" role="status">
+                    {fotosPequenas === 1 ? "1 foto pequena" : `${fotosPequenas} fotos pequenas`} (menos de 1080 px). Para o anúncio no Facebook/Instagram, envie a foto original da galeria ou mande pelo WhatsApp como documento.
+                  </p>
+                )}
                 <div className="foto-grid ficha-minis">
                   {form.fotos.map((url, i) => (
                     <div
