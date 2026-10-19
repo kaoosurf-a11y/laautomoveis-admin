@@ -86,7 +86,7 @@ function pistaLeitura(leituras, campo) {
 const empty = {
   marca:"", modelo:"", versao:"", tipo:"", ano:new Date().getFullYear(), preco:"",
   km:"", cambio:"Automático", combustivel:"Flex", motorizacao:"", cor:"",
-  portas:4, fotos:[], opcionais:[], badge:"", detalhe:"", ativo:true,
+  portas:4, fotos:[], opcionais:[], badge:"", detalhe:"", ativo:true, valor_fipe:"",
 };
 
 export default function Veiculos() {
@@ -165,7 +165,7 @@ export default function Veiculos() {
     setSugeridos([]);
   }
   function abrirCriar() { setForm(empty); limparLeitura(); setErro(""); setModal("criar"); }
-  function abrirEditar(v) { setForm({...v, opcionais: v.opcionais || [], fotos: v.fotos || []}); limparLeitura(); setErro(""); setModal(v); }
+  function abrirEditar(v) { setForm({...v, valor_fipe: v.valor_fipe != null ? String(Number(v.valor_fipe)) : "", opcionais: v.opcionais || [], fotos: v.fotos || []}); limparLeitura(); setErro(""); setModal(v); }
   function fechar() { setModal(null); }
   function set(k, v) { setForm(f => ({...f, [k]:v})); }
 
@@ -600,6 +600,8 @@ export default function Veiculos() {
               <div className="ficha-titulo">Anúncio</div>
               <div className="ficha-grade ficha-grade-3">
                 <div className="form-group"><label className="form-label">Preço (R$) *</label><input className="form-input" type="number" value={form.preco} onChange={e=>set("preco",e.target.value)} placeholder="119900"/></div>
+                {/* 2026-10-19 (Felipe/Diana): FIPE do carro, vai pro catalogo do Meta (abaixo da FIPE). */}
+                <div className="form-group"><label className="form-label">FIPE (R$)</label><input className="form-input" type="number" value={form.valor_fipe ?? ""} onChange={e=>set("valor_fipe",e.target.value)} placeholder="Ex: 125000"/></div>
                 <div className="form-group"><label className="form-label">Badge</label><select className="form-input" value={form.badge} onChange={e=>set("badge",e.target.value)}>{BADGES.map(b=><option key={b} value={b}>{b||"Sem badge"}</option>)}</select></div>
                 <div className="form-group"><label className="form-label">Detalhe</label><input className="form-input" value={form.detalhe} onChange={e=>set("detalhe",e.target.value)} placeholder="Ex: Único dono"/></div>
               </div>
