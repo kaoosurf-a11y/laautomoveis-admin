@@ -1159,6 +1159,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .agm-leg-livre{background:var(--surface)}
 .agm-leg-cheio{background:color-mix(in srgb,var(--brand-fill) 24%,var(--surface2))}
 .agm-leg-fechado{background:var(--fill)}
+.agm-leg-meio{background:linear-gradient(to bottom,var(--surface) 50%,var(--fill) 50%)}
 .agm-vend-cor{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
 .agm-topo-dir{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .agm-menu{position:relative}
@@ -1176,18 +1177,26 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .agm-dow{text-align:center;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:4px 0 6px}
 .agm-dias{grid-auto-rows:minmax(104px,1fr)}
 .agm-vazio{border-radius:12px;border:1px dashed var(--border);opacity:.5}
-.agm-dia{font-family:inherit;text-align:left;display:flex;flex-direction:column;gap:6px;padding:8px 9px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;min-width:0;transition:border-color .15s,transform .1s}
-.agm-dia.cheio{background:color-mix(in srgb,var(--brand-fill) var(--tom,16%),var(--surface2))}
-.agm-dia.fechado{background:var(--fill)}
+.agm-dia{--dia-bg:var(--surface);font-family:inherit;text-align:left;display:flex;flex-direction:column;gap:6px;padding:8px 9px;border-radius:12px;border:1px solid var(--border);background:var(--dia-bg);color:var(--fg);cursor:pointer;min-width:0;transition:border-color .15s,transform .16s cubic-bezier(.23,1,.32,1)}
+.agm-dia.cheio{--dia-bg:color-mix(in srgb,var(--brand-fill) var(--tom,16%),var(--surface2))}
+.agm-dia.fechado{--dia-bg:var(--fill)}
+/* sábado: loja abre só de manhã, metade de baixo na cor do domingo (Felipe 19/10) */
+.agm-dia.meio{background:linear-gradient(to bottom,var(--dia-bg) 50%,var(--fill) 50%)}
+.agm-dia.meio .agm-dia-tag{margin-top:auto;background:none;padding:0 2px}
+.agm-dia.meio .agm-dia-vends+.agm-dia-tag{margin-top:0}
+/* dias do mês vizinho: só o número, esmaecidos, completam as 6 semanas */
+.agm-dia.fora{opacity:.38;border-style:dashed}
+.agm-dia.fora:hover{border-color:var(--border)}
+.agm-dia.fora .agm-dia-num{font-weight:500;color:var(--muted)}
 .agm-dia.passado{opacity:.72}
 .agm-dia:hover{border-color:var(--acao-line,var(--brand))}
-.agm-dia:active{transform:scale(.98)}
+.agm-dia:not(.fora):active{transform:scale(.97)}
 .agm-dia.hoje{border:2px solid var(--brand);padding:7px 8px}
 .agm-dia.sel{box-shadow:0 0 0 2px var(--brand) inset}
 .agm-dia-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:4px}
 .agm-dia-data{display:flex;flex-direction:column;line-height:1.1}
 .agm-dia-dow{font-size:10px;font-weight:600;color:var(--muted)}
-.agm-dia-num{font-size:18px;font-weight:600}
+.agm-dia-num{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .agm-dia-qtd{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;text-align:right}
 .agm-dia-qtd strong{font-size:20px;font-weight:800;letter-spacing:-.02em}
 .agm-dia-qtd span{font-size:10px;font-weight:600;color:var(--muted)}
@@ -1199,7 +1208,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .agm-dia-vend-nome{overflow:hidden;text-overflow:ellipsis}
 .agm-rodape{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding-top:10px}
 .agm-rodape strong{color:var(--fg)}
-@media(min-width:1024px){.agm-dias{grid-auto-rows:minmax(calc((100dvh - 330px) / 6),1fr)}}
+@media(min-width:1024px){.agm-dias{grid-auto-rows:minmax(92px,calc((100dvh - 330px) / 6))}}
 @media(max-width:639px){
   .agm-card{padding:10px 8px 8px;margin:0 -6px}
   .agm-dows,.agm-dias{gap:3px}

@@ -512,9 +512,9 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,ven
   const celulas=[];
   if(semana){for(let i=0;i<7;i++)celulas.push(new Date(semana.getFullYear(),semana.getMonth(),semana.getDate()+i));}
   else{
-  for(let i=0;i<offsetInicial;i++) celulas.push(null);
-  for(let dia=1;dia<=totalDias;dia++) celulas.push(new Date(ano,mes,dia));
-  while(celulas.length%7) celulas.push(null);
+  // 2026-10-19 (Felipe): todo mês na mesma grade de 6 semanas, como o calendário do iPhone.
+  // Os dias do mês vizinho completam a grade esmaecidos e o toque leva para aquele mês.
+  for(let i=0;i<42;i++) celulas.push(new Date(ano,mes,1-offsetInicial+i));
   }
   // contagem do dia respeitando os vendedores desligados
   const contar=r=>{
@@ -531,9 +531,18 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,ven
       <div className="agm-dows">{DOW_SEG.map(n=><div key={n} className="agm-dow">{n}</div>)}</div>
       <div className="agm-dias">
         {celulas.map((d,i)=>{
-          if(!d) return <div key={i} className="agm-vazio"/>;
-          const {total,vends}=contar(porDia[iso(d)]);
           const dow=d.getDay();
+          const fds=dow===0?" fechado":dow===6?" meio":"";
+          if(!semana&&d.getMonth()!==mes){
+            const delta=d<mesAtual?-1:1;
+            return(
+              <button key={i} type="button" className={`agm-dia fora${fds}`} tabIndex={-1} onClick={()=>onMudarMes(delta)}
+                aria-label={`Ir para ${MESES[d.getMonth()].toLowerCase()}`}>
+                <div className="agm-dia-data"><span className="agm-dia-dow">{DOW_SEG[(dow+6)%7]}</span><span className="agm-dia-num">{d.getDate()}</span></div>
+              </button>
+            );
+          }
+          const {total,vends}=contar(porDia[iso(d)]);
           const passado=d<hoje;
           const isHoje=mesmoDia(d,hoje);
           const isSel=mesmoDia(d,diaSel);
@@ -542,14 +551,13 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,ven
           const tom=total>0?Math.round(10+22*(total/maxDia)):0;
           return(
             <button key={i} type="button" onClick={()=>onAbrirDia(d)}
-              className={`agm-dia${dow===0?" fechado":""}${passado?" passado":""}${isHoje?" hoje":""}${isSel?" sel":""}${total>0?" cheio":""}`}
+              className={`agm-dia${fds}${passado?" passado":""}${isHoje?" hoje":""}${isSel?" sel":""}${total>0?" cheio":""}`}
               style={tom?{"--tom":`${tom}%`}:undefined}
               aria-label={`${DIAS_LONGOS[dow]} ${d.getDate()}: ${total} ${total===1?"agendamento":"agendamentos"}`}>
               <div className="agm-dia-topo">
                 <div className="agm-dia-data"><span className="agm-dia-dow">{DOW_SEG[(dow+6)%7]}</span><span className="agm-dia-num">{d.getDate()}</span></div>
                 <div className="agm-dia-qtd">{total>0&&<strong>{total}</strong>}<span>{rotulo}</span></div>
               </div>
-              {dow===6&&<span className="agm-dia-tag">até 12h</span>}
               {vends.length>0&&<div className="agm-dia-vends">
                 {vends.slice(0,semana?99:3).map(v=>(
                   <span key={v.vendedor_id||0} className="agm-dia-vend" title={`${v.vendedor_nome}: ${v.total}`}>
@@ -558,6 +566,7 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,ven
                 ))}
                 {!semana&&vends.length>3&&<span className="agm-dia-vend">+{vends.length-3}</span>}
               </div>}
+              {dow===6&&<span className="agm-dia-tag">até 12h</span>}
             </button>
           );
         })}
@@ -859,6 +868,7 @@ export default function Agenda(){
             <div className="agm-legenda">
               <span><i className="agm-leg agm-leg-livre"/> livre</span>
               <span><i className="agm-leg agm-leg-cheio"/> com agendamento</span>
+              <span><i className="agm-leg agm-leg-meio"/> meio período</span>
               <span><i className="agm-leg agm-leg-fechado"/> fechado</span>
             </div>
             </div>
@@ -890,6 +900,7 @@ export default function Agenda(){
             <div className="agm-legenda">
               <span><i className="agm-leg agm-leg-livre"/> livre</span>
               <span><i className="agm-leg agm-leg-cheio"/> com agendamento</span>
+              <span><i className="agm-leg agm-leg-meio"/> meio período</span>
               <span><i className="agm-leg agm-leg-fechado"/> fechado</span>
             </div>
             </div>
