@@ -80,10 +80,6 @@ function HorariosModal({onClose}){
   );
 }
 
-// "Ocupado" (compromisso de outro vendedor) e "Bloqueio" (almoço/recorrente) agora
-// renderizam direto como bloco compacto dentro de GradeHorarios (mais abaixo) — não
-// precisam mais do card full-width que tinham na lista antiga.
-
 const DIAS_CURTO=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const DIAS_UTEIS=[1,2,3,4,5];
 
@@ -181,86 +177,10 @@ const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"va
 
 function fmtH(iso){const d=new Date(iso);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
 function fmtHF(iso,dur){const d=new Date(iso);d.setMinutes(d.getMinutes()+dur);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
-function fmtDia(d){const ds=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return `${ds[d.getDay()]} ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;}
+function segundaDa(d){const n=new Date(d.getFullYear(),d.getMonth(),d.getDate());n.setDate(n.getDate()-((n.getDay()+6)%7));return n;}
 function mesmoDia(a,b){return a.toDateString()===b.toDateString();}
 function minAte(iso){return Math.round((new Date(iso)-Date.now())/60000);}
 function getStatus(ag){const m=minAte(ag.data_hora);if(ag.status==="confirmado"&&m>0&&m<=30)return "em_breve";return ag.status;}
-
-// ── Grade de horários (estilo Google Agenda) ──
-// Eixo vertical de horas com os compromissos posicionados/dimensionados pelo horário
-// real, em vez da lista plana de cards agrupada só em "manhã"/"tarde" que existia
-// antes. 1px = 1min (GRID_PX_HORA=60), evita depender de lib de calendário externa —
-// o resto do painel também é tudo componente próprio.
-const GRID_H_INICIO=7, GRID_H_FIM=21, GRID_PX_HORA=60;
-function minutosNoGrid(iso){
-  const d=new Date(iso);
-  return Math.max(0,Math.min((GRID_H_FIM-GRID_H_INICIO)*60,(d.getHours()-GRID_H_INICIO)*60+d.getMinutes()));
-}
-// Empacota compromissos que se sobrepõem em colunas lado a lado (mesma ideia do
-// Google Agenda pra 2 reuniões no mesmo horário) — aproximação simples (1 grupo de
-// colunas pro dia inteiro, não por cluster de sobreposição), suficiente pro volume
-// real de agendamentos de uma revenda (poucos por dia, conflito é exceção).
-function atribuirColunas(itens){
-  const ordenados=[...itens].sort((a,b)=>a._ini-b._ini);
-  const finalColuna=[];
-  const comColuna=ordenados.map(it=>{
-    let col=finalColuna.findIndex(fim=>fim<=it._ini);
-    if(col===-1){col=finalColuna.length;finalColuna.push(it._fim);}
-    else finalColuna[col]=it._fim;
-    return {...it,_col:col};
-  });
-  const totalCols=finalColuna.length||1;
-  return comColuna.map(it=>({...it,_totalCols:totalCols}));
-}
-
-function GradeHorarios({doDia,onAbrirAg}){
-  const alturaGrid=(GRID_H_FIM-GRID_H_INICIO)*GRID_PX_HORA;
-  const horas=Array.from({length:GRID_H_FIM-GRID_H_INICIO+1},(_,i)=>GRID_H_INICIO+i);
-  const itens=atribuirColunas(doDia.filter(ag=>ag.status!=="cancelado").map(ag=>({
-    ag,
-    _ini:minutosNoGrid(ag.data_hora),
-    _fim:minutosNoGrid(ag.data_hora)+((ag.duracao_min||30)*(GRID_PX_HORA/60)),
-  })));
-  const agora=new Date();
-  const linhaAgoraTop=mesmoDia(agora,new Date())?( (agora.getHours()-GRID_H_INICIO)*60+agora.getMinutes() ):null;
-  return(
-    <div className="time-grid-wrap">
-      <div className="time-grid" style={{height:alturaGrid}}>
-        {horas.map(h=>(
-          <div key={h} className="time-grid-row" style={{top:(h-GRID_H_INICIO)*GRID_PX_HORA}}>
-            <span className="time-grid-label">{String(h).padStart(2,"0")}:00</span>
-          </div>
-        ))}
-        <div className="time-grid-content">
-          {linhaAgoraTop!==null&&linhaAgoraTop>=0&&linhaAgoraTop<=alturaGrid&&
-            <div className="time-grid-now" style={{top:linhaAgoraTop}}/>}
-          {itens.map(({ag,_ini,_fim,_col,_totalCols})=>{
-            const altura=Math.max(_fim-_ini,22);
-            const largura=`calc((100% - 8px) / ${_totalCols})`;
-            const esquerda=`calc(${_col} * (100% - 8px) / ${_totalCols} + 8px)`;
-            if(ag.ocupado){
-              return <div key={ag.id} className="time-grid-block ocupado" style={{top:_ini,height:altura,left:esquerda,width:largura}} title="Ocupado">Ocupado</div>;
-            }
-            if(ag.tipo==="bloqueio"){
-              return <div key={ag.id} className="time-grid-block bloqueio" style={{top:_ini,height:altura,left:esquerda,width:largura}} title={ag.observacoes||"Bloqueado"}>
-                <i className={`ti ${ag.recorrente?"ti-repeat":"ti-lock"}`} style={{fontSize:11}}/> {ag.observacoes||"Bloqueado"}
-              </div>;
-            }
-            const tipo=TIPOS[ag.tipo]||{icon:"ti-calendar",cor:"var(--muted)"};
-            const status=getStatus(ag);
-            return(
-              <button key={ag.id} className="time-grid-block ag" onClick={()=>onAbrirAg(ag)}
-                style={{top:_ini,height:altura,left:esquerda,width:largura,borderLeftColor:SBORDA[status]||tipo.cor,background:`${tipo.cor}1c`}}>
-                <span className="time-grid-block-hora">{fmtH(ag.data_hora)}</span>
-                <span className="time-grid-block-nome"><i className={`ti ${tipo.icon}`}/> {ag.cliente_nome}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOnly}){
   const status=getStatus(ag);
@@ -579,7 +499,9 @@ function VendedoresMenu({vendedores,ocultos,setOcultos,ordemVend,meuId,porLoja})
   );
 }
 
-function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,vendedores,ordemVend}){
+// Felipe 19/10: a Semana usa os mesmos cards do Mês, só a linha da semana (semana =
+// segunda-feira da semana mostrada), com cards altos que ocupam a primeira tela.
+function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,vendedores,ordemVend,semana}){
   const ano=mesAtual.getFullYear(), mes=mesAtual.getMonth();
   const totalDias=new Date(ano,mes+1,0).getDate();
   const offsetInicial=(new Date(ano,mes,1).getDay()+6)%7;
@@ -588,9 +510,12 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,ven
   resumo.forEach(r=>{porDia[r.data]=r;});
   const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const celulas=[];
+  if(semana){for(let i=0;i<7;i++)celulas.push(new Date(semana.getFullYear(),semana.getMonth(),semana.getDate()+i));}
+  else{
   for(let i=0;i<offsetInicial;i++) celulas.push(null);
   for(let dia=1;dia<=totalDias;dia++) celulas.push(new Date(ano,mes,dia));
   while(celulas.length%7) celulas.push(null);
+  }
   // contagem do dia respeitando os vendedores desligados
   const contar=r=>{
     if(!r)return {total:0,vends:[]};
@@ -598,10 +523,11 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,ven
     const vends=r.por_vendedor.filter(v=>!ocultos.has(v.vendedor_id||0));
     return {total:vends.reduce((s,v)=>s+v.total,0),vends};
   };
-  const maxDia=Math.max(1,...resumo.map(r=>contar(r).total));
-  const totalMes=resumo.reduce((s,r)=>s+contar(r).total,0);
+  const doPeriodo=semana?celulas.map(d=>porDia[iso(d)]).filter(Boolean):resumo;
+  const maxDia=Math.max(1,...doPeriodo.map(r=>contar(r).total));
+  const totalMes=doPeriodo.reduce((s,r)=>s+contar(r).total,0);
   return(
-    <div className="agm-grade">
+    <div className={`agm-grade${semana?" agm-semana":""}`}>
       <div className="agm-dows">{DOW_SEG.map(n=><div key={n} className="agm-dow">{n}</div>)}</div>
       <div className="agm-dias">
         {celulas.map((d,i)=>{
@@ -625,19 +551,19 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,ven
               </div>
               {dow===6&&<span className="agm-dia-tag">até 12h</span>}
               {vends.length>0&&<div className="agm-dia-vends">
-                {vends.slice(0,3).map(v=>(
+                {vends.slice(0,semana?99:3).map(v=>(
                   <span key={v.vendedor_id||0} className="agm-dia-vend" title={`${v.vendedor_nome}: ${v.total}`}>
                     <i style={{background:corDoVendedor(v.vendedor_id,ordemVend)}}/><span className="agm-dia-vend-nome">{(v.vendedor_nome||"").split(" ")[0]}</span> {v.total}
                   </span>
                 ))}
-                {vends.length>3&&<span className="agm-dia-vend">+{vends.length-3}</span>}
+                {!semana&&vends.length>3&&<span className="agm-dia-vend">+{vends.length-3}</span>}
               </div>}
             </button>
           );
         })}
       </div>
       <div className="agm-rodape">
-        <span><strong>{totalMes}</strong> {totalMes===1?"agendamento":"agendamentos"} em {MESES[mes].toLowerCase()}{vendedores.length>0&&ocultos.size>0?" nos vendedores ligados":""}</span>
+        <span><strong>{totalMes}</strong> {totalMes===1?"agendamento":"agendamentos"} {semana?"na semana":`em ${MESES[mes].toLowerCase()}`}{vendedores.length>0&&ocultos.size>0?" nos vendedores ligados":""}</span>
         <span className="agm-rodape-dica">Toque no dia para ver os agendamentos e o interesse de cada cliente</span>
       </div>
     </div>
@@ -831,6 +757,7 @@ export default function Agenda(){
   const[resumoMes,setResumoMes]=useState([]);
   const[diaAberto,setDiaAberto]=useState(false);
   const[ocultos,setOcultos]=useState(()=>new Set());
+  const[semanaIni,setSemanaIni]=useState(()=>segundaDa(new Date()));
   // Bloco clicado na grade de horários (ou "Abrir" na janela do dia) abre o card
   // completo (com as ações de confirmar/reagendar/etc) num modal.
   const[agAberto,setAgAberto]=useState(null);
@@ -847,6 +774,14 @@ export default function Agenda(){
   useEffect(()=>{load();},[diaSel]);
   useEffect(()=>{veiculosApi.getVeiculos().then(setVeiculos).catch(()=>{});},[]);
   useEffect(()=>{if(visao==="mes")loadMes();},[visao,mesAtual]);
+  // Semana: resumo do(s) mês(es) que a semana toca (semana virando o mês pega os dois).
+  useEffect(()=>{
+    if(visao!=="semana")return;
+    const fimSem=new Date(semanaIni);fimSem.setDate(fimSem.getDate()+6);
+    const meses=[[semanaIni.getFullYear(),semanaIni.getMonth()+1]];
+    if(fimSem.getMonth()!==semanaIni.getMonth())meses.push([fimSem.getFullYear(),fimSem.getMonth()+1]);
+    Promise.all(meses.map(([a,m])=>getResumoMes(a,m))).then(r=>setResumoMes(r.flat())).catch(()=>setResumoMes([]));
+  },[visao,semanaIni]);
   // Aba Hoje: a lista de vendedores (e a loja de cada um) vem do resumo do mês do dia.
   useEffect(()=>{if(visao==="dia")getResumoMes(diaSel.getFullYear(),diaSel.getMonth()+1).then(setResumoMes).catch(()=>setResumoMes([]));},[visao,diaSel.getFullYear(),diaSel.getMonth()]);
 
@@ -859,6 +794,7 @@ export default function Agenda(){
   function mudarDia(delta){
     setDiaSel(d=>{const n=new Date(d);n.setDate(n.getDate()+delta);return n;});
   }
+  function mudarSemana(delta){setSemanaIni(w=>{const n=new Date(w);n.setDate(n.getDate()+7*delta);return n;});}
   function abrirDia(d){setDiaSel(d);setDiaAberto(true);}
 
   // Vendedores do mês (para ligar/desligar), em ordem fixa por nome: a cor de cada um
@@ -872,7 +808,6 @@ export default function Agenda(){
   const meuId=getUser()?.id;
   const ehDono=getRole()==="admin_master";
 
-  const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-3+i);return d;});
   const hoje=new Date();
   const doDia=ags.filter(ag=>mesmoDia(new Date(ag.data_hora),diaSel));
   // Busca sempre no array atual (não guarda cópia própria) — assim o modal reflete
@@ -897,7 +832,7 @@ export default function Agenda(){
         </div>
         <div className="seg agm-visoes" role="tablist" aria-label="Visão da agenda">
           <button className={`seg-btn${visao==="dia"?" active":""}`} onClick={irHoje}><i className="ti ti-calendar-event"/> Hoje</button>
-          <button className={`seg-btn${visao==="semana"?" active":""}`} onClick={()=>setVisao("semana")}><i className="ti ti-calendar-week"/> Semana</button>
+          <button className={`seg-btn${visao==="semana"?" active":""}`} onClick={()=>{setSemanaIni(segundaDa(diaSel));setVisao("semana");}}><i className="ti ti-calendar-week"/> Semana</button>
           <button className={`seg-btn${visao==="mes"?" active":""}`} onClick={()=>setVisao("mes")}><i className="ti ti-calendar"/> Mês</button>
         </div>
         {/* 2026-07-28: sempre com rótulo — curto no mobile, completo no desktop. */}
@@ -932,12 +867,38 @@ export default function Agenda(){
         </div>
       )}
 
-      {visao!=="mes"&&<>
-        {visao==="semana"?(
-          <div className="dias-nav">
-            {dias.map((d,i)=>{const isHoje=mesmoDia(d,hoje);const isSel=mesmoDia(d,diaSel);const ns=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return(<button key={i} className={`dia-btn ${isHoje?"hoje":""} ${isSel?"selected":""}`} onClick={()=>setDiaSel(d)}><span className="dia-num">{d.getDate()}</span><span className="dia-nome">{ns[d.getDay()]}</span></button>);})}
+      {visao==="semana"&&(()=>{
+        const fimSem=new Date(semanaIni);fimSem.setDate(fimSem.getDate()+6);
+        const estaSemana=mesmoDia(semanaIni,segundaDa(new Date()));
+        const faixa=semanaIni.getMonth()===fimSem.getMonth()
+          ?`${semanaIni.getDate()} a ${fimSem.getDate()} de ${MESES[fimSem.getMonth()].toLowerCase()}`
+          :`${semanaIni.getDate()} de ${MESES[semanaIni.getMonth()].toLowerCase()} a ${fimSem.getDate()} de ${MESES[fimSem.getMonth()].toLowerCase()}`;
+        return(
+        <div className="agm-card">
+          <div className="agm-card-topo">
+            <div className="agm-nav">
+              <button className="btn btn-ghost btn-icon" aria-label="Semana anterior" onClick={()=>mudarSemana(-1)}><i className="ti ti-chevron-left"/></button>
+              <button className="btn btn-ghost btn-icon" aria-label="Próxima semana" onClick={()=>mudarSemana(1)}><i className="ti ti-chevron-right"/></button>
+              <div>
+                <div className="agm-sobre">{estaSemana?"Esta semana":"Semana"}</div>
+                <div className="agm-mes">{faixa}</div>
+              </div>
+              {!estaSemana&&<button className="btn btn-ghost btn-sm" onClick={()=>setSemanaIni(segundaDa(new Date()))}>Esta semana</button>}
+            </div>
+            <div className="agm-topo-dir">
+            {vendedores.length>1&&<VendedoresMenu vendedores={vendedores} ocultos={ocultos} setOcultos={setOcultos} ordemVend={ordemVend} meuId={meuId} porLoja={ehDono}/>}
+            <div className="agm-legenda">
+              <span><i className="agm-leg agm-leg-livre"/> livre</span>
+              <span><i className="agm-leg agm-leg-cheio"/> com agendamento</span>
+              <span><i className="agm-leg agm-leg-fechado"/> fechado</span>
+            </div>
+            </div>
           </div>
-        ):(
+          <CalendarioMes semana={semanaIni} mesAtual={semanaIni} onMudarMes={()=>{}} resumo={resumoMes} diaSel={diaSel} onAbrirDia={abrirDia} ocultos={ocultos} vendedores={vendedores} ordemVend={ordemVend}/>
+        </div>);
+      })()}
+
+      {visao==="dia"&&<>
           <div className="agm-dia-nav">
             <button className="btn btn-ghost btn-icon" aria-label="Dia anterior" onClick={()=>mudarDia(-1)}><i className="ti ti-chevron-left"/></button>
             <strong>{DIAS_LONGOS[diaSel.getDay()]}, {diaSel.getDate()} de {MESES[diaSel.getMonth()].toLowerCase()}</strong>
@@ -945,22 +906,12 @@ export default function Agenda(){
             {!mesmoDia(diaSel,hoje)&&<button className="btn btn-ghost btn-sm" onClick={()=>setDiaSel(new Date())}>Hoje</button>}
             {vendedores.length>1&&<div className="agq-menu"><VendedoresMenu vendedores={vendedores} ocultos={ocultos} setOcultos={setOcultos} ordemVend={ordemVend} meuId={meuId} porLoja={ehDono}/></div>}
           </div>
-        )}
-        {visao==="semana"&&<div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>{fmtDia(diaSel)} · {doDia.filter(a=>a.status!=="cancelado"&&ehCompromisso(a)).length} agendamentos</div>}
         {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
         {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
         {!erro&&!loading&&visao==="dia"&&<QuemVem dia={diaSel} doDia={doDia} vendedores={vendedores} ocultos={ocultos} ordemVend={ordemVend} porLoja={ehDono} onAbrirAg={ag=>setAgAberto(ag.id)}/>}
-        {!erro&&!loading&&visao==="semana"&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-        {/* 2026-07-28: grade de horários no desktop; no celular lista vertical com o card completo. */}
-        {!erro&&!loading&&visao==="semana"&&doDia.length>0&&<div className="d-desktop"><GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/></div>}
-        {!erro&&!loading&&visao==="semana"&&<div className="d-mobile">
-          {doDia.filter(ag=>ag.status!=="cancelado"&&ehCompromisso(ag)).map(ag=>(
-            <AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly||ag.pode_alterar===false}/>
-          ))}
-        </div>}
       </>}
 
-      {diaAberto&&visao==="mes"&&(
+      {diaAberto&&visao!=="dia"&&(
         <DiaModal dia={diaSel} ags={ags} loading={loading} erro={erro} ocultos={ocultos} ordemVend={ordemVend} readOnly={readOnly}
           onClose={()=>setDiaAberto(false)}
           onAbrir={ag=>setAgAberto(ag.id)}
