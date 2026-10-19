@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgendamento, pedirReagendamentoLara, getResumoMes, getHorarios, criarHorario, removerHorario, getBloqueiosRecorrentes, criarBloqueioRecorrente, removerBloqueioRecorrente } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { isManager, getUser, getRole } from "../auth.js";
@@ -403,6 +403,7 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
           </div>
         </div>
       )}
+      {readOnly&&ag.pode_alterar===false&&getRole()==="vendedor"&&<div style={{fontSize:12,color:"var(--muted)",padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}><i className="ti ti-lock"/> Agendamento de {ag.vendedor_nome||"outro vendedor"}: você pode ver, mas só ele altera.</div>}
       {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"var(--success-line)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
@@ -517,6 +518,66 @@ const SITUACAO={
   cancelado:{label:"Cancelado",badge:"badge-danger"},
 };
 const ehCompromisso=ag=>ag.tipo!=="bloqueio"&&!ag.ocupado;
+
+const NOME_LOJA={1:"Curitibanos",2:"Campos Novos"};
+
+// Menu de vendedores (Felipe 19/10: "dentro de um menu onde eu escolho", no lugar dos
+// botões soltos). Lista o que a hierarquia já deixa ver: admin_master as duas lojas
+// separadas por loja; gerente e vendedor só a própria loja (o servidor já filtra).
+function VendedoresMenu({vendedores,ocultos,setOcultos,ordemVend,meuId,porLoja}){
+  const[aberto,setAberto]=useState(false);
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!aberto)return;
+    const fora=e=>{if(ref.current&&!ref.current.contains(e.target))setAberto(false);};
+    const esc=e=>{if(e.key==="Escape")setAberto(false);};
+    document.addEventListener("pointerdown",fora);document.addEventListener("keydown",esc);
+    return()=>{document.removeEventListener("pointerdown",fora);document.removeEventListener("keydown",esc);};
+  },[aberto]);
+  const chave=v=>v.vendedor_id||0;
+  const ligados=vendedores.filter(v=>!ocultos.has(chave(v)));
+  const rotulo=ligados.length===vendedores.length?"Todos os vendedores"
+    :ligados.length===0?"Nenhum vendedor"
+    :ligados.length===1?ligados[0].vendedor_nome
+    :`${ligados.length} de ${vendedores.length} vendedores`;
+  const so=lista=>setOcultos(new Set(vendedores.filter(v=>!lista.includes(v)).map(chave)));
+  const alternar=k=>setOcultos(s=>{const n=new Set(s);n.has(k)?n.delete(k):n.add(k);return n;});
+  const grupos=porLoja
+    ?[1,2,null].map(l=>({loja:l,itens:vendedores.filter(v=>(v.loja_id||null)===l)})).filter(g=>g.itens.length)
+    :[{loja:undefined,itens:vendedores}];
+  const meu=vendedores.find(v=>v.vendedor_id===meuId);
+  return(
+    <div className="agm-menu" ref={ref}>
+      <button type="button" className="agm-menu-btn" aria-haspopup="true" aria-expanded={aberto} onClick={()=>setAberto(a=>!a)}>
+        <i className="ti ti-users"/> {rotulo} <i className={`ti ti-chevron-${aberto?"up":"down"}`}/>
+      </button>
+      {aberto&&(
+        <div className="agm-menu-pop" role="menu">
+          <div className="agm-menu-atalhos">
+            <button type="button" onClick={()=>setOcultos(new Set())}>Todos</button>
+            {meu&&<button type="button" onClick={()=>so([meu])}>Só os meus</button>}
+            {porLoja&&grupos.filter(g=>g.loja).map(g=><button key={g.loja} type="button" onClick={()=>so(g.itens)}>Só {NOME_LOJA[g.loja]||`loja ${g.loja}`}</button>)}
+          </div>
+          {grupos.map(g=>(
+            <div key={String(g.loja)} className="agm-menu-grupo">
+              {g.loja!==undefined&&<div className="agm-menu-loja">{g.loja?NOME_LOJA[g.loja]||`Loja ${g.loja}`:"Sem loja"}</div>}
+              {g.itens.map(v=>{
+                const k=chave(v);
+                return(
+                  <label key={k} className="agm-menu-item">
+                    <input type="checkbox" checked={!ocultos.has(k)} onChange={()=>alternar(k)}/>
+                    <i className="agm-vend-cor" style={{background:corDoVendedor(v.vendedor_id,ordemVend)}}/>
+                    <span>{v.vendedor_nome}{v.vendedor_id===meuId?" (você)":""}</span>
+                  </label>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,vendedores,ordemVend}){
   const ano=mesAtual.getFullYear(), mes=mesAtual.getMonth();
@@ -646,7 +707,8 @@ function DiaModal({dia,ags,loading,erro,ocultos,ordemVend,readOnly,onClose,onAbr
                               <small>{ag.origem==="ia"?<><i className="ti ti-robot"/> Agendado pela IA</>:ag.origem==="manual"?<><i className="ti ti-user"/> Agendado no painel</>:null}{ag.lead_estagio?` · ${ag.lead_estagio.replace(/_/g," ")}`:""}</small>
                             </span>
                             <span className="agd-acoes">
-                              <button className="btn btn-ghost btn-sm" onClick={()=>onAbrir(ag)}><i className="ti ti-list-details"/> Abrir</button>
+                              {ag.pode_alterar===false&&!readOnly?<button className="btn btn-ghost btn-sm" title="Agendamento de outro vendedor: só leitura" onClick={()=>onAbrir(ag)}><i className="ti ti-lock"/> Ver</button>
+                              :<button className="btn btn-ghost btn-sm" onClick={()=>onAbrir(ag)}><i className="ti ti-list-details"/> Abrir</button>}
                               {ag.lead_id?(
                                 <LeadPhoneChatwoot lead={{id:ag.lead_id,telefone:ag.cliente_tel,chatwoot_conv_id:ag.chatwoot_conv_id,chatwoot_inbox_id:ag.chatwoot_inbox_id}} style={{padding:"4px 10px"}}>Chatwoot</LeadPhoneChatwoot>
                               ):ag.chatwoot_conv_id?(
@@ -680,7 +742,6 @@ function DiaModal({dia,ags,loading,erro,ocultos,ordemVend,readOnly,onClose,onAbr
 
 export default function Agenda(){
   const readOnly=getRole()==="gerente";
-  const ehVendedor=getRole()==="vendedor";
   const[ags,setAgs]=useState([]);
   const[diaSel,setDiaSel]=useState(new Date());
   const[loading,setLoading]=useState(true);
@@ -728,12 +789,12 @@ export default function Agenda(){
   // não muda quando outro sai ou entra.
   const vendedores=[];
   resumoMes.forEach(r=>(r.por_vendedor||[]).forEach(v=>{
-    if(!vendedores.some(x=>(x.vendedor_id||0)===(v.vendedor_id||0)))vendedores.push(v);
+    if(!vendedores.some(x=>(x.vendedor_id||0)===(v.vendedor_id||0)))vendedores.push({vendedor_id:v.vendedor_id,vendedor_nome:v.vendedor_nome,loja_id:v.loja_id});
   }));
   vendedores.sort((a,b)=>(!a.vendedor_id)-(!b.vendedor_id)||a.vendedor_nome.localeCompare(b.vendedor_nome));
   const ordemVend=vendedores.filter(v=>v.vendedor_id).map(v=>v.vendedor_id);
-  const mostrarToggles=!ehVendedor&&vendedores.length>1;
-  function alternarVend(k){setOcultos(s=>{const n=new Set(s);n.has(k)?n.delete(k):n.add(k);return n;});}
+  const meuId=getUser()?.id;
+  const ehDono=getRole()==="admin_master";
 
   const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-3+i);return d;});
   const hoje=new Date();
@@ -778,32 +839,19 @@ export default function Agenda(){
               <button className="btn btn-ghost btn-icon" aria-label="Mês anterior" onClick={()=>mudarMes(-1)}><i className="ti ti-chevron-left"/></button>
               <button className="btn btn-ghost btn-icon" aria-label="Próximo mês" onClick={()=>mudarMes(1)}><i className="ti ti-chevron-right"/></button>
               <div>
-                <div className="agm-sobre">Agenda da loja</div>
+                <div className="agm-sobre">{ehDono?"Agenda das lojas":`Agenda da loja${NOME_LOJA[getUser()?.loja_id]?` · ${NOME_LOJA[getUser()?.loja_id]}`:""}`}</div>
                 <div className="agm-mes">{MESES[mesAtual.getMonth()].toLowerCase()} de {mesAtual.getFullYear()}</div>
               </div>
             </div>
+            <div className="agm-topo-dir">
+            {vendedores.length>1&&<VendedoresMenu vendedores={vendedores} ocultos={ocultos} setOcultos={setOcultos} ordemVend={ordemVend} meuId={meuId} porLoja={ehDono}/>}
             <div className="agm-legenda">
               <span><i className="agm-leg agm-leg-livre"/> livre</span>
               <span><i className="agm-leg agm-leg-cheio"/> com agendamento</span>
               <span><i className="agm-leg agm-leg-fechado"/> fechado</span>
             </div>
-          </div>
-          {mostrarToggles&&(
-            <div className="agm-vends">
-              <span className="agm-vends-tit">Vendedores</span>
-              {vendedores.map(v=>{
-                const k=v.vendedor_id||0;
-                const ligado=!ocultos.has(k);
-                return(
-                  <button key={k} type="button" role="switch" aria-checked={ligado} className={`agm-vend${ligado?" on":""}`} onClick={()=>alternarVend(k)}>
-                    <i className="agm-vend-cor" style={{background:corDoVendedor(v.vendedor_id,ordemVend)}}/>
-                    {v.vendedor_nome}
-                    <span className="agm-switch"/>
-                  </button>
-                );
-              })}
             </div>
-          )}
+          </div>
           <CalendarioMes mesAtual={mesAtual} onMudarMes={mudarMes} resumo={resumoMes} diaSel={diaSel} onAbrirDia={abrirDia} ocultos={ocultos} vendedores={vendedores} ordemVend={ordemVend}/>
         </div>
       )}
@@ -829,7 +877,7 @@ export default function Agenda(){
         {!erro&&!loading&&doDia.length>0&&<div className="d-desktop"><GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/></div>}
         {!erro&&!loading&&<div className="d-mobile">
           {doDia.filter(ag=>ag.status!=="cancelado"&&ehCompromisso(ag)).map(ag=>(
-            <AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>
+            <AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly||ag.pode_alterar===false}/>
           ))}
         </div>}
       </>}
@@ -849,7 +897,7 @@ export default function Agenda(){
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
             <div className="modal-handle"/>
             <div className="modal-header"><h2 className="modal-title">Compromisso</h2><button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={()=>setAgAberto(null)}><i className="ti ti-x"/></button></div>
-            <AgendaCard ag={agAbertoAtual} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>
+            <AgendaCard ag={agAbertoAtual} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly||agAbertoAtual.pode_alterar===false}/>
           </div>
         </div>
       )}

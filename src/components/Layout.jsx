@@ -17,6 +17,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const user = getUser();
 
+  const ehMeu = ag => user?.role !== "vendedor" || ag.vendedor_id === user?.id;
   useEffect(() => {
     const data = new Date().toISOString().split("T")[0];
     getAgenda(data).then(ags => {
@@ -24,7 +25,8 @@ export default function Layout({ children }) {
       // "bloqueio" é horário pessoal do vendedor (almoço, indisponibilidade) — mesma
       // exclusão já aplicada no filtro de notificação abaixo, só que faltava aqui,
       // inflando esse número com compromissos que não são de cliente nenhum.
-      const ativos = ags.filter(a => !CONCLUIDOS.includes(a.status) && a.tipo !== "bloqueio");
+      // 19/10: vendedor agora vê a agenda da loja inteira; o número e o aviso continuam só dos dele.
+      const ativos = ags.filter(a => !CONCLUIDOS.includes(a.status) && a.tipo !== "bloqueio" && !a.ocupado && ehMeu(a));
       setAgendaHoje(ativos.length);
     }).catch(() => {});
 
@@ -35,7 +37,7 @@ export default function Layout({ children }) {
         const em30 = agora + 30*60*1000;
         const prox = ags.filter(ag => {
           const t = new Date(ag.data_hora).getTime();
-          return t > agora && t <= em30 && ag.status === "confirmado" && TIPOS_NOTIF[ag.tipo];
+          return t > agora && t <= em30 && ag.status === "confirmado" && TIPOS_NOTIF[ag.tipo] && ehMeu(ag);
         });
         if (prox.length > 0) setNotif(prox[0]);
       }).catch(() => {});
