@@ -176,7 +176,7 @@ function BloqueioModal({onClose,onCriado}){
   );
 }
 
-const TIPOS={test_drive:{label:"Test drive",icon:"ti-car",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"ti-building-store",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"ti-clipboard-list",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"ti-heart-handshake",cor:"#8E44AD"},visita_mencionada:{label:"Visita mencionada",icon:"ti-message-circle",cor:"#16A085"}};
+const TIPOS={test_drive:{label:"Test drive",icon:"ti-car",cor:"#C8A84B"},visita_patio:{label:"Visita ao pátio",icon:"ti-building-store",cor:"#2980B9"},apresentacao:{label:"Apresentação",icon:"ti-clipboard-list",cor:"#27AE60"},reuniao_fechamento:{label:"Reunião de fechamento",icon:"ti-heart-handshake",cor:"#8E44AD"},visita_mencionada:{label:"Visita mencionada",icon:"ti-message-circle",cor:"#16A085"},lembrete_vai_pensar:{label:"Retomar contato",icon:"ti-bell",cor:"#E67E22"}};
 const SBORDA={confirmado:"var(--success)",pendente:"var(--warning)",em_breve:"var(--brand)",realizado:"var(--muted)",cancelado:"var(--danger)",nao_compareceu:"#e67e22",aguardando_reagendamento_lara:"var(--brand)",intencao:"#16A085"};
 
 function fmtH(iso){const d=new Date(iso);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
@@ -422,7 +422,7 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
   );
 }
 
-function NovoModal({onClose,onCriado}){
+function NovoModal({onClose,onCriado,dataInicial}){
   const user=getUser();
   // 2026-07-28: antes o dropdown de vendedor era uma lista fixa de 3 nomes (só loja 1)
   // e mandava vendedor_nome pro backend — que só lê vendedor_id (agenda.js:304), então
@@ -432,7 +432,7 @@ function NovoModal({onClose,onCriado}){
   // Disparador usam) e manda o id.
   const[vendedores,setVendedores]=useState([]);
   useEffect(()=>{if(isManager())veiculosApi.getUsers().then(u=>setVendedores((u||[]).filter(x=>x.role==="vendedor"))).catch(()=>{});},[]);
-  const[form,setForm]=useState({cliente_nome:"",cliente_tel:"",veiculo:"",tipo:"test_drive",data:dataLocalISO(new Date()),horario:"09:00",duracao_min:45,vendedor_id:isManager()?"":user?.id,observacoes:""});
+  const[form,setForm]=useState({cliente_nome:"",cliente_tel:"",veiculo:"",tipo:"test_drive",data:dataInicial||dataLocalISO(new Date()),horario:"09:00",duracao_min:45,vendedor_id:isManager()?"":user?.id,observacoes:""});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   function slots(){const d=new Date(form.data+"T12:00:00");const dow=d.getDay();if(dow===0)return[];const fim=dow===6?12:18;const s=[];for(let h=8;h<fim;h++){s.push(`${String(h).padStart(2,"0")}:00`);s.push(`${String(h).padStart(2,"0")}:30`);}return s;}
   const[erro,setErro]=useState("");
@@ -464,7 +464,7 @@ function NovoModal({onClose,onCriado}){
         <div className="form-group"><label className="form-label">Telefone</label><input className="form-input" value={form.cliente_tel} onChange={e=>set("cliente_tel",e.target.value)} placeholder="49999999999"/></div>
         <div className="form-group"><label className="form-label">Veículo *</label><input className="form-input" value={form.veiculo} onChange={e=>set("veiculo",e.target.value)} placeholder="Ex: HB20 2022"/></div>
         <div className="form-grid">
-          <div className="form-group"><label className="form-label">Tipo</label><select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>{Object.entries(TIPOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
+          <div className="form-group"><label className="form-label">Tipo</label><select className="form-input" value={form.tipo} onChange={e=>set("tipo",e.target.value)}>{Object.entries(TIPOS).filter(([k])=>k!=="lembrete_vai_pensar").map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
           <div className="form-group"><label className="form-label">Duração</label><select className="form-input" value={form.duracao_min} onChange={e=>set("duracao_min",+e.target.value)}><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 hora</option><option value={90}>1h30</option></select></div>
           <div className="form-group"><label className="form-label">Data</label><input className="form-input" type="date" value={form.data} onChange={e=>{set("data",e.target.value);setForaHorario(false);setConfirmarMesmoAssim(false);}} min={dataLocalISO(new Date())}/></div>
           <div className="form-group"><label className="form-label">Horário</label><select className="form-input" value={form.horario} onChange={e=>{set("horario",e.target.value);setForaHorario(false);setConfirmarMesmoAssim(false);}}>{slots().map(s=><option key={s} value={s}>{s}</option>)}</select></div>
@@ -490,67 +490,189 @@ function NovoModal({onClose,onCriado}){
 }
 
 const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-const DIAS_SEMANA_CURTO=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const DIAS_LONGOS=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+// 2026-10-19 (Felipe, modelo da agenda por cadeiras): semana começa na segunda e o
+// domingo (loja fechada) fica no fim, como no modelo que ele mandou.
+const DOW_SEG=["seg","ter","qua","qui","sex","sáb","dom"];
 
-function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
+// Cor de cada vendedor (é dado, não interface: mesma regra das cores de estágio).
+const VEND_CORES=["#C8A84B","#2980B9","#27AE60","#8E44AD","#E67E22","#16A085","#C0392B","#D35400"];
+const SEM_VEND_COR="#8a8a84";
+function corDoVendedor(id,ordem){
+  if(!id)return SEM_VEND_COR;
+  const i=ordem.indexOf(id);
+  return VEND_CORES[(i<0?0:i)%VEND_CORES.length];
+}
+
+const SITUACAO={
+  confirmado:{label:"Confirmado",badge:"badge-success"},
+  pendente:{label:"Pendente",badge:"badge-warning"},
+  em_breve:{label:"Em breve",badge:"badge-brand"},
+  intencao:{label:"Intenção",badge:"badge-brand"},
+  aguardando_reagendamento_lara:{label:"Lara remarcando",badge:"badge-brand"},
+  realizado:{label:"Realizado",badge:"badge-muted"},
+  realizado_comprou:{label:"Comprou",badge:"badge-success"},
+  realizado_nao_comprou:{label:"Não comprou",badge:"badge-muted"},
+  nao_compareceu:{label:"Não veio",badge:"badge-danger"},
+  cancelado:{label:"Cancelado",badge:"badge-danger"},
+};
+const ehCompromisso=ag=>ag.tipo!=="bloqueio"&&!ag.ocupado;
+
+function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onAbrirDia,ocultos,vendedores,ordemVend}){
   const ano=mesAtual.getFullYear(), mes=mesAtual.getMonth();
-  const primeiroDia=new Date(ano,mes,1);
   const totalDias=new Date(ano,mes+1,0).getDate();
-  const offsetInicial=primeiroDia.getDay();
-  const hoje=new Date();
-  // Prévia por dia (não só contagem) — mostra "09:00 João" dentro da célula, igual
-  // o Google Agenda, em vez de só um número que obriga clicar pra saber o que tem.
-  const previaPorDia={};
-  resumo.forEach(r=>{previaPorDia[r.data]={total:r.total,eventos:r.eventos||[]};});
+  const offsetInicial=(new Date(ano,mes,1).getDay()+6)%7;
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const porDia={};
+  resumo.forEach(r=>{porDia[r.data]=r;});
   const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-
   const celulas=[];
   for(let i=0;i<offsetInicial;i++) celulas.push(null);
   for(let dia=1;dia<=totalDias;dia++) celulas.push(new Date(ano,mes,dia));
-
+  while(celulas.length%7) celulas.push(null);
+  // contagem do dia respeitando os vendedores desligados
+  const contar=r=>{
+    if(!r)return {total:0,vends:[]};
+    if(!r.por_vendedor)return {total:r.total,vends:[]};
+    const vends=r.por_vendedor.filter(v=>!ocultos.has(v.vendedor_id||0));
+    return {total:vends.reduce((s,v)=>s+v.total,0),vends};
+  };
+  const maxDia=Math.max(1,...resumo.map(r=>contar(r).total));
+  const totalMes=resumo.reduce((s,r)=>s+contar(r).total,0);
   return(
-    <div className="cal-mes-wrap">
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-        <button className="btn btn-ghost" style={{padding:"6px 10px"}} onClick={()=>onMudarMes(-1)}><i className="ti ti-chevron-left"/></button>
-        <span style={{fontSize:15,fontWeight:700,color:"var(--fg)"}}>{MESES[mes]} {ano}</span>
-        <button className="btn btn-ghost" style={{padding:"6px 10px"}} onClick={()=>onMudarMes(1)}><i className="ti ti-chevron-right"/></button>
-      </div>
-      <div className="cal-grid" style={{marginBottom:4}}>
-        {DIAS_SEMANA_CURTO.map(n=><div key={n} className="cal-dow"><span className="xs-inline">{n[0]}</span><span className="sm-inline">{n}</span></div>)}
-      </div>
-      <div className="cal-grid cal-grid-dias">
+    <div className="agm-grade">
+      <div className="agm-dows">{DOW_SEG.map(n=><div key={n} className="agm-dow">{n}</div>)}</div>
+      <div className="agm-dias">
         {celulas.map((d,i)=>{
-          if(!d) return <div key={i}/>;
-          const{total=0,eventos=[]}=previaPorDia[iso(d)]||{};
+          if(!d) return <div key={i} className="agm-vazio"/>;
+          const {total,vends}=contar(porDia[iso(d)]);
+          const dow=d.getDay();
+          const passado=d<hoje;
           const isHoje=mesmoDia(d,hoje);
           const isSel=mesmoDia(d,diaSel);
-          const sobrando=total-eventos.length;
-          // 2026-10-18 (Felipe): domingo a loja fecha (célula inteira em outra cor) e
-          // sábado fecha 12h (metade de baixo pintada, a tarde fechada).
-          const dow=d.getDay();
-          const fundo=dow===0?"var(--danger-soft)"
-            :dow===6?"linear-gradient(to bottom, var(--surface2) 50%, var(--danger-soft) 50%)"
-            :"var(--surface2)";
+          const rotulo=total>0?(total===1?"agendado":"agendados"):dow===0?"fechado":passado?"":"livre";
+          // tom do dia cresce com o movimento (dia cheio salta aos olhos, igual o modelo)
+          const tom=total>0?Math.round(10+22*(total/maxDia)):0;
           return(
-            <button key={i} className="cal-cel cal-cel-mes" onClick={()=>onSelecionarDia(d)} title={dow===0?"Domingo: loja fechada":dow===6?"Sábado: loja até 12h":undefined} style={{
-              border:isSel?"2px solid var(--brand)":isHoje?"1px solid var(--brand)":"1px solid var(--border)",
-              background:isSel?"var(--brand-soft)":fundo,
-            }}>
-              <span className="cal-cel-num" style={{fontWeight:isHoje?700:500}}>{d.getDate()}</span>
-              <div className="cal-cel-chips">
-                {eventos.map(ev=>{
-                  const tipo=TIPOS[ev.tipo]||{icon:"ti-calendar",cor:"var(--muted)"};
-                  return <span key={ev.id} className="cal-chip" style={{background:`${tipo.cor}22`,color:tipo.cor}}><i className={`ti ${tipo.icon}`}/> {ev.hora} {ev.cliente_nome||"—"}</span>;
-                })}
-                {sobrando>0&&<span className="cal-chip cal-chip-mais">+{sobrando} mais</span>}
+            <button key={i} type="button" onClick={()=>onAbrirDia(d)}
+              className={`agm-dia${dow===0?" fechado":""}${passado?" passado":""}${isHoje?" hoje":""}${isSel?" sel":""}${total>0?" cheio":""}`}
+              style={tom?{"--tom":`${tom}%`}:undefined}
+              aria-label={`${DIAS_LONGOS[dow]} ${d.getDate()}: ${total} ${total===1?"agendamento":"agendamentos"}`}>
+              <div className="agm-dia-topo">
+                <div className="agm-dia-data"><span className="agm-dia-dow">{DOW_SEG[(dow+6)%7]}</span><span className="agm-dia-num">{d.getDate()}</span></div>
+                <div className="agm-dia-qtd">{total>0&&<strong>{total}</strong>}<span>{rotulo}</span></div>
               </div>
+              {dow===6&&<span className="agm-dia-tag">até 12h</span>}
+              {vends.length>0&&<div className="agm-dia-vends">
+                {vends.slice(0,3).map(v=>(
+                  <span key={v.vendedor_id||0} className="agm-dia-vend" title={`${v.vendedor_nome}: ${v.total}`}>
+                    <i style={{background:corDoVendedor(v.vendedor_id,ordemVend)}}/><span className="agm-dia-vend-nome">{(v.vendedor_nome||"").split(" ")[0]}</span> {v.total}
+                  </span>
+                ))}
+                {vends.length>3&&<span className="agm-dia-vend">+{vends.length-3}</span>}
+              </div>}
             </button>
           );
         })}
       </div>
-      <div style={{display:"flex",gap:16,flexWrap:"wrap",marginTop:8,fontSize:12,color:"var(--muted)"}}>
-        <span style={{display:"inline-flex",alignItems:"center",gap:6}}><span style={{width:12,height:12,borderRadius:3,background:"var(--danger-soft)",border:"1px solid var(--border)"}}/> Domingo fechado</span>
-        <span style={{display:"inline-flex",alignItems:"center",gap:6}}><span style={{width:12,height:12,borderRadius:3,background:"linear-gradient(to bottom, var(--surface2) 50%, var(--danger-soft) 50%)",border:"1px solid var(--border)"}}/> Sábado até 12h</span>
+      <div className="agm-rodape">
+        <span><strong>{totalMes}</strong> {totalMes===1?"agendamento":"agendamentos"} em {MESES[mes].toLowerCase()}{vendedores.length>0&&ocultos.size>0?" nos vendedores ligados":""}</span>
+        <span className="agm-rodape-dica">Toque no dia para ver os agendamentos e o interesse de cada cliente</span>
+      </div>
+    </div>
+  );
+}
+
+// Janela do dia (2026-10-19, modelo "Leads do dia" que o Felipe mandou): por vendedor,
+// dentro dele por tipo, uma linha por cliente com horário, interesse, situação e resumo.
+function DiaModal({dia,ags,loading,erro,ocultos,ordemVend,readOnly,onClose,onAbrir,onAgendar,onVerHorarios}){
+  const visiveis=ags.filter(ag=>mesmoDia(new Date(ag.data_hora),dia)&&!ocultos.has(ag.vendedor_id||0));
+  const compromissos=visiveis.filter(ag=>ehCompromisso(ag)&&ag.status!=="cancelado");
+  const cancelados=visiveis.filter(ag=>ehCompromisso(ag)&&ag.status==="cancelado");
+  const bloqueios=visiveis.filter(ag=>!ehCompromisso(ag));
+  const grupos=[];
+  compromissos.forEach(ag=>{
+    const k=ag.vendedor_id||0;
+    let g=grupos.find(x=>x.k===k);
+    if(!g){g={k,nome:ag.vendedor_nome||"Sem vendedor",cor:corDoVendedor(ag.vendedor_id,ordemVend),tipos:[]};grupos.push(g);}
+    let t=g.tipos.find(x=>x.tipo===ag.tipo);
+    if(!t){t={tipo:ag.tipo,itens:[]};g.tipos.push(t);}
+    t.itens.push(ag);
+  });
+  grupos.sort((a,b)=>(a.k===0)-(b.k===0)||a.nome.localeCompare(b.nome));
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const podeAgendar=!readOnly&&dia>=hoje&&dia.getDay()!==0;
+  const titulo=`${DIAS_LONGOS[dia.getDay()]}, ${dia.getDate()} de ${MESES[dia.getMonth()].toLowerCase()}`;
+  return(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-lg agd-modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-handle"/>
+        <div className="agd-topo">
+          <div style={{minWidth:0}}>
+            <div className="agd-sobre">Agendamentos do dia</div>
+            <h2 className="agd-titulo">{titulo}</h2>
+            <div className="agd-sub">{loading?"Carregando...":`${compromissos.length} ${compromissos.length===1?"agendado":"agendados"} · por vendedor e tipo`}</div>
+          </div>
+          <div className="agd-topo-acoes">
+            <button className="btn btn-ghost btn-sm" onClick={onVerHorarios}><i className="ti ti-clock"/> Ver horários</button>
+            {podeAgendar&&<button className="btn btn-primary btn-sm" onClick={onAgendar}><i className="ti ti-plus"/> Agendar</button>}
+            <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={onClose}><i className="ti ti-x"/></button>
+          </div>
+        </div>
+        <div className="agd-corpo">
+          {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
+          {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
+          {!erro&&!loading&&compromissos.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>{dia.getDay()===0?"Domingo a loja fica fechada.":"Nenhum agendamento neste dia."}</p></div>}
+          {!erro&&!loading&&grupos.map(g=>(
+            <section key={g.k} className="agd-vend">
+              <h3 className="agd-vend-nome"><i style={{background:g.cor}}/>{g.nome}<span className="agd-cont">{g.tipos.reduce((s,t)=>s+t.itens.length,0)}</span></h3>
+              {g.tipos.map(t=>{
+                const tipo=TIPOS[t.tipo]||{label:t.tipo,icon:"ti-calendar",cor:"#8a8a84"};
+                return(
+                  <div key={t.tipo} className="agd-tipo">
+                    <div className="agd-tipo-nome"><i className={`ti ${tipo.icon}`} style={{color:tipo.cor}}/> {tipo.label}<span className="agd-cont">{t.itens.length}</span></div>
+                    <div className="agd-tabela">
+                      <div className="agd-linha agd-cab"><span>Horário</span><span>Cliente</span><span>Interesse</span><span>Situação</span><span>Resumo</span><span/></div>
+                      {t.itens.map(ag=>{
+                        const st=SITUACAO[getStatus(ag)]||{label:ag.status,badge:"badge-muted"};
+                        return(
+                          <div key={ag.id} className="agd-linha">
+                            <span className="agd-hora">{fmtH(ag.data_hora)}–{fmtHF(ag.data_hora,ag.duracao_min||30)}</span>
+                            <span className="agd-cli"><strong>{ag.cliente_nome||"Sem nome"}</strong>{ag.cliente_tel&&<small>{ag.cliente_tel}</small>}</span>
+                            <span className="agd-int">{ag.veiculo?<><i className="ti ti-car"/> {ag.veiculo}</>:<em>Sem veículo definido</em>}</span>
+                            <span><span className={`badge ${st.badge}`}>{st.label}</span></span>
+                            <span className="agd-res">
+                              {ag.observacoes?<span className="agd-obs">{ag.observacoes}</span>:<em>Sem observação</em>}
+                              <small>{ag.origem==="ia"?<><i className="ti ti-robot"/> Agendado pela IA</>:ag.origem==="manual"?<><i className="ti ti-user"/> Agendado no painel</>:null}{ag.lead_estagio?` · ${ag.lead_estagio.replace(/_/g," ")}`:""}</small>
+                            </span>
+                            <span className="agd-acoes">
+                              <button className="btn btn-ghost btn-sm" onClick={()=>onAbrir(ag)}><i className="ti ti-list-details"/> Abrir</button>
+                              {ag.lead_id?(
+                                <LeadPhoneChatwoot lead={{id:ag.lead_id,telefone:ag.cliente_tel,chatwoot_conv_id:ag.chatwoot_conv_id,chatwoot_inbox_id:ag.chatwoot_inbox_id}} style={{padding:"4px 10px"}}>Chatwoot</LeadPhoneChatwoot>
+                              ):ag.chatwoot_conv_id?(
+                                <ChatwootLink conv_id={ag.chatwoot_conv_id} inbox_id={ag.chatwoot_inbox_id} style={{padding:"4px 10px"}}>Chatwoot</ChatwootLink>
+                              ):null}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+          ))}
+          {!erro&&!loading&&(bloqueios.length>0||cancelados.length>0)&&(
+            <section className="agd-extra">
+              {bloqueios.length>0&&<div><span className="agd-extra-tit"><i className="ti ti-lock"/> Horários bloqueados</span>
+                {bloqueios.map(b=><span key={b.id} className="agd-extra-item">{fmtH(b.data_hora)}–{fmtHF(b.data_hora,b.duracao_min||30)} {b.ocupado?"Ocupado":(b.observacoes||"Bloqueado")}{b.vendedor_nome?` · ${b.vendedor_nome.split(" ")[0]}`:""}</span>)}
+              </div>}
+              {cancelados.length>0&&<div><span className="agd-extra-tit"><i className="ti ti-x"/> Cancelados</span>
+                {cancelados.map(c=><button key={c.id} className="agd-extra-item agd-extra-link" onClick={()=>onAbrir(c)}>{fmtH(c.data_hora)} {c.cliente_nome||"Sem nome"}</button>)}
+              </div>}
+            </section>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -558,10 +680,12 @@ function CalendarioMes({mesAtual,onMudarMes,resumo,diaSel,onSelecionarDia}){
 
 export default function Agenda(){
   const readOnly=getRole()==="gerente";
+  const ehVendedor=getRole()==="vendedor";
   const[ags,setAgs]=useState([]);
   const[diaSel,setDiaSel]=useState(new Date());
   const[loading,setLoading]=useState(true);
   const[novoModal,setNovoModal]=useState(false);
+  const[novoData,setNovoData]=useState(null);
   const[bloqueioModal,setBloqueioModal]=useState(false);
   const[horariosModal,setHorariosModal]=useState(false);
   const[erro,setErro]=useState(null);
@@ -570,10 +694,10 @@ export default function Agenda(){
   const[visao,setVisao]=useState("mes");
   const[mesAtual,setMesAtual]=useState(()=>{const d=new Date();d.setDate(1);return d;});
   const[resumoMes,setResumoMes]=useState([]);
-  // Bloco clicado na grade de horários abre o card completo (com as ações de
-  // confirmar/reagendar/etc) num modal — o bloco em si fica compacto, só
-  // horário+nome, igual o Google Agenda; o detalhe rico continua sendo o mesmo
-  // AgendaCard de sempre, só que sob demanda em vez de sempre visível.
+  const[diaAberto,setDiaAberto]=useState(false);
+  const[ocultos,setOcultos]=useState(()=>new Set());
+  // Bloco clicado na grade de horários (ou "Abrir" na janela do dia) abre o card
+  // completo (com as ações de confirmar/reagendar/etc) num modal.
   const[agAberto,setAgAberto]=useState(null);
 
   function load(){
@@ -582,16 +706,34 @@ export default function Agenda(){
     getAgenda(data).then(a=>{setAgs(a);setLoading(false);})
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   }
+  function loadMes(){
+    getResumoMes(mesAtual.getFullYear(),mesAtual.getMonth()+1).then(setResumoMes).catch(()=>setResumoMes([]));
+  }
   useEffect(()=>{load();},[diaSel]);
   useEffect(()=>{veiculosApi.getVeiculos().then(setVeiculos).catch(()=>{});},[]);
-  useEffect(()=>{
-    if(visao!=="mes")return;
-    getResumoMes(mesAtual.getFullYear(),mesAtual.getMonth()+1).then(setResumoMes).catch(()=>setResumoMes([]));
-  },[visao,mesAtual]);
+  useEffect(()=>{if(visao==="mes")loadMes();},[visao,mesAtual]);
 
   function mudarMes(delta){
     setMesAtual(m=>{const n=new Date(m);n.setMonth(n.getMonth()+delta);return n;});
   }
+  function irHoje(){
+    const h=new Date();setDiaSel(h);setVisao("dia");
+  }
+  function mudarDia(delta){
+    setDiaSel(d=>{const n=new Date(d);n.setDate(n.getDate()+delta);return n;});
+  }
+  function abrirDia(d){setDiaSel(d);setDiaAberto(true);}
+
+  // Vendedores do mês (para ligar/desligar), em ordem fixa por nome: a cor de cada um
+  // não muda quando outro sai ou entra.
+  const vendedores=[];
+  resumoMes.forEach(r=>(r.por_vendedor||[]).forEach(v=>{
+    if(!vendedores.some(x=>(x.vendedor_id||0)===(v.vendedor_id||0)))vendedores.push(v);
+  }));
+  vendedores.sort((a,b)=>(!a.vendedor_id)-(!b.vendedor_id)||a.vendedor_nome.localeCompare(b.vendedor_nome));
+  const ordemVend=vendedores.filter(v=>v.vendedor_id).map(v=>v.vendedor_id);
+  const mostrarToggles=!ehVendedor&&vendedores.length>1;
+  function alternarVend(k){setOcultos(s=>{const n=new Set(s);n.has(k)?n.delete(k):n.add(k);return n;});}
 
   const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-3+i);return d;});
   const hoje=new Date();
@@ -600,55 +742,107 @@ export default function Agenda(){
   // na hora qualquer mudança de status/reagendamento feita nele mesmo.
   const agAbertoAtual=agAberto?doDia.find(a=>a.id===agAberto):null;
 
-  async function handleStatus(id,status,estagio,veiculo_vendido_id){try{await atualizarStatusAgendamento(id,status,estagio,veiculo_vendido_id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));}
+  async function handleStatus(id,status,estagio,veiculo_vendido_id){try{await atualizarStatusAgendamento(id,status,estagio,veiculo_vendido_id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status}:ag));if(visao==="mes")loadMes();}
   // 2026-07-28: antes engolia qualquer erro (catch{} vazio) e recarregava como se
   // tivesse funcionado — agora deixa o erro subir pro AgendaCard tratar (mostrar o
   // motivo real e oferecer "mesmo assim" quando for fora de horário).
-  async function handleReagendar(id,data_hora,ignorar_horario){await reagendarAgendamento(id,data_hora,ignorar_horario);load();}
+  async function handleReagendar(id,data_hora,ignorar_horario){await reagendarAgendamento(id,data_hora,ignorar_horario);load();if(visao==="mes")loadMes();}
   async function handleReagendarLara(id){try{await pedirReagendamentoLara(id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status:"aguardando_reagendamento_lara"}:ag));}
   function handleVendaFeita(ag){setVendaFeitaAviso({ag,veiculo:acharVeiculo(veiculos,ag.veiculo)});setAgAberto(null);}
+  function criado(){load();if(visao==="mes")loadMes();}
 
   return(
-    <div>
-      <div className="page-header">
-        <h1 className="page-title"><i className="ti ti-calendar-event"/> Agenda</h1>
-        {/* 2026-07-28: antes o texto sumia inteiro abaixo de 640px (só ícone), e
-            ícone sozinho de relógio/cadeado não é óbvio o que faz. Agora sempre tem
-            um rótulo — curto no mobile, completo no desktop — em vez de esconder. */}
-        {!readOnly&&<div className="agenda-hdr-actions">
+    <div className="agm">
+      <div className="agm-cab">
+        <div className="agm-cab-tit">
+          <div className="agm-sobre">Loja · seg a sex 8h às 18h · sáb 8h às 12h</div>
+          <h1 className="page-title"><i className="ti ti-calendar-event"/> Agenda</h1>
+        </div>
+        <div className="seg agm-visoes" role="tablist" aria-label="Visão da agenda">
+          <button className={`seg-btn${visao==="dia"?" active":""}`} onClick={irHoje}><i className="ti ti-calendar-event"/> Hoje</button>
+          <button className={`seg-btn${visao==="semana"?" active":""}`} onClick={()=>setVisao("semana")}><i className="ti ti-calendar-week"/> Semana</button>
+          <button className={`seg-btn${visao==="mes"?" active":""}`} onClick={()=>setVisao("mes")}><i className="ti ti-calendar"/> Mês</button>
+        </div>
+        {/* 2026-07-28: sempre com rótulo — curto no mobile, completo no desktop. */}
+        {!readOnly&&<div className="agenda-hdr-actions agm-cab-acoes">
           <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setHorariosModal(true)}><i className="ti ti-clock"/> <span className="xs-inline">Horários</span><span className="sm-inline">Meus horários</span></button>
           <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setBloqueioModal(true)}><i className="ti ti-lock"/> <span className="xs-inline">Bloquear</span><span className="sm-inline">Bloquear horário</span></button>
-          <button className="btn btn-primary agenda-hdr-btn" onClick={()=>setNovoModal(true)}><i className="ti ti-plus"/> Agendar</button>
+          <button className="btn btn-primary agenda-hdr-btn" onClick={()=>{setNovoData(null);setNovoModal(true);}}><i className="ti ti-plus"/> Agendar</button>
         </div>}
       </div>
-      <div className="agenda-visao-toggle">
-        <button className={`btn agenda-visao-btn ${visao==="semana"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("semana")}><i className="ti ti-calendar-week"/> Semana</button>
-        <button className={`btn agenda-visao-btn ${visao==="mes"?"btn-primary":"btn-ghost"}`} style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setVisao("mes")}><i className="ti ti-calendar"/> Mês</button>
-      </div>
-      {visao==="semana"?(
-        <div className="dias-nav">
-          {dias.map((d,i)=>{const isHoje=mesmoDia(d,hoje);const isSel=mesmoDia(d,diaSel);const ns=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return(<button key={i} className={`dia-btn ${isHoje?"hoje":""} ${isSel?"selected":""}`} onClick={()=>setDiaSel(d)}><span className="dia-num">{d.getDate()}</span><span className="dia-nome">{ns[d.getDay()]}</span></button>);})}
+
+      {visao==="mes"&&(
+        <div className="agm-card">
+          <div className="agm-card-topo">
+            <div className="agm-nav">
+              <button className="btn btn-ghost btn-icon" aria-label="Mês anterior" onClick={()=>mudarMes(-1)}><i className="ti ti-chevron-left"/></button>
+              <button className="btn btn-ghost btn-icon" aria-label="Próximo mês" onClick={()=>mudarMes(1)}><i className="ti ti-chevron-right"/></button>
+              <div>
+                <div className="agm-sobre">Agenda da loja</div>
+                <div className="agm-mes">{MESES[mesAtual.getMonth()].toLowerCase()} de {mesAtual.getFullYear()}</div>
+              </div>
+            </div>
+            <div className="agm-legenda">
+              <span><i className="agm-leg agm-leg-livre"/> livre</span>
+              <span><i className="agm-leg agm-leg-cheio"/> com agendamento</span>
+              <span><i className="agm-leg agm-leg-fechado"/> fechado</span>
+            </div>
+          </div>
+          {mostrarToggles&&(
+            <div className="agm-vends">
+              <span className="agm-vends-tit">Vendedores</span>
+              {vendedores.map(v=>{
+                const k=v.vendedor_id||0;
+                const ligado=!ocultos.has(k);
+                return(
+                  <button key={k} type="button" role="switch" aria-checked={ligado} className={`agm-vend${ligado?" on":""}`} onClick={()=>alternarVend(k)}>
+                    <i className="agm-vend-cor" style={{background:corDoVendedor(v.vendedor_id,ordemVend)}}/>
+                    {v.vendedor_nome}
+                    <span className="agm-switch"/>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <CalendarioMes mesAtual={mesAtual} onMudarMes={mudarMes} resumo={resumoMes} diaSel={diaSel} onAbrirDia={abrirDia} ocultos={ocultos} vendedores={vendedores} ordemVend={ordemVend}/>
         </div>
-      ):(
-        <CalendarioMes mesAtual={mesAtual} onMudarMes={mudarMes} resumo={resumoMes} diaSel={diaSel} onSelecionarDia={setDiaSel}/>
       )}
-      <div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>{fmtDia(diaSel)} · {doDia.filter(a=>a.status!=="cancelado"&&a.tipo!=="bloqueio"&&!a.ocupado).length} agendamentos</div>
-      {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
-      {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
-      {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
-      {/* 2026-07-28: grade horizontal (estilo Google Agenda) é ótima no desktop, mas
-          no celular obrigava rolar de lado pra ver o dia inteiro e o bloco ficava
-          pequeno demais pra ler direito — virava "abrir o resumo" em 2 toques (tocar
-          no dia, depois no bloco). No mobile agora é lista vertical com o card
-          completo direto na tela (mesmo card do modal), sem precisar tocar de novo. */}
-      {!erro&&!loading&&doDia.length>0&&<div className="d-desktop"><GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/></div>}
-      {!erro&&!loading&&<div className="d-mobile">
-        {doDia.filter(ag=>ag.status!=="cancelado"&&ag.tipo!=="bloqueio"&&!ag.ocupado).map(ag=>(
-          <AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>
-        ))}
-      </div>}
-      {!readOnly&&novoModal&&<NovoModal onClose={()=>setNovoModal(false)} onCriado={()=>load()}/>}
-      {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={()=>load()}/>}
+
+      {visao!=="mes"&&<>
+        {visao==="semana"?(
+          <div className="dias-nav">
+            {dias.map((d,i)=>{const isHoje=mesmoDia(d,hoje);const isSel=mesmoDia(d,diaSel);const ns=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];return(<button key={i} className={`dia-btn ${isHoje?"hoje":""} ${isSel?"selected":""}`} onClick={()=>setDiaSel(d)}><span className="dia-num">{d.getDate()}</span><span className="dia-nome">{ns[d.getDay()]}</span></button>);})}
+          </div>
+        ):(
+          <div className="agm-dia-nav">
+            <button className="btn btn-ghost btn-icon" aria-label="Dia anterior" onClick={()=>mudarDia(-1)}><i className="ti ti-chevron-left"/></button>
+            <strong>{DIAS_LONGOS[diaSel.getDay()]}, {diaSel.getDate()} de {MESES[diaSel.getMonth()].toLowerCase()}</strong>
+            <button className="btn btn-ghost btn-icon" aria-label="Próximo dia" onClick={()=>mudarDia(1)}><i className="ti ti-chevron-right"/></button>
+            {!mesmoDia(diaSel,hoje)&&<button className="btn btn-ghost btn-sm" onClick={()=>setDiaSel(new Date())}>Hoje</button>}
+          </div>
+        )}
+        <div style={{fontSize:13,color:"var(--muted)",marginBottom:16}}>{fmtDia(diaSel)} · {doDia.filter(a=>a.status!=="cancelado"&&ehCompromisso(a)).length} agendamentos</div>
+        {erro&&<div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>}
+        {!erro&&loading&&<div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>}
+        {!erro&&!loading&&doDia.length===0&&<div className="empty-state"><i className="ti ti-calendar-off"/><p>Nenhum agendamento para {fmtDia(diaSel)}</p></div>}
+        {/* 2026-07-28: grade de horários no desktop; no celular lista vertical com o card completo. */}
+        {!erro&&!loading&&doDia.length>0&&<div className="d-desktop"><GradeHorarios doDia={doDia} onAbrirAg={ag=>setAgAberto(ag.id)}/></div>}
+        {!erro&&!loading&&<div className="d-mobile">
+          {doDia.filter(ag=>ag.status!=="cancelado"&&ehCompromisso(ag)).map(ag=>(
+            <AgendaCard key={ag.id} ag={ag} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly}/>
+          ))}
+        </div>}
+      </>}
+
+      {diaAberto&&visao==="mes"&&(
+        <DiaModal dia={diaSel} ags={ags} loading={loading} erro={erro} ocultos={ocultos} ordemVend={ordemVend} readOnly={readOnly}
+          onClose={()=>setDiaAberto(false)}
+          onAbrir={ag=>setAgAberto(ag.id)}
+          onAgendar={()=>{setNovoData(dataLocalISO(diaSel));setNovoModal(true);}}
+          onVerHorarios={()=>{setDiaAberto(false);setVisao("dia");}}/>
+      )}
+      {!readOnly&&novoModal&&<NovoModal dataInicial={novoData} onClose={()=>setNovoModal(false)} onCriado={criado}/>}
+      {!readOnly&&bloqueioModal&&<BloqueioModal onClose={()=>setBloqueioModal(false)} onCriado={criado}/>}
       {!readOnly&&horariosModal&&<HorariosModal onClose={()=>setHorariosModal(false)}/>}
       {agAbertoAtual&&(
         <div className="modal-overlay" onClick={()=>setAgAberto(null)}>
