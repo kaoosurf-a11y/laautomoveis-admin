@@ -751,6 +751,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .kc-top{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted)}
 .kc-top span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .kc-top time{flex-shrink:0;font-variant-numeric:tabular-nums}
+.kc-top-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.kc-rede{width:16px;height:16px;flex-shrink:0;display:block}
+.kc-rede-ti{font-size:17px;line-height:16px;width:auto;text-align:center}
 .kc-car{font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--fg);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kc-meta{grid-column:2;display:flex;align-items:center;gap:5px;margin-top:6px;min-width:0;flex-wrap:wrap}
 .kc-meta:empty{display:none}

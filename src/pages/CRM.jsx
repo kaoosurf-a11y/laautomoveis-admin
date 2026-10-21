@@ -5,6 +5,7 @@ import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 import { useVisivel } from "../lib/useVisivel.js";
+import RedeIcone from "../components/RedeIcone.jsx";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
 // nao_achou_carro/parou_responder o rótulo é o mesmo da coluna do Kanban (o tipo
@@ -258,8 +259,6 @@ const fmtR0=n=>"R$ "+Math.round(n).toLocaleString("pt-BR");
 const fmtRCurto=n=>n>=1e6?`R$ ${(n/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1})} mi`:n>=1e3?`R$ ${Math.round(n/1e3).toLocaleString("pt-BR")} mil`:fmtR0(n);
 function diaMesCurto(iso){if(!iso)return "";const d=new Date(iso);if(isNaN(d))return "";return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0");}
 const iniciaisDe=n=>String(n||"?").trim().split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
-// Selo de canal em cima da foto/inicial: de onde o lead veio (mesmas origens do seletor).
-const CANAL={anuncio:["#1877F2","ti-brand-meta","Anúncio"],site:["#5b6b7f","ti-world","Site"],organico:["#25D366","ti-brand-whatsapp","Orgânico (WhatsApp)"],presencial:["#b08a2e","ti-building-store","Presencial (loja)"],reativacao:["#8E44AD","ti-refresh","Campanha de reativação"],particular:["#128a43","ti-brand-whatsapp","WhatsApp particular do vendedor"]};
 // Foto de perfil do cliente (a que o Chatwoot já guarda; vem em lead.foto_url). Sem foto,
 // ou se a imagem não abrir, mostra a inicial. Só baixa a foto do card que aparece (useVisivel).
 function FotoLead({lead}){
@@ -1201,7 +1200,6 @@ export default function CRM(){
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
                   {leads.map((lead,li)=>{
                     const preco=precos[li];
-                    const canal=CANAL[lead.origem];
                     const corVend=AV[lead.vendedor_iniciais]||"#C8A84B";
                     return(
                     <div
@@ -1215,10 +1213,9 @@ export default function CRM(){
                     >
                       <div className="kc-av">
                         <FotoLead lead={lead}/>
-                        {canal&&<span className="kc-ch" style={{background:canal[0]}} title={`Origem: ${canal[2]}`}><i className={`ti ${canal[1]}`}/></span>}
                       </div>
                       <div className="kc-main">
-                        <div className="kc-top"><span>{lead.nome}</span><time>{diaMesCurto(lead.criado_em)}</time></div>
+                        <div className="kc-top"><span>{lead.nome}</span><span className="kc-top-r"><RedeIcone lead={lead}/><time>{diaMesCurto(lead.criado_em)}</time></span></div>
                         <div className="kc-car">{lead.veiculo_interesse||"Sem carro definido"}</div>
                       </div>
                       <div className="kc-meta">
