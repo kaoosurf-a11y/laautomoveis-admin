@@ -100,6 +100,10 @@ const ESTAGIOS_ADMIN=[
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
   {key:"fechado_perdido",label:"Venda Perdida",cor:"#546E7A"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
+  // fornecedor (2026-10-23, pedido do Felipe): quem oferece carro pra loja (atacado,
+  // locadora, outra revenda). A IA passa pro vendedor e põe aqui; aparece em todos os
+  // boards, inclusive do vendedor. Sem follow-up e fora da conta de conversão.
+  {key:"fornecedor",label:"Fornecedor",cor:"#5C6BC0"},
 ];
 // Vendedor 2026-07: quando o lead chega, a Lara já atendeu e qualificou, cai em
 // "Para atender" (= estagio novo_lead). Rótulo unificado com ESTAGIOS_ADMIN em
@@ -123,6 +127,10 @@ const ESTAGIOS_VENDEDOR=[
   {key:"fechado_ganho",label:"Venda concluída",cor:"#4caf7d"},
   {key:"fechado_perdido",label:"Venda Perdida",cor:"#546E7A"},
   {key:"bau",label:"Baú",cor:"#8d6e63"},
+  // fornecedor (2026-10-23, pedido do Felipe): quem oferece carro pra loja (atacado,
+  // locadora, outra revenda). A IA passa pro vendedor e põe aqui; aparece em todos os
+  // boards, inclusive do vendedor. Sem follow-up e fora da conta de conversão.
+  {key:"fornecedor",label:"Fornecedor",cor:"#5C6BC0"},
 ];
 function leadsDaColuna(est,kanban){
   return est.estagiosDb ? est.estagiosDb.flatMap(k=>kanban[k]||[]) : (kanban[est.key]||[]);
