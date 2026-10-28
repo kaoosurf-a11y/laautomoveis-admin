@@ -114,7 +114,7 @@ function EscolherLead({ loja, modelo, saidaId, lead, onLead }) {
   }, [loja, busca, modelo, saidaId]);
 
   if (lead) return (
-    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",border:"1px solid var(--primary)",borderRadius:10}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",border:"1px solid var(--brand-line)",background:"var(--brand-soft)",borderRadius:10}}>
       <div style={{flex:1,minWidth:0,fontSize:14,color:"var(--fg)"}}>
         <strong>{lead.nome}</strong>
         <span style={{color:"var(--muted)"}}> · final {lead.telefone_final}</span>
