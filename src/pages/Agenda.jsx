@@ -3,6 +3,7 @@ import { getAgenda, criarAgendamento, atualizarStatusAgendamento, reagendarAgend
 import { api as veiculosApi } from "../lib/api.js";
 import { isManager, getUser, getRole } from "../auth.js";
 import { LeadPhoneChatwoot, ChatwootLink } from "../components/ChatwootLink.jsx";
+import QualCarroComprou from "../components/QualCarroComprou.jsx";
 
 const ESTAGIOS_NAO_COMPROU=[
   {key:"sem_credito",label:"Sem crédito"},
@@ -16,15 +17,6 @@ const ESTAGIOS_NAO_COMPROU=[
 // meia-noite em UTC-3 o UTC já virou o dia seguinte e a data sai errada.
 function dataLocalISO(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-
-// Acha o veículo do estoque que bate com o texto livre do agendamento (ex: "Onix 2019"),
-// pra linkar direto na tela de edição dele no lembrete de "Venda feita". Best-effort —
-// se não achar, o lembrete ainda aparece, só sem o link direto.
-function acharVeiculo(veiculos,textoLivre){
-  if(!textoLivre)return null;
-  const alvo=textoLivre.toLowerCase();
-  return veiculos.find(v=>alvo.includes(v.modelo.toLowerCase()))||null;
 }
 
 const DIAS_SEMANA=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
@@ -182,22 +174,13 @@ function mesmoDia(a,b){return a.toDateString()===b.toDateString();}
 function minAte(iso){return Math.round((new Date(iso)-Date.now())/60000);}
 function getStatus(ag){const m=minAte(ag.data_hora);if(ag.status==="confirmado"&&m>0&&m<=30)return "em_breve";return ag.status;}
 
-function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOnly}){
+function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onComprou,readOnly}){
   const status=getStatus(ag);
   const tipo=TIPOS[ag.tipo]||{label:ag.tipo,icon:"ti-calendar",cor:"var(--muted)"};
   const min=minAte(ag.data_hora);
   const[escolhendoReagendar,setEscolhendoReagendar]=useState(false);
   const[reagendando,setReagendando]=useState(false);
   const[escolhendoMotivo,setEscolhendoMotivo]=useState(false);
-  // Veículo vendido (2026-07-31, auditoria dashboard): "Comprou" fechava a venda sem
-  // nunca pedir qual veículo — era o principal caminho real de fechamento (mais usado
-  // que o dropdown do CRM) e por isso o motivo de 100% das vendas reais estarem sem
-  // veiculo_vendido_id/valor, zerando o ticket médio do Dashboard. Backend
-  // (estagioLead.js) auto-preenche crm_leads.valor a partir do preço de tabela quando
-  // recebe esse id — opcional, "Confirmar sem vincular" ainda fecha a venda normalmente.
-  const[escolhendoVeiculoVenda,setEscolhendoVeiculoVenda]=useState(false);
-  const[veiculosEstoque,setVeiculosEstoque]=useState(null);
-  const[veiculoVendaId,setVeiculoVendaId]=useState("");
   const[pedidoLaraEnviado,setPedidoLaraEnviado]=useState(false);
   const iso=new Date(ag.data_hora);
   const[novaData,setNovaData]=useState(dataLocalISO(iso));
@@ -223,15 +206,6 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
   function confirmarNaoComprou(estagio){
     onStatus(ag.id,"realizado_nao_comprou",estagio);
     setEscolhendoMotivo(false);
-  }
-  function abrirEscolhaVeiculoVenda(){
-    setEscolhendoVeiculoVenda(true);
-    if(!veiculosEstoque)veiculosApi.getVeiculos().then(setVeiculosEstoque).catch(()=>setVeiculosEstoque([]));
-  }
-  function confirmarComprou(){
-    onStatus(ag.id,"realizado_comprou",undefined,veiculoVendaId||undefined);
-    setEscolhendoVeiculoVenda(false);
-    onVendaFeita(ag);
   }
   return(
     <div className={`agenda-card ${status}`} style={{borderLeftColor:SBORDA[status]}}>
@@ -306,30 +280,13 @@ function AgendaCard({ag,onStatus,onReagendar,onReagendarLara,onVendaFeita,readOn
           </div>
         </div>
       )}
-      {escolhendoVeiculoVenda&&(
-        <div style={{marginBottom:10,padding:"8px",background:"var(--surface2)",borderRadius:6}}>
-          <div style={{fontSize:12,color:"var(--muted)",marginBottom:6}}>Qual veículo do estoque foi vendido? (opcional, mas ajuda a fechar o histórico certo)</div>
-          {veiculosEstoque===null?(
-            <div style={{fontSize:12,color:"var(--muted)"}}><span className="spinner" style={{marginRight:6}}/>Carregando estoque...</div>
-          ):(
-            <select className="form-input" style={{marginBottom:6,fontSize:12}} value={veiculoVendaId} onChange={e=>setVeiculoVendaId(e.target.value)}>
-              <option value="">— não vincular a um veículo específico —</option>
-              {veiculosEstoque.map(v=><option key={v.id} value={v.id}>{v.marca} {v.modelo} {v.ano}</option>)}
-            </select>
-          )}
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            <button className="btn btn-primary" style={{fontSize:12,padding:"6px 10px"}} onClick={confirmarComprou}>Confirmar venda</button>
-            <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 10px"}} onClick={()=>{setEscolhendoVeiculoVenda(false);setVeiculoVendaId("");}}>Cancelar</button>
-          </div>
-        </div>
-      )}
       {readOnly&&ag.pode_alterar===false&&getRole()==="vendedor"&&<div style={{fontSize:12,color:"var(--muted)",padding:"6px 8px",background:"var(--surface2)",borderRadius:6}}><i className="ti ti-lock"/> Agendamento de {ag.vendedor_nome||"outro vendedor"}: você pode ver, mas só ele altera.</div>}
       {!readOnly&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {ag.status==="pendente"&&<button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"var(--success-line)"}} onClick={()=>onStatus(ag.id,"confirmado")}><i className="ti ti-check"/> Confirmar</button>}
         {(ag.status==="confirmado"||ag.status==="pendente")&&<button className="btn btn-danger" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>onStatus(ag.id,"cancelado")}><i className="ti ti-x"/> Cancelar</button>}
-        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&!escolhendoReagendar&&!escolhendoVeiculoVenda&&<>
+        {ag.status==="confirmado"&&new Date(ag.data_hora)<new Date()&&!reagendando&&!escolhendoMotivo&&!escolhendoReagendar&&<>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px"}} onClick={()=>setEscolhendoReagendar(true)}><i className="ti ti-calendar-time"/> Reagendar</button>
-          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"var(--success-line)"}} onClick={abrirEscolhaVeiculoVenda}><i className="ti ti-check"/> Veio e comprou</button>
+          <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--success)",borderColor:"var(--success-line)"}} onClick={()=>onComprou(ag)}><i className="ti ti-check"/> Veio e comprou</button>
           <button className="btn btn-ghost" style={{fontSize:12,padding:"6px 12px",color:"var(--warning)",borderColor:"rgba(230,126,34,.3)"}} onClick={()=>setEscolhendoMotivo(true)}><i className="ti ti-mood-sad"/> Veio e não comprou</button>
           {/* 2026-07-15: "não veio" (no-show) tinha o MESMO status de "cancelado" (cancelamento
               prévio) — impossível medir taxa de comparecimento porque os dois casos ficavam
@@ -760,7 +717,11 @@ export default function Agenda(){
   const[horariosModal,setHorariosModal]=useState(false);
   const[erro,setErro]=useState(null);
   const[veiculos,setVeiculos]=useState([]);
-  const[vendaFeitaAviso,setVendaFeitaAviso]=useState(null);
+  // 2026-10-28 (Felipe): "Veio e comprou" abre a mesma janela do CRM ("Qual carro ele
+  // comprou?"). Só depois da escolha o agendamento vira "Comprou" (o servidor move o card;
+  // se a janela já moveu, mover de novo pro mesmo estágio não dispara a Meta outra vez).
+  // Substitui a pergunta opcional de veículo e o lembrete "remova o anúncio do site".
+  const[comprouAg,setComprouAg]=useState(null);
   const[visao,setVisao]=useState("mes");
   const[mesAtual,setMesAtual]=useState(()=>{const d=new Date();d.setDate(1);return d;});
   const[resumoMes,setResumoMes]=useState([]);
@@ -829,7 +790,10 @@ export default function Agenda(){
   // motivo real e oferecer "mesmo assim" quando for fora de horário).
   async function handleReagendar(id,data_hora,ignorar_horario){await reagendarAgendamento(id,data_hora,ignorar_horario);load();if(visao==="mes")loadMes();}
   async function handleReagendarLara(id){try{await pedirReagendamentoLara(id);}catch{}setAgs(a=>a.map(ag=>ag.id===id?{...ag,status:"aguardando_reagendamento_lara"}:ag));}
-  function handleVendaFeita(ag){setVendaFeitaAviso({ag,veiculo:acharVeiculo(veiculos,ag.veiculo)});setAgAberto(null);}
+  function handleComprou(ag){
+    if(!ag.lead_id){handleStatus(ag.id,"realizado_comprou");return;}
+    setComprouAg(ag);setAgAberto(null);
+  }
   function criado(){load();if(visao==="mes")loadMes();}
 
   return(
@@ -937,27 +901,13 @@ export default function Agenda(){
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
             <div className="modal-handle"/>
             <div className="modal-header"><h2 className="modal-title">Compromisso</h2><button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={()=>setAgAberto(null)}><i className="ti ti-x"/></button></div>
-            <AgendaCard ag={agAbertoAtual} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onVendaFeita={handleVendaFeita} readOnly={readOnly||agAbertoAtual.pode_alterar===false}/>
+            <AgendaCard ag={agAbertoAtual} onStatus={handleStatus} onReagendar={handleReagendar} onReagendarLara={handleReagendarLara} onComprou={handleComprou} readOnly={readOnly||agAbertoAtual.pode_alterar===false}/>
           </div>
         </div>
       )}
-      {vendaFeitaAviso&&(
-        <div className="modal-overlay" onClick={()=>setVendaFeitaAviso(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
-            <div className="modal-handle"/>
-            <div className="modal-header"><h2 className="modal-title"><i className="ti ti-check" style={{color:"var(--success)"}}/> Venda registrada!</h2><button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={()=>setVendaFeitaAviso(null)}><i className="ti ti-x"/></button></div>
-            <p style={{fontSize:14,color:"var(--fg)",marginBottom:16}}>
-              Não esqueça de remover o anúncio do <strong>{vendaFeitaAviso.veiculo?`${vendaFeitaAviso.veiculo.marca} ${vendaFeitaAviso.veiculo.modelo}`:vendaFeitaAviso.ag.veiculo}</strong> do site e dos portais.
-            </p>
-            <div style={{display:"flex",gap:8}}>
-              <button className="btn btn-ghost" onClick={()=>setVendaFeitaAviso(null)} style={{flex:1}}>Fechar</button>
-              <a className="btn btn-primary" style={{flex:1,textAlign:"center"}} href={vendaFeitaAviso.veiculo?`/veiculos?editar=${vendaFeitaAviso.veiculo.id}`:"/veiculos"}>
-                <i className="ti ti-car"/> Ir para Veículos
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+      {comprouAg&&<QualCarroComprou lead={{id:comprouAg.lead_id,nome:comprouAg.cliente_nome,veiculo_interesse:comprouAg.veiculo}} estoque={veiculos.length?veiculos:null}
+        onClose={()=>setComprouAg(null)}
+        onFeito={async()=>{const id=comprouAg.id;setComprouAg(null);await handleStatus(id,"realizado_comprou");veiculosApi.getVeiculos().then(setVeiculos).catch(()=>{});}}/>}
     </div>
   );
 }
