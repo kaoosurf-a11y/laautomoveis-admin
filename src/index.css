@@ -1341,3 +1341,25 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .fu-resp{padding:8px 12px;font-size:12px;min-height:34px}
   .lapis-toque{padding:10px;margin:-10px -10px -10px -4px}
 }
+
+/* ── Agenda no celular (28/10/2026, Felipe): sem o texto do horário da loja, botões no
+   alto ao lado do título e o mês inteiro na primeira tela, sem rolar. ── */
+@media(max-width:639px){
+  .agm-cab{align-items:center;gap:10px 8px;margin-bottom:10px}
+  .agm-cab-tit{order:1;flex:1 1 0;min-width:0}
+  .agm-cab-tit .page-title{white-space:nowrap}
+  .agm-cab-tit .agm-sobre{display:none}
+  .agm-cab-acoes{order:2;width:auto;flex:0 0 auto;gap:6px}
+  .agm-cab-acoes .agenda-hdr-btn{flex:none;min-height:40px}
+  .agm-cab-acoes .btn-primary.agenda-hdr-btn{padding:0 12px}
+  .agm-cab-acoes .btn-ghost.agenda-hdr-btn{width:40px;padding:0;justify-content:center}
+  .agm-cab-acoes .btn-ghost.agenda-hdr-btn span{display:none}
+  .agm-cab-acoes .btn-ghost.agenda-hdr-btn i{margin:0}
+  .agm-visoes{order:3}
+  .agm-visoes .seg-btn{min-height:38px}
+  .agm-card-topo{margin-bottom:6px}
+  .agm-card-topo .agm-sobre{display:none}
+  .agm-nav .btn-icon{min-width:36px;min-height:36px}
+  .agm-dias{grid-auto-rows:minmax(54px,auto)}
+  .agm-rodape{padding-top:6px}
+}

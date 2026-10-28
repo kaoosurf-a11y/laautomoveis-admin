@@ -1,4 +1,5 @@
 import { authHeaders, getUser } from "./auth.js";
+import { lembrar } from "./memoria.js";
 const API = import.meta.env.VITE_API_URL || "https://api.laautomoveis.com.br";
 
 async function req(path, opts={}) {
@@ -56,7 +57,7 @@ export async function getCRMKanban(lojaId) {
   // própria loja (ver crm.js).
   if(lojaId)params.set("loja_id",lojaId);
   const qs=params.toString();
-  return req(`/api/crm/kanban${qs?`?${qs}`:""}`);
+  return lembrar(`kanban:${lojaId||""}`, req(`/api/crm/kanban${qs?`?${qs}`:""}`));
 }
 export async function getLojas() { return req("/api/lojas"); }
 export async function moverLead(id,est,motivo,veiculo_vendido_id,data_hora_agendamento,lembrete_dias) { return req(`/api/crm/leads/${id}/estagio`,{method:"PATCH",body:JSON.stringify({estagio:est,motivo,veiculo_vendido_id,data_hora_agendamento,lembrete_dias})}); }
@@ -99,7 +100,7 @@ export async function updateMetaVendas(meta_vendas_mes, loja_id){
 export async function getMetricasVendedor(id){ return req(`/api/metrics/vendedor/${id}`); }
 export async function getFollowups() {
   const u=getUser(); const q=u?.role==="vendedor"?`?vendedor_id=${u.id}`:"";
-  return req(`/api/followups${q}`);
+  return lembrar("followups", req(`/api/followups${q}`));
 }
 export async function marcarFollowupEnviado(id)   { return req(`/api/followups/${id}/enviado`,{method:"PATCH"}); }
 export async function marcarFollowupRespondeu(id) { return req(`/api/followups/${id}/respondeu`,{method:"PATCH"}); }

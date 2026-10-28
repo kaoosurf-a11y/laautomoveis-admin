@@ -1,6 +1,9 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { isLoggedIn, isManager, getUser } from "./auth.js";
+import { getCRMKanban, getFollowups } from "./api.js";
+import { api } from "./lib/api.js";
+import { lembrado } from "./memoria.js";
 import Layout from "./components/Layout.jsx";
 import DialogHost from "./components/Dialog.jsx";
 import Login from "./pages/Login.jsx";
@@ -42,6 +45,13 @@ const TELAS = [Dashboard, CRM, FollowUps, Agenda, Veiculos, Equipe, ContatosPerd
 function prebaixarTelas() {
   try { sessionStorage.removeItem("la_recarregou_tela"); } catch {}
   TELAS.forEach(t => t.carregar().catch(() => {}));
+  // 2026-10-28: também deixa CRM, Follow-up e Veículos com os dados prontos na memória
+  // (memoria.js), pra primeira entrada em cada uma já abrir sem "Carregando".
+  if (isLoggedIn()) {
+    if (!lembrado("kanban:")) getCRMKanban().catch(() => {});
+    if (!lembrado("followups")) getFollowups().catch(() => {});
+    if (!lembrado("veiculos")) api.getVeiculos().catch(() => {});
+  }
 }
 
 const carregandoTela = <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;

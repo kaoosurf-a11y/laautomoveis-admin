@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { lembrado } from "../memoria.js";
 import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
@@ -150,7 +151,7 @@ function FotoLead({nome,foto}){
   if(!foto||falhou)return <div className="kc-ini">{iniciaisDe(nome)}</div>;
   // Até o card chegar perto da tela fica só o círculo vazio (sem baixar a foto).
   if(!visivel)return <div ref={ref} className="kc-foto"/>;
-  return <img className="kc-foto" src={foto} alt="" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
+  return <img className="kc-foto" src={foto} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
 }
 
 // Classificação do estágio: manual (vendedor arrastou o card) vs automática (Observador
@@ -308,13 +309,13 @@ export default function FollowUps(){
   // "Visitas mencionadas" e "Agendamentos" removidos como abas próprias (2026-07-28):
   // Agenda (menu lateral) já é a visão dedicada de compromissos — manter os dois
   // aqui era informação duplicada. Follow-ups agora é só "Por estágio".
-  const[data,setData]=useState({porTipo:{}});
+  const[data,setData]=useState(()=>lembrado("followups")||{porTipo:{}});
   // Filtro de data dentro de "Por estágio" — antes eram 2 abas próprias (Agenda de
   // hoje / Vencidos), mas liam a MESMA tabela (followups) que já aparece aqui, só
   // com um WHERE de data diferente. Virou filtro em vez de aba: menos lugar pra
   // Dariana checar, mesma informação (2026-07-16).
   const[filtroData,setFiltroData]=useState("todos");
-  const[loading,setLoading]=useState(true);
+  const[loading,setLoading]=useState(()=>!lembrado("followups"));
   const[erro,setErro]=useState(null);
 
   const load=()=>getFollowups().then(d=>{setData(d);setLoading(false);})

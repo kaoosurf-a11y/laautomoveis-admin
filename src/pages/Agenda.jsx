@@ -846,8 +846,8 @@ export default function Agenda(){
         </div>
         {/* 2026-07-28: sempre com rótulo — curto no mobile, completo no desktop. */}
         {!readOnly&&<div className="agenda-hdr-actions agm-cab-acoes">
-          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setHorariosModal(true)}><i className="ti ti-clock"/> <span className="xs-inline">Horários</span><span className="sm-inline">Meus horários</span></button>
-          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setBloqueioModal(true)}><i className="ti ti-lock"/> <span className="xs-inline">Bloquear</span><span className="sm-inline">Bloquear horário</span></button>
+          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setHorariosModal(true)} aria-label="Meus horários" title="Meus horários"><i className="ti ti-clock"/> <span className="xs-inline">Horários</span><span className="sm-inline">Meus horários</span></button>
+          <button className="btn btn-ghost agenda-hdr-btn" onClick={()=>setBloqueioModal(true)} aria-label="Bloquear horário" title="Bloquear horário"><i className="ti ti-lock"/> <span className="xs-inline">Bloquear</span><span className="sm-inline">Bloquear horário</span></button>
           <button className="btn btn-primary agenda-hdr-btn" onClick={()=>{setNovoData(null);setNovoModal(true);}}><i className="ti ti-plus"/> Agendar</button>
         </div>}
       </div>

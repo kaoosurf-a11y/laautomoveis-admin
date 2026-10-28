@@ -1,4 +1,5 @@
 import { getToken, logout } from "../auth.js";
+import { lembrar } from "../memoria.js";
 
 const BASE = import.meta.env.VITE_API_URL || "https://api.laautomoveis.com.br";
 
@@ -35,7 +36,7 @@ export const api = {
   me: () => req("GET", "/api/admin/me"),
 
   // Veículos — rota de admin traz TODOS (inclusive ativo=false), a pública só traz ativos
-  getVeiculos: () => req("GET", "/api/veiculos/admin/todos"),
+  getVeiculos: () => lembrar("veiculos", req("GET", "/api/veiculos/admin/todos")),
   getContagensVeiculos: () => req("GET", "/api/veiculos/admin/contagens"),
   lerFotosVeiculo: (fotos) => req("POST", "/api/veiculos/admin/ler-fotos", { fotos }),
   getVeiculo: (id) => req("GET", `/api/veiculos/${id}`),

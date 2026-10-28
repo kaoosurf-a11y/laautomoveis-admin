@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { getCRMKanban, getMovimentosLead, moverLead, criarLeadCRM, agendarVisita, agendarRetomada, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
+import { lembrado } from "../memoria.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
@@ -275,7 +276,7 @@ function FotoLead({lead}){
   if(!lead.foto_url||falhou)return <div className="kc-ini">{iniciaisDe(lead.nome)}</div>;
   // Até o card chegar perto da tela fica só o círculo vazio (sem baixar a foto).
   if(!visivel)return <div ref={ref} className="kc-foto"/>;
-  return <img className="kc-foto" src={lead.foto_url} alt="" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
+  return <img className="kc-foto" src={lead.foto_url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
 }
 // Status do follow-up no rodapé: bolinha vermelha (atrasado), verde (em dia). Sem follow-up não mostra nada.
 function StatusFollowup({lead}){
@@ -1015,10 +1016,11 @@ export default function CRM(){
     arrastandoBoard.current.ativo=false;
     boardRef.current?.classList.remove("grabbing");
   }
-  const[kanban,setKanban]=useState({});
+  // Volta pra tela mostrando na hora o último Kanban (memoria.js) e atualiza por baixo.
+  const[kanban,setKanban]=useState(()=>lembrado("kanban:")||{});
   const campanhaVipAtiva=kanban.__campanha_vip_ativa!==false;
   const estagiosKanban=campanhaVipAtiva?estagios:estagios.filter(e=>e.key!=="lista_vip");
-  const[loading,setLoading]=useState(true);
+  const[loading,setLoading]=useState(()=>!lembrado("kanban:"));
   const[busca,setBusca]=useState("");
   const[leadSel,setLeadSel]=useState(null);
   const[novoModal,setNovoModal]=useState(false);
@@ -1040,14 +1042,16 @@ export default function CRM(){
   // colunas diferentes aparecem pra cada pessoa, quando é só a posição do scroll.
   useEffect(()=>{if(boardRef.current)boardRef.current.scrollLeft=0;},[loading]);
   const load=useCallback((silent)=>{
-    if(!silent) setLoading(true);
+    const k0=lembrado(`kanban:${lojaFiltro||""}`);
+    if(k0){setKanban(k0);setLoading(false);}
+    else if(!silent) setLoading(true);
     setErro(null);
     getCRMKanban(lojaFiltro||undefined).then(k=>{setKanban(k);setLoading(false);})
       .catch(()=>{setErro("Erro ao carregar dados. Tente novamente.");setLoading(false);});
   },[lojaFiltro]);
   useEffect(()=>{load();},[load]);
   // Estoque (compartilhado) só pra mostrar o preço no card; falha em silêncio: o card sai sem preço.
-  const[estoqueCards,setEstoqueCards]=useState([]);
+  const[estoqueCards,setEstoqueCards]=useState(()=>lembrado("veiculos")||[]);
   useEffect(()=>{veiculosApi.getVeiculos().then(v=>setEstoqueCards(Array.isArray(v)?v:[])).catch(()=>{});},[]);
   const indiceEstoque=useMemo(()=>indexarEstoque(estoqueCards),[estoqueCards]);
 

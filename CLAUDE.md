@@ -49,3 +49,9 @@ Claude cannot log into this admin panel — typing any password (even the shared
 - **Telas sob demanda**: `App.jsx` carrega cada página com `React.lazy` e baixa as outras em segundo plano 2,5 s depois. Página nova entra na lista com `tela(() => import(...))` e em `TELAS`.
 - **Fotos dos cards** (CRM e Follow-ups) usam `src/lib/useVisivel.js`; fotos de Veículos/Status com `loading="lazy"`. `.kanban-card` tem `content-visibility:auto` (card fora da tela não é desenhado).
 - Medição antes/depois (4G lento, CPU 4x, 390x844 e 820x1180): `/root/reports/painel-leveza-celular-20261018.md`.
+
+## Instantâneo e app (2026-10-28)
+
+- **`src/memoria.js`**: CRM (`kanban:`), Follow-up e Veículos guardam a última resposta na memória da aba. Ao voltar pra tela, mostra na hora e atualiza por baixo. Só memória (nada de lead no `localStorage`); chave por usuário, limpa no `logout()`. `App.jsx` pré-busca os três 2,5 s depois de abrir.
+- **Fotos de Veículos** saem por `?w=` (redimensionador do backend, `imageResize.js`, cache de 1 ano): capa de ~400 KB vira ~60 KB.
+- **App instalável**: `public/manifest.json` + ícones em `public/` (sem service worker, de propósito: nada de versão velha presa no aparelho).

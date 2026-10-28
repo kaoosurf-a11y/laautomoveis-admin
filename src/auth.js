@@ -1,3 +1,4 @@
+import { esquecerTudo } from "./memoria.js";
 const API = import.meta.env.VITE_API_URL || "https://api.laautomoveis.com.br";
 const TOKEN_KEY   = "la_token";
 const USER_KEY    = "la_user";
@@ -35,6 +36,7 @@ export async function login(usuario, senha, persist = false) {
 }
 
 export function logout() {
+  esquecerTudo();
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(PERSIST_KEY);
