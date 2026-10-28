@@ -470,8 +470,8 @@ export default function Veiculos() {
             {/* Foto capa */}
             <div style={{position:"relative"}}>
               <div style={{position:"absolute",bottom:10,left:10,zIndex:1,display:"flex",gap:4,background:"rgba(0,0,0,.55)",borderRadius:8,padding:2}}>
-                <button className="btn btn-ghost btn-icon" style={{padding:4,minHeight:0}} onClick={() => mover(v,"cima")} disabled={i===0 || movendo===v.id} title="Mover pra cima"><i className="ti ti-chevron-up"/></button>
-                <button className="btn btn-ghost btn-icon" style={{padding:4,minHeight:0}} onClick={() => mover(v,"baixo")} disabled={i===veiculos.length-1 || movendo===v.id} title="Mover pra baixo"><i className="ti ti-chevron-down"/></button>
+                <button className="btn btn-ghost btn-icon" style={{padding:"4px 8px",minHeight:38,minWidth:42}} onClick={() => mover(v,"cima")} disabled={i===0 || movendo===v.id} title="Mover pra cima"><i className="ti ti-chevron-up"/></button>
+                <button className="btn btn-ghost btn-icon" style={{padding:"4px 8px",minHeight:38,minWidth:42}} onClick={() => mover(v,"baixo")} disabled={i===veiculos.length-1 || movendo===v.id} title="Mover pra baixo"><i className="ti ti-chevron-down"/></button>
               </div>
               {v.fotos?.[0]
                 ? <img src={v.fotos[0]} alt="" loading="lazy" decoding="async" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>

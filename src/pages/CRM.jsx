@@ -595,7 +595,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             <h2 className="modal-title" style={{display:"flex",alignItems:"center",gap:8}}>
               {nomeAtual}
               {!readOnly&&
-                <button onClick={()=>{setNomeInput(nomeAtual);setEditandoNome(true);}} title="Editar nome"
+                <button onClick={()=>{setNomeInput(nomeAtual);setEditandoNome(true);}} title="Editar nome" className="lapis-toque"
                   style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:14,display:"flex"}}>
                   <i className="ti ti-pencil"/>
                 </button>
@@ -625,7 +625,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <div style={{fontSize:15,fontWeight:600,color:"var(--fg)"}}>{veiculoAtual}</div>
               {!readOnly&&
-                <button onClick={()=>{setVeiculoInput(veiculoAtual);setEditandoVeiculo(true);}} title="Trocar veículo"
+                <button onClick={()=>{setVeiculoInput(veiculoAtual);setEditandoVeiculo(true);}} title="Trocar veículo" className="lapis-toque"
                   style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:14,display:"flex"}}>
                   <i className="ti ti-pencil"/>
                 </button>

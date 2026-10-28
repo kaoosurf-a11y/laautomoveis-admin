@@ -429,7 +429,9 @@ export default function FollowUps(){
           vazias). 2026-10-18 (Felipe): mesmas classes do Kanban do CRM (.kanban-board/
           .kanban-col/.kanban-card.kc), então coluna, card, altura da tela e a barra de
           rolagem embaixo ficam iguais nas duas telas. match_estoque não tem coluna
-          própria: ver comentário perto de TIPO_COR. */}
+          própria: ver comentário perto de TIPO_COR. 2026-10-28 (Felipe, teste em 360px):
+          no celular a coluna vazia fica estreita (.kanban-col-vazia) pra coluna com
+          follow-up aparecer logo do lado, em vez de a vazia ocupar a tela inteira. */}
           <div className="kanban-board fu-board" ref={boardRef}
             onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
             onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}>
@@ -437,7 +439,7 @@ export default function FollowUps(){
               const leads=(data.porTipo?.[tipo]||[]).filter(passaFiltro);
               const cor=TIPO_COR[tipo];
               return (
-              <div key={tipo} className="kanban-col" style={{"--cor":cor}}>
+              <div key={tipo} className={`kanban-col${leads.length===0?" kanban-col-vazia":""}`} style={{"--cor":cor}}>
                 <div className="kanban-col-header" style={{"--cor":cor,opacity:colArrastando===tipo?.4:1}}
                   draggable
                   onDragStart={e=>onColHeaderDragStart(e,tipo)}

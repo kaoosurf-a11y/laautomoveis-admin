@@ -1328,3 +1328,16 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .agm-semana .agm-dia-dow{font-size:13px;text-transform:capitalize}
   .agm-semana .agm-dia-vend-nome{margin-right:3px}
 }
+
+/* ── Toque no celular (28/10/2026, Felipe, teste em 360px) ── */
+@media(max-width:1023px){
+  .kanban-col-vazia{width:84px}
+  .kanban-col-vazia .kanban-col-header{align-items:flex-start}
+  .kanban-col-vazia .kanban-col-title{white-space:normal;line-height:1.25;font-size:11px;letter-spacing:.03em}
+  .kanban-col-vazia .ti-grip-vertical{display:none}
+  .fu-board .kanban-col:not(.kanban-col-vazia){width:min(272px,calc(100vw - 128px))}
+  .fu-filtros{flex-wrap:nowrap;width:100%}
+  .fu-filtros .tab-btn{flex:1;min-width:0;padding:10px 6px}
+  .fu-resp{padding:8px 12px;font-size:12px;min-height:34px}
+  .lapis-toque{padding:10px;margin:-10px -10px -10px -4px}
+}
