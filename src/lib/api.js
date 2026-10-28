@@ -43,7 +43,9 @@ export const api = {
   criarVeiculo: (data) => req("POST", "/api/veiculos", data),
   editarVeiculo: (id, data) => req("PUT", `/api/veiculos/${id}`, data),
   removerVeiculo: (id, saida) => req("DELETE", `/api/veiculos/${id}`, saida),
-  getVendaOpcoes: (loja, q) => req("GET", `/api/veiculos/admin/venda-opcoes?loja=${loja}&q=${encodeURIComponent(q || "")}`),
+  getVendaOpcoes: (loja, q, extra = {}) => req("GET", `/api/veiculos/admin/venda-opcoes?loja=${loja}&q=${encodeURIComponent(q || "")}&modelo=${encodeURIComponent(extra.modelo || "")}&saida=${extra.saida || ""}`),
+  getVendasSemCliente: () => req("GET", "/api/veiculos/admin/vendas-sem-cliente"),
+  vincularCliente: (saidaId, crmLeadId) => req("PATCH", `/api/veiculos/admin/saidas/${saidaId}/cliente`, { crm_lead_id: crmLeadId }),
   restaurarVeiculo: (id) => req("PATCH", `/api/veiculos/${id}/restaurar`),
   moverVeiculo: (id, direcao, site) => req("PATCH", `/api/veiculos/${id}/mover`, { direcao, site }),
 

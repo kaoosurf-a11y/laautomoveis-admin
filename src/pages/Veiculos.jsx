@@ -94,6 +94,57 @@ const empty = {
   portas:4, fotos:[], opcionais:[], badge:"", detalhe:"", ativo:true, valor_fipe:"",
 };
 
+// Dia/mês no fuso da loja (data em que o carro saiu do estoque).
+const fmtDia = d => d ? new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
+
+// 2026-10-28 (Felipe): escolha do lead que comprou, a mesma na venda e no "Vincular
+// cliente". Abre com até 3 leads prováveis prontos pra um toque (o servidor ordena por
+// telefone do comprador, modelo, card já em Venda feita e leads do vendedor); a busca
+// por nome ou telefone fica embaixo pra quando não for nenhum deles.
+function EscolherLead({ loja, modelo, saidaId, lead, onLead }) {
+  const [busca, setBusca] = useState("");
+  const [op, setOp] = useState({ leads: [], sugeridos: [] });
+  useEffect(() => {
+    let vivo = true;
+    const t = setTimeout(() => {
+      api.getVendaOpcoes(loja, busca, { modelo, saida: saidaId })
+        .then(d => { if (vivo && d) setOp({ leads: d.leads || [], sugeridos: d.sugeridos || [] }); }).catch(() => {});
+    }, busca ? 300 : 0);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [loja, busca, modelo, saidaId]);
+
+  if (lead) return (
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",border:"1px solid var(--primary)",borderRadius:10}}>
+      <div style={{flex:1,minWidth:0,fontSize:14,color:"var(--fg)"}}>
+        <strong>{lead.nome}</strong>
+        <span style={{color:"var(--muted)"}}> · final {lead.telefone_final}</span>
+      </div>
+      <button type="button" className="btn btn-ghost btn-icon" title="Trocar" onClick={()=>onLead(null)}><i className="ti ti-x"/></button>
+    </div>
+  );
+  const buscando = busca.trim().length >= 2;
+  const itens = buscando ? op.leads : op.sugeridos;
+  return (
+    <>
+      {!buscando && itens.length > 0 && <div style={{fontSize:12,color:"var(--muted)",marginBottom:6}}>Prováveis</div>}
+      {(buscando || itens.length > 0) && (
+        <div style={{marginBottom:8,maxHeight:190,overflowY:"auto",border:"1px solid var(--border)",borderRadius:10}}>
+          {itens.length === 0 && <div style={{padding:"10px 12px",fontSize:13,color:"var(--muted)"}}>Nenhum lead encontrado nesta loja.</div>}
+          {itens.map(l => (
+            <button type="button" key={l.id} onClick={()=>onLead(l)}
+              style={{display:"block",width:"100%",textAlign:"left",padding:"10px 12px",minHeight:44,background:"none",border:"none",borderBottom:"1px solid var(--border)",cursor:"pointer",color:"var(--fg)",fontSize:14}}>
+              <strong>{l.nome}</strong> <span style={{color:"var(--muted)"}}>· final {l.telefone_final}</span>
+              <div style={{fontSize:12,color:"var(--muted)"}}>{[l.veiculo_interesse, l.vendedor].filter(Boolean).join(" · ")}</div>
+            </button>
+          ))}
+        </div>
+      )}
+      <input className="form-input" placeholder={itens.length && !buscando ? "Não é nenhum? Buscar por nome ou telefone" : "Buscar por nome ou telefone"}
+        value={busca} onChange={e=>setBusca(e.target.value)}/>
+    </>
+  );
+}
+
 export default function Veiculos() {
   const [veiculos, setVeiculos] = useState(() => lembrado("veiculos") || []);
   const [modal, setModal] = useState(null);
@@ -116,14 +167,13 @@ export default function Veiculos() {
   // guardado em veiculos_saidas, que não é apagada na purga dos 7 dias.
   // 2026-10-18 (Felipe): a venda fica sempre com quem removeu e confirmou (o servidor
   // grava req.admin.id); por isso não há mais escolha de vendedor, só a confirmação.
-  const SAIDA_VAZIA = { motivo:"", valor:"", loja:"1", lead:null, semLead:false, busca:"", confirmo:false };
+  // 2026-10-28 (Felipe): "não está no CRM" pede o telefone do comprador.
+  const SAIDA_VAZIA = { motivo:"", valor:"", loja:"1", lead:null, semLead:false, telefone:"", confirmo:false };
   const [saida, setSaida] = useState(SAIDA_VAZIA);
-  const [vendaOpcoes, setVendaOpcoes] = useState({ vendedores:[], leads:[] });
   const souMaster = getUser()?.role === "admin_master";
 
   function abrirExcluir(v) {
     const eu = getUser();
-    setVendaOpcoes({ vendedores:[], leads:[] });
     setSaida({
       ...SAIDA_VAZIA,
       valor: String(Math.round(Number(v.preco) || 0) || ""),
@@ -132,24 +182,30 @@ export default function Veiculos() {
     setConfirmarDel(v);
   }
 
-  // Vendedores da loja que vendeu + busca do lead que comprou (com pequena espera pra
-  // não chamar a cada tecla). A loja é resolvida no servidor pra quem não é dono.
-  useEffect(() => {
-    if (!confirmarDel || saida.motivo !== "vendido") return;
-    let vivo = true;
-    const t = setTimeout(() => {
-      api.getVendaOpcoes(saida.loja, saida.busca).then(d => { if (vivo && d) setVendaOpcoes(d); }).catch(() => {});
-    }, saida.busca ? 300 : 0);
-    return () => { vivo = false; clearTimeout(t); };
-  }, [confirmarDel, saida.motivo, saida.loja, saida.busca]);
-
   const vendaCompleta = saida.motivo === "erro" ||
-    (saida.motivo === "vendido" && Number(saida.valor) > 0 && saida.confirmo && (saida.lead || saida.semLead));
+    (saida.motivo === "vendido" && Number(saida.valor) > 0 && saida.confirmo && (saida.lead || (saida.semLead && saida.telefone.length >= 10)));
+
+  // 2026-10-28 (Felipe): vendas novas sem cliente apontado. O servidor só devolve as que
+  // quem está logado pode vincular (vendedor as dele, gerente a loja, dono todas); a
+  // lista fica no topo mesmo depois que a linha do carro some da lixeira.
+  const [semCliente, setSemCliente] = useState([]);
+  const [vincular, setVincular] = useState(null);
+  const [vincularLead, setVincularLead] = useState(null);
+  const [vinculando, setVinculando] = useState(false);
+  function abrirVincular(venda) { setVincularLead(null); setVincular(venda); }
+  async function confirmarVincular() {
+    if (!vincular || !vincularLead) return;
+    setVinculando(true);
+    try { await api.vincularCliente(vincular.id, vincularLead.id); setVincular(null); await load(); }
+    catch (e) { await alertDialog("Erro ao vincular: " + e.message); }
+    finally { setVinculando(false); }
+  }
 
   async function load() {
     const data = await api.getVeiculos().catch(() => []);
     setVeiculos(data);
     api.getContagensVeiculos().then(c => setVendidos(Number(c?.vendidos))).catch(() => setVendidos(null));
+    api.getVendasSemCliente().then(l => setSemCliente(Array.isArray(l) ? l : [])).catch(() => {});
   }
   useEffect(() => { load(); }, []);
   useEffect(() => {
@@ -328,6 +384,7 @@ export default function Veiculos() {
       loja_venda_id: vendido ? Number(saida.loja) : null,
       crm_lead_id: vendido && saida.lead ? saida.lead.id : null,
       comprador_sem_lead: vendido && !saida.lead && saida.semLead,
+      comprador_telefone: vendido && !saida.lead && saida.semLead ? saida.telefone : null,
     }).catch(() => {});
     setConfirmarDel(null);
     await load();
@@ -400,6 +457,25 @@ export default function Veiculos() {
         </button>
       </div>
 
+      {semCliente.length > 0 && (
+        <div className="card" style={{marginBottom:16,padding:"14px 16px",border:"1px solid var(--warning)",background:"var(--warning-soft)"}}>
+          <div style={{fontWeight:700,color:"var(--fg)",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+            <i className="ti ti-link" style={{color:"var(--warning)"}}/> {semCliente.length === 1 ? "1 venda sem cliente vinculado" : `${semCliente.length} vendas sem cliente vinculado`}
+          </div>
+          {semCliente.map(x => (
+            <div key={x.id} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderTop:"1px solid var(--border)",flexWrap:"wrap"}}>
+              <div style={{flex:1,minWidth:180,fontSize:14,color:"var(--fg)"}}>
+                <strong>{x.marca} {x.modelo}{x.ano ? " " + x.ano : ""}</strong>
+                <span style={{color:"var(--muted)"}}> · {x.vendedor || "sem vendedor"} · {fmtDia(x.saiu_em)}{x.telefone_final ? ` · comprador final ${x.telefone_final}` : ""}</span>
+              </div>
+              <button className="btn btn-primary" style={{padding:"6px 14px",fontSize:13,minHeight:38}} onClick={() => abrirVincular(x)}>
+                <i className="ti ti-link"/> Vincular
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* DESKTOP: tabela */}
       <div className="card d-desktop" style={{padding:0,overflow:"hidden"}}>
         {veiculos.length===0 ? <div className="empty-state"><i className="ti ti-car"/><p>Nenhum veículo cadastrado.</p></div> : (
@@ -435,8 +511,14 @@ export default function Veiculos() {
                         )}
                         {!v.ativo && v.removido_por_nome && (
                           <span style={{marginLeft:"auto",fontSize:13,fontWeight:600,color:"var(--fg)",display:"inline-flex",alignItems:"center",gap:4}}>
-                            <i className="ti ti-user" style={{fontSize:13}}/> {v.removido_motivo==="vendido" ? "Vendido por" : "Removido por"} {v.removido_por_nome}
+                            <i className="ti ti-user" style={{fontSize:13}}/> {v.removido_motivo==="vendido" ? "Vendido por" : "Removido por"} {v.removido_por_nome}{v.removido_em ? ` · ${fmtDia(v.removido_em)}` : ""}
                           </span>
+                        )}
+                        {!v.ativo && semCliente.some(x => x.id === v.saida_pendente_id) && (
+                          <button type="button" className="badge badge-warning" style={{fontSize:11,border:"none",cursor:"pointer"}}
+                            onClick={() => abrirVincular(semCliente.find(x => x.id === v.saida_pendente_id))}>
+                            <i className="ti ti-link" style={{fontSize:11}}/> Vincular cliente
+                          </button>
                         )}
                       </div>
                       <div style={{color:"var(--muted)",fontSize:12}}>{v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel} · {v.cor}</div>
@@ -489,7 +571,7 @@ export default function Veiculos() {
               )}
               {!v.ativo && (
                 <span className="badge badge-muted" style={{position:"absolute",top:10,left:10}}>
-                  <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d{v.removido_por_nome ? ` · ${v.removido_motivo==="vendido" ? "vendido" : "removido"} por ${v.removido_por_nome}` : ""}
+                  <i className="ti ti-trash" style={{fontSize:10}}/> Excluído · some em {diasRestantes(v)}d{v.removido_por_nome ? ` · ${v.removido_motivo==="vendido" ? "vendido" : "removido"} por ${v.removido_por_nome}${v.removido_em ? " em " + fmtDia(v.removido_em) : ""}` : ""}
                 </span>
               )}
             </div>
@@ -706,7 +788,7 @@ export default function Veiculos() {
                 {souMaster && (
                   <div className="form-group">
                     <label className="form-label">Loja que vendeu *</label>
-                    <select className="form-input" value={saida.loja} onChange={e=>setSaida(s=>({...s,loja:e.target.value,lead:null,busca:""}))}>
+                    <select className="form-input" value={saida.loja} onChange={e=>setSaida(s=>({...s,loja:e.target.value,lead:null}))}>
                       <option value="1">Curitibanos</option>
                       <option value="2">Campos Novos</option>
                     </select>
@@ -714,38 +796,23 @@ export default function Veiculos() {
                 )}
                 <div className="form-group">
                   <label className="form-label">Lead que comprou *</label>
-                  {saida.lead ? (
-                    <>
-                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",border:"1px solid var(--border)",borderRadius:10}}>
-                      <div style={{flex:1,minWidth:0,fontSize:14,color:"var(--fg)"}}>
-                        <strong>{saida.lead.nome}</strong>
-                        <span style={{color:"var(--muted)"}}> · final {saida.lead.telefone_final}</span>
-                      </div>
-                      <button type="button" className="btn btn-ghost btn-icon" title="Trocar" onClick={()=>setSaida(s=>({...s,lead:null}))}><i className="ti ti-x"/></button>
+                  {!saida.semLead && (
+                    <EscolherLead loja={saida.loja} modelo={confirmarDel.modelo} lead={saida.lead} onLead={l=>setSaida(s=>({...s,lead:l}))}/>
+                  )}
+                  {saida.lead && <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>O card deste lead vai para Venda feita no Kanban, com este valor.</div>}
+                  {!saida.lead && (
+                    <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,fontSize:13,color:"var(--muted)",cursor:"pointer"}}>
+                      <input type="checkbox" checked={saida.semLead} onChange={e=>setSaida(s=>({...s,semLead:e.target.checked,telefone:""}))}/>
+                      Comprador não está no CRM
+                    </label>
+                  )}
+                  {saida.semLead && (
+                    <div style={{marginTop:8}}>
+                      <label className="form-label">Telefone do comprador *</label>
+                      <input className="form-input" inputMode="tel" placeholder="(49) 99999-9999"
+                        value={saida.telefone} onChange={e=>setSaida(s=>({...s,telefone:e.target.value.replace(/\D/g,"").slice(0,13)}))}/>
+                      <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>Com o telefone, o cliente aparece de sugestão quando você for vincular depois.</div>
                     </div>
-                      <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>O card deste lead vai para Venda feita no Kanban, com este valor.</div>
-                    </>
-                  ) : (
-                    <>
-                      <input className="form-input" placeholder="Buscar por nome ou telefone" disabled={saida.semLead}
-                        value={saida.busca} onChange={e=>setSaida(s=>({...s,busca:e.target.value}))}/>
-                      {!saida.semLead && saida.busca.trim().length >= 2 && (
-                        <div style={{marginTop:6,maxHeight:170,overflowY:"auto",border:"1px solid var(--border)",borderRadius:10}}>
-                          {vendaOpcoes.leads.length === 0 && <div style={{padding:"10px 12px",fontSize:13,color:"var(--muted)"}}>Nenhum lead encontrado nesta loja.</div>}
-                          {vendaOpcoes.leads.map(l => (
-                            <button type="button" key={l.id} onClick={()=>setSaida(s=>({...s,lead:l,semLead:false}))}
-                              style={{display:"block",width:"100%",textAlign:"left",padding:"9px 12px",background:"none",border:"none",borderBottom:"1px solid var(--border)",cursor:"pointer",color:"var(--fg)",fontSize:14}}>
-                              <strong>{l.nome}</strong> <span style={{color:"var(--muted)"}}>· final {l.telefone_final}</span>
-                              <div style={{fontSize:12,color:"var(--muted)"}}>{[l.veiculo_interesse, l.vendedor].filter(Boolean).join(" · ")}</div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <label style={{display:"flex",alignItems:"center",gap:8,marginTop:8,fontSize:13,color:"var(--muted)",cursor:"pointer"}}>
-                        <input type="checkbox" checked={saida.semLead} onChange={e=>setSaida(s=>({...s,semLead:e.target.checked,busca:""}))}/>
-                        Comprador não está no CRM
-                      </label>
-                    </>
                   )}
                 </div>
                 <label style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px",marginBottom:14,border:`1px solid ${saida.confirmo?"var(--primary)":"var(--border)"}`,borderRadius:10,cursor:"pointer",fontSize:14,color:"var(--fg)",lineHeight:1.4}}>
@@ -758,6 +825,34 @@ export default function Veiculos() {
               <button className="btn btn-ghost" onClick={() => setConfirmarDel(null)} style={{flex:1}}>Cancelar</button>
               <button className={saida.motivo==="vendido"?"btn btn-primary":"btn btn-danger"} onClick={confirmarRemover} disabled={!vendaCompleta} style={{flex:1,...(saida.motivo==="vendido"?{}:{background:"var(--danger)",color:"white"}),opacity:vendaCompleta?1:.45}}>
                 {saida.motivo==="vendido" ? <><i className="ti ti-check"/> Confirmar venda</> : <><i className="ti ti-trash"/> Excluir</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal vincular cliente (2026-10-28, Felipe) */}
+      {vincular && (
+        <div className="modal-overlay" onClick={() => setVincular(null)}>
+          <div className="modal" style={{maxWidth:400,maxHeight:"92vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div className="modal-handle"/>
+            <div className="modal-header">
+              <h2 className="modal-title">Vincular cliente</h2>
+              <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={() => setVincular(null)}><i className="ti ti-x"/></button>
+            </div>
+            <p style={{fontSize:14,color:"var(--muted)",marginBottom:14,lineHeight:1.5}}>
+              <strong style={{color:"var(--fg)"}}>{vincular.marca} {vincular.modelo}{vincular.ano ? " " + vincular.ano : ""}</strong><br/>
+              Vendido por {vincular.vendedor || "?"} em {fmtDia(vincular.saiu_em)}{vincular.valor_venda ? ` por R$ ${Number(vincular.valor_venda).toLocaleString("pt-BR")}` : ""}
+            </p>
+            <div className="form-group">
+              <label className="form-label">Lead que comprou *</label>
+              <EscolherLead loja={String(vincular.loja_venda_id || 1)} saidaId={vincular.id} lead={vincularLead} onLead={setVincularLead}/>
+              {vincularLead && <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>O card deste lead vai para Venda feita no Kanban, com o valor da venda.</div>}
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-ghost" onClick={() => setVincular(null)} style={{flex:1}}>Cancelar</button>
+              <button className="btn btn-primary" onClick={confirmarVincular} disabled={!vincularLead || vinculando} style={{flex:1,opacity:vincularLead?1:.45}}>
+                {vinculando ? <span className="spinner"/> : <><i className="ti ti-link"/> Vincular</>}
               </button>
             </div>
           </div>
