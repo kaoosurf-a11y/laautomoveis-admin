@@ -583,10 +583,11 @@ img{max-width:100%;height:auto}
 @media(prefers-reduced-motion:reduce){.modal,.modal-overlay,.notif-banner{animation:none}.sidebar{transition:none}}
 .tema-item{width:100%;background:none;border:none;font-family:inherit;text-align:left}
 /* ── Faixa "vendo como outro usuário" ── */
-.vercomo-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:16px;background:var(--surface);border:1px solid var(--warning);border-radius:var(--radius-lg);font-size:13px;color:var(--fg);position:sticky;top:calc(var(--topbar-h) + 8px);z-index:90}
-.vercomo-bar>i{font-size:18px;color:var(--warning);flex-shrink:0}
-.vercomo-bar>span{flex:1;min-width:200px}
-@media(min-width:1024px){.vercomo-bar{top:12px}}
+.tema-linha{display:flex;align-items:center;gap:4px}.tema-linha .tema-item{flex:1;min-width:0}
+/* "Ver como" (Felipe 28/10): só o olho ao lado do sol, sem faixa nem texto; clicar volta pro dono */
+.vercomo-olho{color:var(--warning)}.vercomo-olho i{font-size:20px}
+.topbar-mobile span{white-space:nowrap}
+@media(max-width:400px){.topbar-mobile:has(.vercomo-olho) .icon-btn{width:34px}}
 
 /* ── Acabamento (04/10/2026): profundidade leve, estados de passar o mouse, rolagem fina ── */
 .card,.metric-card,.crm-list-item,.veiculo-card,.agenda-card,.login-card{box-shadow:var(--lift)}
@@ -939,8 +940,6 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 @media(hover:hover){.fu-resp:hover{border-color:var(--brand-line);color:var(--brand)}}
 /* Com a faixa "Você está vendo o painel como" em cima, o board desconta a altura dela
    pra barra de rolagem horizontal continuar visível sem rolar a página (Kanban e Follow-ups). */
-@media(max-width:1023px){.main-content:has(>.vercomo-bar) .kanban-board{height:calc(100vh - 230px - 74px - var(--topbar-h) - var(--bottom-h) - env(safe-area-inset-bottom))}}
-@media(min-width:1024px){.main-content:has(>.vercomo-bar) .kanban-board{height:calc(100vh - 92px - 74px)}}
 .fu-card .kc-tag{display:inline-flex;align-items:center;gap:3px}.fu-card .kc-tag i{font-size:11px}
 .fu-msg{padding:6px 0;border-top:1px solid var(--border)}
 .fu-msg-top{display:flex;align-items:center;gap:6px}
@@ -1370,7 +1369,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
    o quadro vai até a barra de baixo, sem o vão vazio que sobrava embaixo. ── */
 @media(max-width:1023px){
   .main-content:has(.kanban-board){display:flex;flex-direction:column;height:calc(100dvh - var(--topbar-h));overflow:hidden}
-  .main-content:has(.kanban-board)>div:not(.vercomo-bar){flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  .main-content:has(.kanban-board)>div{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
   .main-content:has(.kanban-board) .kanban-board{flex:1 1 0;height:auto;min-height:0;padding-bottom:6px}
 }
 @media(max-width:639px){
@@ -1378,12 +1377,6 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .page-header{margin-bottom:10px;gap:8px;min-height:0}
   .page-title{font-size:21px;gap:8px}.page-title i{font-size:21px}
   .page-header>div:first-child>span:not(:has(.ti-loader)){display:none}
-  .vercomo-bar{flex-wrap:nowrap;gap:8px;padding:6px 6px 6px 12px;margin-bottom:10px}
-  .vercomo-bar>span{min-width:0;font-size:0;white-space:nowrap;overflow:hidden}
-  .vercomo-bar>span::before{content:"Vendo como ";font-size:13px}
-  .vercomo-bar>span strong{font-size:13px}
-  .vercomo-bar .btn{flex-shrink:0;min-height:34px;padding:6px 14px;font-size:0}
-  .vercomo-bar .btn::before{content:"Voltar";font-size:13px}
   .dash-filtros{gap:6px}
   .dash-filtros .seg-btn{min-height:38px}
   .dash-escopo{display:none}

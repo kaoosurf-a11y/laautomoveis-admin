@@ -48,7 +48,7 @@ export default function Layout({ children }) {
   }, [notifDismissed]);
 
   function handleLogout() { logout(); navigate("/login"); }
-  // "Ver como": faixa fixa avisando que o painel está aberto como outro usuário.
+  // "Ver como": só um olho ao lado do sol (Felipe 28/10: a tela fica igual à do usuário). Clicar volta pro dono.
   const vendoComo = estaVendoComo();
   function handleVoltar() { if (voltarParaMim()) window.location.href = "/admin/equipe"; }
 
@@ -136,9 +136,12 @@ export default function Layout({ children }) {
           )}
         </nav>
         <div className="sidebar-footer">
-          <button type="button" className="nav-item tema-item" onClick={() => setTema(alternarTema())}>
-            <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/><span>{tema==="light"?"Tema escuro":"Tema claro"}</span>
-          </button>
+          <div className="tema-linha">
+            <button type="button" className="nav-item tema-item" onClick={() => setTema(alternarTema())}>
+              <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/><span>{tema==="light"?"Tema escuro":"Tema claro"}</span>
+            </button>
+            {vendoComo && <button type="button" className="icon-btn vercomo-olho" aria-label="Voltar para o meu painel" onClick={handleVoltar}><i className="ti ti-eye"/></button>}
+          </div>
           <div className="user-info" onClick={() => setPerfilModal(true)} style={{cursor:"pointer"}}>
             <div className="avatar">{user?.foto_url?<img src={user.foto_url} alt=""/>:(user?.iniciais||"??")}</div>
             <div style={{flex:1,minWidth:0}}>
@@ -159,6 +162,7 @@ export default function Layout({ children }) {
           <span style={{fontSize:15,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em"}}>LA AUTOMÓVEIS</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
+          {vendoComo && <button type="button" className="icon-btn vercomo-olho" aria-label="Voltar para o meu painel" onClick={handleVoltar}><i className="ti ti-eye"/></button>}
           <button className="icon-btn" title={tema==="light"?"Usar tema escuro":"Usar tema claro"} aria-label={tema==="light"?"Usar tema escuro":"Usar tema claro"} onClick={() => setTema(alternarTema())}>
             <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/>
           </button>
@@ -173,13 +177,6 @@ export default function Layout({ children }) {
 
       {/* Conteúdo */}
       <main className="main-content">
-        {vendoComo && (
-          <div className="vercomo-bar" role="status">
-            <i className="ti ti-eye"/>
-            <span>Você está vendo o painel como <strong>{user?.nome}</strong>. O que fizer aqui vale de verdade, em nome dessa pessoa.</span>
-            <button className="btn btn-primary btn-sm" onClick={handleVoltar}>Voltar para {getDono()?.nome?.split(" ")[0] || "meu usuário"}</button>
-          </div>
-        )}
         {children}
       </main>
 
