@@ -1363,3 +1363,38 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .agm-dias{grid-auto-rows:minmax(54px,auto)}
   .agm-rodape{padding-top:6px}
 }
+
+/* ── Primeira tela no celular (28/10/2026, Felipe): só o título e os botões, tudo mais
+   pra cima. Sem cargo e sem o texto do recorte no Dashboard, sem contador no CRM,
+   aviso de "vendo como" numa linha, abas do Dashboard numa linha só. CRM e Follow-up:
+   o quadro vai até a barra de baixo, sem o vão vazio que sobrava embaixo. ── */
+@media(max-width:1023px){
+  .main-content:has(.kanban-board){display:flex;flex-direction:column;height:calc(100dvh - var(--topbar-h));overflow:hidden}
+  .main-content:has(.kanban-board)>div:not(.vercomo-bar){flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  .main-content:has(.kanban-board) .kanban-board{flex:1 1 0;height:auto;min-height:0;padding-bottom:6px}
+}
+@media(max-width:639px){
+  .main-content{padding-top:10px}
+  .page-header{margin-bottom:10px;gap:8px;min-height:0}
+  .page-title{font-size:21px;gap:8px}.page-title i{font-size:21px}
+  .page-header>div:first-child>span:not(:has(.ti-loader)){display:none}
+  .vercomo-bar{flex-wrap:nowrap;gap:8px;padding:6px 6px 6px 12px;margin-bottom:10px}
+  .vercomo-bar>span{min-width:0;font-size:0;white-space:nowrap;overflow:hidden}
+  .vercomo-bar>span::before{content:"Vendo como ";font-size:13px}
+  .vercomo-bar>span strong{font-size:13px}
+  .vercomo-bar .btn{flex-shrink:0;min-height:34px;padding:6px 14px;font-size:0}
+  .vercomo-bar .btn::before{content:"Voltar";font-size:13px}
+  .dash-filtros{gap:6px}
+  .dash-filtros .seg-btn{min-height:38px}
+  .dash-escopo{display:none}
+  .dash-bar{margin-bottom:10px}
+  .dash-bar .tabs-wrap{flex-wrap:nowrap;justify-content:flex-start;gap:4px;overflow-x:auto}
+  .dash-bar .tab-btn{flex:1 1 auto;min-width:0;max-width:none;min-height:38px;padding:0 6px;font-size:12.5px}
+  .fu-header{margin-bottom:8px}
+  .fu-filtros{gap:6px}
+  .fu-filtros .tab-btn{min-height:38px;padding:0 6px;font-size:13px}
+  .page-header:has(.crm-filtros)>.btn{flex:0 0 auto;min-height:38px;padding:0 12px;font-size:13px}
+  .crm-filtros{gap:6px;flex:1 1 100%}
+  .crm-filtros .crm-contador{display:none}
+  .crm-filtros .form-input{min-height:38px}
+}
