@@ -13,8 +13,10 @@ const fmtMin = v => {
   if (v === null || v === undefined) return "sem dados";
   const n = Number(v);
   if (n < 60) return `${Math.round(n * 10) / 10}min`;
-  const h = Math.floor(n / 60);
-  const m = Math.round(n % 60);
+  // Arredonda o total antes de separar: 599,6 min virava "9h 60min" (28/10).
+  const total = Math.round(n);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 };
 const AV_CORES = ["#C8A84B","#7ba7e0","#4caf7d","#e07b7b","#a07be0"];
@@ -181,7 +183,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
       delta:`${comSinal(resumo.conversao_delta)} pontos vs anterior`, tom:tomDelta(resumo.conversao_delta),
       compara: resumo.conversao_delta != null ? [Number(resumo.conversao), Number(resumo.conversao) - Number(resumo.conversao_delta)] : null },
     { icon:"ti-x",             label:"Perdidas",     value:resumo.perdidas,              delta:"perdidas no período", tom:"" },
-    { icon:"ti-clock",         label:"Resp. média",  value:fmtMin(resumo.resp_media_min),delta:"até o vendedor responder", tom:"",
+    { icon:"ti-clock",         label:"Resp. vendedor",  value:fmtMin(resumo.resp_media_min),delta:"metade dos leads respondida nesse tempo", tom:"",
       title:"Tempo entre o lead ser atribuído e a primeira resposta do vendedor. Conta o relógio corrido, inclusive noite e fim de semana." },
     { icon:"ti-currency-real", label:"Ticket médio", value:resumo.vendas === 0 || semValor || resumo.ticket_medio == null ? "—" : fmtR(resumo.ticket_medio),
       delta: resumo.vendas === 0 ? "nenhuma saída no período"
