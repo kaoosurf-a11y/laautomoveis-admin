@@ -1436,3 +1436,12 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .baixar-app-topo img{border-radius:13px;flex-shrink:0}
 .baixar-app-passos{margin:0 0 20px;padding-left:20px;font-size:14px;color:var(--fg);line-height:1.5}
 .baixar-app-passos li{margin-bottom:8px}
+/* 2026-10-28 (Felipe): avisos do app */
+.main-content:has(.kanban-board)>div.avisos-faixa,.avisos-faixa{flex:0 0 auto;flex-direction:row;min-height:0;display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border-radius:14px;background:var(--brand-soft);border:1px solid var(--border);font-size:13px;color:var(--fg);line-height:1.35}
+.avisos-faixa>i{color:var(--brand);font-size:18px;flex-shrink:0}
+.avisos-faixa>span{flex:1;min-width:0}
+.avisos-faixa .btn-sm{min-height:34px;padding:6px 12px;flex-shrink:0}
+.avisos-ativar i{color:var(--brand)}
+.avisos-ligados{cursor:default}
+.avisos-ligados i{color:var(--success)}
+.avisos-testar{min-height:32px;padding:4px 10px;flex-shrink:0}

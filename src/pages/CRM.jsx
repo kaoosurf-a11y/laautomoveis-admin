@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getCRMKanban, getMovimentosLead, moverLead, criarLeadCRM, agendarVisita, agendarRetomada, atualizarLeadCRM, atualizarTemperatura, atualizarResponsavel, criarAgendamento, excluirLeadCRM, getLojas } from "../api.js";
 import { api as veiculosApi } from "../lib/api.js";
 import { lembrado } from "../memoria.js";
@@ -991,6 +992,14 @@ export default function CRM(){
   const[loading,setLoading]=useState(()=>!lembrado("kanban:"));
   const[busca,setBusca]=useState("");
   const[leadSel,setLeadSel]=useState(null);
+  // 2026-10-28 (Felipe): tocar no aviso do app abre o lead (/crm?lead=ID) assim que o Kanban carrega.
+  const[urlParams,setUrlParams]=useSearchParams();
+  const leadDoAviso=urlParams.get("lead");
+  useEffect(()=>{
+    if(!leadDoAviso)return;
+    const l=Object.values(kanban||{}).flat().find(x=>String(x?.id)===leadDoAviso);
+    if(l){setLeadSel(l);setUrlParams({},{replace:true});}
+  },[leadDoAviso,kanban]);
   const[novoModal,setNovoModal]=useState(false);
   const[isMobile,setIsMobile]=useState(window.innerWidth<768);
   const[erro,setErro]=useState(null);

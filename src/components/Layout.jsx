@@ -4,6 +4,8 @@ import { getUser, logout, isManager, isOwner, estaVendoComo, getDono, voltarPara
 import { getAgenda, enviarMinhaFoto, removerMinhaFoto } from "../api.js";
 import { getTema, alternarTema } from "../theme.js";
 import BaixarApp from "./BaixarApp.jsx";
+import Avisos from "./Avisos.jsx";
+import { sincronizarAvisos, desligarAvisosDoAparelho } from "../lib/avisos.js";
 
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -48,7 +50,15 @@ export default function Layout({ children }) {
     return () => clearInterval(iv);
   }, [notifDismissed]);
 
-  function handleLogout() { logout(); navigate("/login"); }
+  // Sair desliga os avisos deste aparelho antes (outra pessoa que logar no mesmo celular não recebe os seus).
+  async function handleLogout() { await desligarAvisosDoAparelho(); logout(); navigate("/login"); }
+  // Avisos do app: liga o aparelho a quem está logado e, ao tocar num aviso com o painel aberto, vai pra tela dele.
+  useEffect(() => { sincronizarAvisos(); }, []);
+  useEffect(() => {
+    const abrir = e => { try { const u = new URL(e.detail); navigate((u.pathname.replace(/^\/admin/, "") || "/") + u.search); } catch {} };
+    window.addEventListener("la-abrir", abrir);
+    return () => window.removeEventListener("la-abrir", abrir);
+  }, [navigate]);
   // "Ver como": só um olho ao lado do sol (Felipe 28/10: a tela fica igual à do usuário). Clicar volta pro dono.
   const vendoComo = estaVendoComo();
   function handleVoltar() { if (voltarParaMim()) window.location.href = "/admin/equipe"; }
@@ -137,6 +147,7 @@ export default function Layout({ children }) {
           )}
         </nav>
         <div className="sidebar-footer">
+          <Avisos onAbrir={() => setMenuOpen(false)}/>
           <BaixarApp onAbrir={() => setMenuOpen(false)}/>
           <div className="tema-linha">
             <button type="button" className="nav-item tema-item" onClick={() => setTema(alternarTema())}>
@@ -179,6 +190,7 @@ export default function Layout({ children }) {
 
       {/* Conteúdo */}
       <main className="main-content">
+        <Avisos tipo="faixa"/>
         {children}
       </main>
 
