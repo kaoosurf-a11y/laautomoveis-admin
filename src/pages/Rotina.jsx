@@ -12,7 +12,6 @@ import { ChatwootLink } from "../components/ChatwootLink.jsx";
 // Regras de cada lista: backend src/routes/rotina.js.
 
 const LOJA_CURTA = { 1: "Curitibanos", 2: "Campos Novos" };
-const TEMP = { quente: "badge-danger", morno: "badge-warning", frio: "badge-muted" };
 
 function hojeISO(desloc = 0) {
   const d = new Date(); d.setDate(d.getDate() + desloc);
@@ -39,21 +38,28 @@ function telLink(tel) {
   return `tel:+${d.startsWith("55") ? d : "55" + d}`;
 }
 
-function LinhaLead({ l, inbox, dia, info }) {
+// Nome só de emoji ou vazio vira "Sem nome" com o final do telefone, pra dar pra achar.
+function nomeLead(l) {
+  const n = String(l.nome || "").trim();
+  if (/[A-Za-zÀ-ú]/.test(n)) return n;
+  const d = String(l.telefone || "").replace(/\D/g, "");
+  return d.length >= 4 ? `Sem nome (final ${d.slice(-4)})` : "Sem nome";
+}
+
+function LinhaLead({ l, inbox, info }) {
   const tel = telLink(l.telefone);
   return (
     <div className="rot-lead">
       <div className="rot-lead-info">
         <div className="rot-lead-nome">
-          {l.nome || "Sem nome"}
-          {l.temperatura && <span className={`badge ${TEMP[l.temperatura] || "badge-muted"}`}>{l.temperatura}</span>}
+          {nomeLead(l)}
+          {/* Só quente ganha etiqueta: quase todo lead é "morno" e a etiqueta repetida virava ruído. */}
+          {l.temperatura === "quente" && <span className="badge badge-danger">quente</span>}
         </div>
         <div className="rot-lead-sub">{[l.veiculo || "carro não informado", info].filter(Boolean).join(" | ")}</div>
       </div>
       <div className="rot-acoes">
-        {l.conv_id
-          ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox}>Mensagem</ChatwootLink>
-          : null}
+        {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox}>Mensagem</ChatwootLink> : null}
         {tel && <a className="btn btn-ghost btn-sm rot-btn" href={tel}><i className="ti ti-phone" />Ligar</a>}
         <Link className="btn btn-ghost btn-sm rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir card no CRM"><i className="ti ti-external-link" />Card</Link>
       </div>
@@ -61,19 +67,23 @@ function LinhaLead({ l, inbox, dia, info }) {
   );
 }
 
-function Grupo({ titulo, tom, itens, inbox, dia, info, total, vazio }) {
+function Grupo({ titulo, tom, itens, inbox, info, total, vazio }) {
   const [todos, setTodos] = useState(false);
   if (!itens.length && !vazio) return null;
-  const LIM = 8;
+  const LIM = 10;
   const mostra = todos ? itens : itens.slice(0, LIM);
   return (
     <div className="rot-grupo">
-      <div className="rot-grupo-tit">
-        <span className={`rot-dot rot-${tom}`} />{titulo}
-        <span className="rot-num">{total ?? itens.length}</span>
-      </div>
+      {titulo && (
+        <div className="rot-grupo-tit">
+          <span className={`rot-dot rot-${tom}`} />{titulo}
+          <span className="rot-num">{total ?? itens.length}</span>
+        </div>
+      )}
       {!itens.length && <div className="rot-vazio">{vazio}</div>}
-      {mostra.map(l => <LinhaLead key={`${l.id}-${l.agenda_id || ""}`} l={l} inbox={inbox} dia={dia} info={info(l)} />)}
+      <div className="rot-lista">
+        {mostra.map(l => <LinhaLead key={`${l.id}-${l.agenda_id || ""}`} l={l} inbox={inbox} info={info(l)} />)}
+      </div>
       {itens.length > LIM && (
         <button type="button" className="btn btn-ghost btn-sm rot-mais" onClick={() => setTodos(!todos)}>
           {todos ? "Mostrar menos" : `Ver mais ${itens.length - LIM}`}
@@ -83,10 +93,14 @@ function Grupo({ titulo, tom, itens, inbox, dia, info, total, vazio }) {
   );
 }
 
+// Felipe 29/10 ("dá pra melhorar a organização"): uma lista por vez, em abas, em vez de tudo empilhado.
+// Abre na primeira aba que tem coisa: Hoje, depois Acumulado, depois Retomar.
 function Vendedor({ v, inbox, dia, aberto, parado }) {
   const aFazer = v.responder_hoje.length + v.visitas.length + v.confirmar.length;
   const feito = v.feito.respondidos + v.feito.movidos + v.feito.visitas + v.feito.vendas;
   const emDia = !aFazer && !v.acumulado.length;
+  const [aba, setAba] = useState(aFazer ? "hoje" : v.acumulado.length ? "acumulado" : v.retomar_total ? "retomar" : "hoje");
+  const ABAS = [["hoje", "Hoje", aFazer], ["acumulado", "Acumulado", v.acumulado.length], ["retomar", "Retomar", v.retomar_total], ["feito", "Feito", feito]];
   return (
     <details className="card rot-vend" open={aberto}>
       <summary className="rot-vend-head">
@@ -102,24 +116,38 @@ function Vendedor({ v, inbox, dia, aberto, parado }) {
         <i className="ti ti-chevron-down rot-seta" />
       </summary>
 
-      <div className="rot-feito">
-        <span><b>{v.chegaram}</b> chegaram</span>
-        <span><b>{v.feito.respondidos}</b> respondidos</span>
-        <span><b>{v.feito.movidos}</b> cards movidos</span>
-        <span><b>{v.feito.visitas}</b> visitas feitas</span>
-        <span><b>{v.feito.vendas}</b> vendas</span>
+      <div className="rot-abas">
+        <div className="seg">
+          {ABAS.map(([k, n, q]) => (
+            <button key={k} type="button" className={`seg-btn ${aba === k ? "active" : ""}`} onClick={() => setAba(k)}>
+              {n}<span className="rot-aba-num">{q}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Grupo titulo="Responder agora" tom="danger" itens={v.responder_hoje} inbox={inbox} dia={dia}
-        info={l => `passado às ${quando(l.passado_em, dia)}`} vazio="Nenhum lead novo esperando resposta." />
-      <Grupo titulo="Visitas do dia" tom="success" itens={v.visitas} inbox={inbox} dia={dia}
-        info={l => `${quando(l.data_hora, dia)} | ${String(l.status || "").replace(/_/g, " ")}`} />
-      <Grupo titulo="Confirmar visita que o cliente mencionou" tom="warning" itens={v.confirmar} inbox={inbox} dia={dia}
-        info={l => `mencionou ${quando(l.data_hora, dia)}`} />
-      <Grupo titulo="Acumulado sem resposta" tom="danger" itens={v.acumulado.slice().reverse()} inbox={inbox} dia={dia}
-        info={l => `passado ${quando(l.passado_em, dia)}`} />
-      <Grupo titulo={`Retomar contato (negociação parada há ${parado}+ dias)`} tom="muted" itens={v.retomar} total={v.retomar_total}
-        inbox={inbox} dia={dia} info={l => `último contato ${quando(l.ultimo_em, dia)}`} />
+      {aba === "hoje" && <>
+        <Grupo titulo="Responder agora" tom="danger" itens={v.responder_hoje} inbox={inbox}
+          info={l => `passado às ${quando(l.passado_em, dia)}`} vazio="Nenhum lead novo esperando resposta." />
+        <Grupo titulo="Visitas do dia" tom="success" itens={v.visitas} inbox={inbox}
+          info={l => `${quando(l.data_hora, dia)} | ${String(l.status || "").replace(/_/g, " ")}`} />
+        <Grupo titulo="Confirmar visita que o cliente mencionou" tom="warning" itens={v.confirmar} inbox={inbox}
+          info={l => `mencionou ${quando(l.data_hora, dia)}`} />
+      </>}
+      {aba === "acumulado" && <Grupo titulo="Passados em outros dias e ainda sem resposta" tom="danger" itens={v.acumulado.slice().reverse()}
+        inbox={inbox} info={l => `passado ${quando(l.passado_em, dia)}`} vazio="Nada acumulado. Tudo respondido." />}
+      {aba === "retomar" && <Grupo titulo={`Em negociação, sem conversa há ${parado}+ dias (quentes primeiro)`} tom="muted" itens={v.retomar}
+        total={v.retomar_total} inbox={inbox} info={l => `último contato ${quando(l.ultimo_em, dia)}`} vazio="Nenhuma negociação parada." />}
+      {aba === "feito" && (
+        <div className="rot-grupo">
+          <div className="rot-feito-grade">
+            {[["Chegaram", v.chegaram], ["Respondidos", v.feito.respondidos], ["Cards movidos", v.feito.movidos],
+              ["Visitas feitas", v.feito.visitas], ["Vendas", v.feito.vendas]].map(([n, q]) => (
+              <div key={n} className="rot-feito-item"><b>{q}</b><span>{n}</span></div>
+            ))}
+          </div>
+        </div>
+      )}
     </details>
   );
 }
@@ -132,14 +160,15 @@ function Loja({ loja, dia, souVendedor, parado }) {
   return (
     <section className="rot-loja">
       {!souVendedor && <h2 className="rot-loja-tit"><i className="ti ti-building-store" /> {LOJA_CURTA[loja.id] || loja.nome}</h2>}
-      <div className="metrics-grid">
-        {!souVendedor && <div className="metric-card"><div className="metric-label">Chegaram</div><div className="metric-value">{loja.chegaram.length}</div></div>}
+      {/* Vendedor já vê os mesmos números nas abas do card dele. */}
+      {!souVendedor && <div className="metrics-grid">
+        <div className="metric-card"><div className="metric-label">Chegaram</div><div className="metric-value">{loja.chegaram.length}</div></div>
         <div className="metric-card"><div className="metric-label">Responder</div><div className="metric-value">{soma(v => v.responder_hoje.length)}</div></div>
         <div className="metric-card"><div className="metric-label">Visitas</div><div className="metric-value">{soma(v => v.visitas.length + v.confirmar.length)}</div></div>
         <div className="metric-card"><div className="metric-label">Acumulado</div><div className="metric-value">{soma(v => v.acumulado.length)}</div></div>
         <div className="metric-card"><div className="metric-label">Retomar</div><div className="metric-value">{soma(v => v.retomar_total)}</div></div>
         <div className="metric-card"><div className="metric-label">Feito</div><div className="metric-value">{soma(v => v.feito.respondidos + v.feito.movidos + v.feito.visitas + v.feito.vendas)}</div></div>
-      </div>
+      </div>}
 
       {!souVendedor && (
         <details className="card rot-vend">
@@ -152,7 +181,7 @@ function Loja({ loja, dia, souVendedor, parado }) {
             </span>
             <i className="ti ti-chevron-down rot-seta" />
           </summary>
-          <Grupo titulo="Entraram no dia" tom="muted" itens={loja.chegaram} inbox={loja.inbox_id} dia={dia}
+          <Grupo itens={loja.chegaram} inbox={loja.inbox_id}
             info={l => `${quando(l.criado_em, dia)} | ${l.vendedor_nome || "com a IA"}`} vazio="Nenhum lead entrou." />
         </details>
       )}
