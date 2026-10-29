@@ -68,6 +68,8 @@ export default function Layout({ children }) {
     ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dashboard", section:"VISÃO GERAL" }] : []),
     // Resultado mensal (2026-10-07): leads, vendas e verba mês a mês, por loja. Só admin_master.
     ...(isOwner() ? [{ to:"/mensal", icon:"ti-report-analytics", label:"Resultado mensal", section:null }] : []),
+    // Mapa do site (2026-10-29): mapa de calor dos dois sites. Só admin_master.
+    ...(isOwner() ? [{ to:"/site", icon:"ti-flame", label:"Mapa do site", section:null }] : []),
     { to:"/rotina",    icon:"ti-list-check",    label:"Rotina do dia", section:"COMERCIAL" },
     { to:"/crm",       icon:"ti-target",        label:"CRM Pipeline", section:null },
     { to:"/followups", icon:"ti-clock",          label:"Follow-ups",   section:null },

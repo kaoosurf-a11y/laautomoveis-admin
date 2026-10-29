@@ -41,8 +41,9 @@ const Campanha = tela(() => import("./pages/Campanha.jsx"));
 const Envios = tela(() => import("./pages/Envios.jsx"));
 const Mensal = tela(() => import("./pages/Mensal.jsx"));
 const Rotina = tela(() => import("./pages/Rotina.jsx"));
+const SiteMapa = tela(() => import("./pages/SiteMapa.jsx"));
 
-const TELAS = [Dashboard, CRM, FollowUps, Agenda, Veiculos, Equipe, ContatosPerdidos, Clientes, Disparador, Status, Lojas, Campanha, Envios, Mensal, Rotina];
+const TELAS = [Dashboard, CRM, FollowUps, Agenda, Veiculos, Equipe, ContatosPerdidos, Clientes, Disparador, Status, Lojas, Campanha, Envios, Mensal, Rotina, SiteMapa];
 function prebaixarTelas() {
   try { sessionStorage.removeItem("la_recarregou_tela"); } catch {}
   TELAS.forEach(t => t.carregar().catch(() => {}));
@@ -96,6 +97,7 @@ export default function App() {
       <Route path="/" element={isLoggedIn() ? (isManager() ? <Navigate to="/dashboard" replace /> : <Navigate to="/crm" replace />) : <Navigate to="/login" replace />} />
       <Route path="/dashboard" element={<OwnerOnly><Dashboard /></OwnerOnly>} />
       <Route path="/mensal"    element={<AdminMasterOnly><Mensal /></AdminMasterOnly>} />
+      <Route path="/site"      element={<AdminMasterOnly><SiteMapa /></AdminMasterOnly>} />
       <Route path="/rotina"    element={<Priv><Rotina /></Priv>} />
       <Route path="/crm"       element={<Priv><CRM /></Priv>} />
       <Route path="/followups" element={<Priv><FollowUps /></Priv>} />
