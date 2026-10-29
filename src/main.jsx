@@ -9,11 +9,13 @@ import { getTema, aplicarTema } from "./theme.js";
 import { instalarModalGuard } from "./lib/modalGuard.js";
 import { ouvirInstalacao } from "./lib/instalarApp.js";
 import { registrarServiceWorker } from "./lib/avisos.js";
+import { iniciarUso } from "./lib/uso.js";
 
 aplicarTema(getTema());
 instalarModalGuard();
 ouvirInstalacao();
 registrarServiceWorker();
+iniciarUso();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>

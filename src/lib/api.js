@@ -62,6 +62,7 @@ export const api = {
   getUsers: () => req("GET", "/api/admin/users"),
   getAvisosStatus: () => req("GET", "/api/push/status"),
   testarAvisos: (id) => req("POST", `/api/push/teste/${id}`),
+  getUsoApp: (dias = 30) => req("GET", `/api/uso?dias=${dias}`),
 
   // Lojas — status de assinatura (admin_master)
   getLojas: () => req("GET", "/api/lojas"),

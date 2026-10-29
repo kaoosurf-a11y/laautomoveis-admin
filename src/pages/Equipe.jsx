@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
 import { getUser, verComo } from "../auth.js";
 import { alertDialog } from "../components/Dialog.jsx";
+import UsoDoApp from "../components/UsoDoApp.jsx";
 
 const CORES=["#C8A84B","#e05252","#8E44AD","#2980B9","#27AE60","#e6a817"];
 const GRUPOS=[{role:"admin_master",titulo:"Proprietários"},{role:"gerente",titulo:"Gerentes"},{role:"vendedor",titulo:"Vendedores"}];
@@ -105,6 +106,7 @@ export default function Equipe(){
           </div>
         );
       })}
+      {eu?.role==="admin_master"&&<UsoDoApp/>}
       <div className="card" style={{marginTop:20}}>
         <div className="card-title"><i className="ti ti-key"/> Credenciais</div>
         <div style={{background:"var(--surface2)",borderRadius:8,padding:"12px 14px",fontSize:13,color:"var(--muted)"}}>
