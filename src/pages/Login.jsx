@@ -31,7 +31,7 @@ export default function Login() {
       </button>
       {/* logo */}
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
-        <img src="/admin/logo-la-larga.png?v=2" alt="LA Multimarcas" width="180" height="85" style={{display:"block"}}/>
+        <img src="/logo-la-larga.png?v=2" alt="LA Multimarcas" width="180" height="85" style={{display:"block"}}/>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:20,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em",lineHeight:1.1}}>
             LA AUTOMÓVEIS

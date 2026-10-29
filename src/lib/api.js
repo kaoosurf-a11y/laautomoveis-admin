@@ -21,7 +21,7 @@ async function req(method, path, body, isFormData = false) {
   });
   if (res.status === 401) {
     logout();
-    window.location.href = "/admin/";
+    window.location.href = "/";
     return;
   }
   const data = await res.json();

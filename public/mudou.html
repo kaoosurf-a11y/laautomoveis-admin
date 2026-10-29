@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0c0c0a">
+<title>LA Automóveis · Painel mudou de endereço</title>
+<meta property="og:title" content="LA Automóveis · Painel">
+<meta property="og:description" content="O painel agora fica em app.laautomoveis.com.br">
+<meta property="og:image" content="https://app.laautomoveis.com.br/og-painel.png?v=2">
+<link rel="icon" href="https://app.laautomoveis.com.br/favicon.ico?v=2">
+<style>
+  /* 2026-10-28 (Felipe): aviso do endereço antigo (admin.laautomoveis.com.br). Some sozinho em 12/11. */
+  :root{--bg:#0c0c0a;--card:#161614;--fg:#f4f1e8;--muted:#a8a395;--brand:#c9a94e;--on:#0c0c0a;--line:#2a2924}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100dvh;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+  main{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px 22px;text-align:center}
+  img{width:180px;height:auto;display:block;margin:0 auto 18px}
+  h1{font-size:20px;margin:0 0 8px}
+  p{color:var(--muted);font-size:15px;line-height:1.45;margin:0 0 20px}
+  b{color:var(--fg)}
+  a.btn{display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:14px;font-weight:700;font-size:16px;text-decoration:none;margin-top:10px}
+  .pri{background:var(--brand);color:var(--on)}
+  .sec{background:transparent;color:var(--brand);border:1px solid var(--brand)}
+  small{display:block;color:var(--muted);font-size:12px;margin-top:16px;line-height:1.4}
+</style>
+</head>
+<body>
+<main>
+  <img src="https://app.laautomoveis.com.br/logo-la-larga.png?v=2" alt="LA Multimarcas">
+  <h1>O painel mudou de endereço</h1>
+  <p>Agora é <b>app.laautomoveis.com.br</b>. Entre por lá, baixe o app de novo e ative os avisos pra receber lead novo e mensagem de cliente na hora.</p>
+  <a class="btn pri" id="abrir" href="https://app.laautomoveis.com.br/">Abrir o novo painel</a>
+  <a class="btn sec" id="baixar" href="https://app.laautomoveis.com.br/?baixar=1">Baixar o app novo</a>
+  <small>Se você tinha o app antigo na tela inicial, pode apagar o ícone dele depois de instalar o novo.</small>
+</main>
+<script>
+  // Leva junto a tela que a pessoa queria (ex.: /admin/crm?lead=10 vira /crm?lead=10).
+  var destino = "https://app.laautomoveis.com.br" + (location.pathname.replace(/^\/admin(?=\/|$)/, "") || "/") + location.search;
+  document.getElementById("abrir").href = destino;
+  // Desliga os avisos e o service worker do endereço antigo (evita aviso em dobro).
+  try { navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) {
+    r.pushManager.getSubscription().then(function (s) { if (s) s.unsubscribe(); }).catch(function () {});
+    r.unregister();
+  }); }); } catch (e) {}
+  // Depois de 12/11 vai direto, sem aviso.
+  if (new Date() >= new Date("2026-11-12T00:00:00-03:00")) location.replace(destino);
+</script>
+</body>
+</html>

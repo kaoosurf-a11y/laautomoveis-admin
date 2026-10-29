@@ -41,7 +41,7 @@ function AjudaInstalar({ onClose }) {
           <button className="icon-btn" aria-label="Fechar" onClick={onClose}><i className="ti ti-x"/></button>
         </div>
         <div className="baixar-app-topo">
-          <img src="/admin/icon-192.png?v=2" alt="" width="56" height="56"/>
+          <img src="/icon-192.png?v=2" alt="" width="56" height="56"/>
           <div>O painel vira um app na tela inicial do celular e abre em tela cheia, sem a barra do navegador.</div>
         </div>
         {iphone

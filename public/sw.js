@@ -9,22 +9,24 @@ self.addEventListener("push", e => {
   try { a = e.data ? e.data.json() : {}; } catch { a = { corpo: e.data && e.data.text() }; }
   e.waitUntil(self.registration.showNotification(a.titulo || "LA Automóveis", {
     body: a.corpo || "",
-    icon: "/admin/icon-192.png?v=2",
-    badge: "/admin/badge-96.png?v=2",
+    icon: "/icon-192.png?v=2",
+    badge: "/badge-96.png?v=2",
     tag: a.tag || undefined,
     renotify: !!a.tag,
     vibrate: [200, 100, 200],
-    data: { url: a.url || "/admin/" },
+    data: { url: a.url || "/" },
   }));
 });
 
 // Tocar no aviso: usa o painel que já está aberto (vai pra tela do aviso) ou abre um novo.
 self.addEventListener("notificationclick", e => {
   e.notification.close();
-  const url = new URL((e.notification.data && e.notification.data.url) || "/admin/", self.location.origin).href;
+  // Painel na raiz do app.laautomoveis.com.br desde 28/10: aviso com endereço antigo (/admin/...) vira o novo.
+  const caminho = ((e.notification.data && e.notification.data.url) || "/").replace(/^\/admin(?=\/|$)/, "") || "/";
+  const url = new URL(caminho, self.location.origin).href;
   e.waitUntil((async () => {
     const abertos = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    const aba = abertos.find(c => c.url.includes("/admin"));
+    const aba = abertos.find(c => c.url.startsWith(self.location.origin));
     if (aba) {
       await aba.focus();
       aba.postMessage({ tipo: "abrir", url });

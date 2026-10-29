@@ -1445,3 +1445,13 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .avisos-ligados{cursor:default}
 .avisos-ligados i{color:var(--success)}
 .avisos-testar{min-height:32px;padding:4px 10px;flex-shrink:0}
+/* 2026-10-28 (Felipe): passo a passo da primeira vez (baixar app, ativar avisos, ajustar aparelho) */
+.pv-modal{max-width:420px}
+.pv-topo{display:flex;align-items:flex-start;gap:14px;margin:2px 0 18px}
+.pv-topo img{border-radius:15px;flex-shrink:0}
+.pv-topo .modal-title{margin:0 0 6px}
+.pv-sub{font-size:14px;color:var(--muted);line-height:1.45}
+.pv-sino{width:64px;height:64px;border-radius:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--brand-soft);color:var(--brand);font-size:30px}
+.pv-ok{color:var(--success)}
+.pv-btn{width:100%;margin-top:8px}
+.pv-erro{font-size:13px;color:var(--danger);margin-bottom:10px}

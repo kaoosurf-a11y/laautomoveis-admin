@@ -16,7 +16,7 @@ ouvirInstalacao();
 registrarServiceWorker();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter basename="/admin">
+  <BrowserRouter>
     <App />
   </BrowserRouter>
 );

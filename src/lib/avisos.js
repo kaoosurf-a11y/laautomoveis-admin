@@ -23,7 +23,7 @@ async function api(path, body) {
 let registro = null;
 export function registrarServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.register("/admin/sw.js", { scope: "/admin/" })
+  navigator.serviceWorker.register("/sw.js", { scope: "/" })
     .then(r => { registro = r; avisar(); })
     .catch(e => console.warn("avisos: service worker não registrou", e));
   // Toque num aviso com o painel já aberto: o service worker pede pra ir pra tela do aviso.

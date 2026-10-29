@@ -23,7 +23,7 @@ export default function Equipe(){
     setAbrindo(m.id);
     const r=await verComo(m.id);
     if(!r.ok){setAbrindo(null);alertDialog(r.erro);return;}
-    window.location.href="/admin/";
+    window.location.href="/";
   }
 
   useEffect(()=>{
@@ -79,7 +79,7 @@ export default function Equipe(){
               <i className={`ti ti-eye${mostrarSenha?"-off":""}`}/>
             </button>
           </div>
-          <div style={{marginTop:6}}>URL: <code style={{color:"var(--brand)"}}>admin.laautomoveis.com.br/admin</code></div>
+          <div style={{marginTop:6}}>URL: <code style={{color:"var(--brand)"}}>app.laautomoveis.com.br</code></div>
         </div>
       </div>
     </div>

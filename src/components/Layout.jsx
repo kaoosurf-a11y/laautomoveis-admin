@@ -5,6 +5,7 @@ import { getAgenda, enviarMinhaFoto, removerMinhaFoto } from "../api.js";
 import { getTema, alternarTema } from "../theme.js";
 import BaixarApp from "./BaixarApp.jsx";
 import Avisos from "./Avisos.jsx";
+import PrimeiraVez from "./PrimeiraVez.jsx";
 import { sincronizarAvisos, desligarAvisosDoAparelho } from "../lib/avisos.js";
 
 export default function Layout({ children }) {
@@ -61,7 +62,7 @@ export default function Layout({ children }) {
   }, [navigate]);
   // "Ver como": só um olho ao lado do sol (Felipe 28/10: a tela fica igual à do usuário). Clicar volta pro dono.
   const vendoComo = estaVendoComo();
-  function handleVoltar() { if (voltarParaMim()) window.location.href = "/admin/equipe"; }
+  function handleVoltar() { if (voltarParaMim()) window.location.href = "/equipe"; }
 
   const navItems = [
     ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dashboard", section:"VISÃO GERAL" }] : []),
@@ -133,7 +134,7 @@ export default function Layout({ children }) {
           <div className="logo-wrap" role="link" tabIndex={0} title="Tela inicial" style={{cursor:"pointer"}}
             onClick={() => { setMenuOpen(false); navigate("/"); }}
             onKeyDown={e => { if (e.key === "Enter") { setMenuOpen(false); navigate("/"); } }}>
-            <img className="logo-badge logo-img" src="/admin/logo-la.png?v=2" alt="LA"/>
+            <img className="logo-badge logo-img" src="/logo-la.png?v=2" alt="LA"/>
             <div><div className="logo-name">LA AUTOMÓVEIS</div><div className="logo-sub">Multimarcas</div></div>
           </div>
         </div>
@@ -171,7 +172,7 @@ export default function Layout({ children }) {
       {/* Topbar mobile */}
       <header className="topbar-mobile">
         <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} role="link" title="Tela inicial" onClick={() => navigate("/")}>
-          <img className="logo-badge logo-img" style={{width:32,height:32}} src="/admin/logo-la.png?v=2" alt="LA"/>
+          <img className="logo-badge logo-img" style={{width:32,height:32}} src="/logo-la.png?v=2" alt="LA"/>
           <span style={{fontSize:15,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em"}}>LA AUTOMÓVEIS</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -220,6 +221,7 @@ export default function Layout({ children }) {
       </nav>
 
       {/* Modal Perfil / Trocar senha */}
+      <PrimeiraVez/>
       {perfilModal && <PerfilModal user={user} onClose={() => setPerfilModal(false)} onLogout={handleLogout} onFoto={() => setFotoVersao(v => v + 1)}/>}
     </div>
   );
