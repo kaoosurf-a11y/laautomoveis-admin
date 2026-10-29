@@ -6,6 +6,20 @@ import { alertDialog } from "../components/Dialog.jsx";
 const CORES=["#C8A84B","#e05252","#8E44AD","#2980B9","#27AE60","#e6a817"];
 const GRUPOS=[{role:"admin_master",titulo:"Proprietários"},{role:"gerente",titulo:"Gerentes"},{role:"vendedor",titulo:"Vendedores"}];
 
+// 2026-10-29 (Felipe): situação dos avisos do app de cada pessoa. Verde = ativou e o celular
+// aceitou aviso nas últimas 24h; amarelo = ativou, sem aviso recente; vermelho = não ativou.
+function hora(d){return new Date(d).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function situacaoAvisos(a){
+  if(!a)return{cor:"var(--danger)",fundo:"var(--danger-soft)",titulo:"Não ativou os avisos",linha:"Precisa entrar no app e tocar em Ativar avisos"};
+  const aparelhos=[...new Set(a.aparelhos)].join(", ");
+  const recente=a.ultimo_ok_em&&Date.now()-new Date(a.ultimo_ok_em)<24*3600e3;
+  return{
+    cor:recente?"var(--success)":"var(--warning)",fundo:recente?"var(--success-soft)":"var(--warning-soft)",
+    titulo:`Avisos ativos · ${aparelhos}`,
+    linha:a.ultimo_ok_em?`Último aviso recebido ${hora(a.ultimo_ok_em)}`:`Ativou ${hora(a.ativou_em)} · ainda sem aviso`,
+  };
+}
+
 export default function Equipe(){
   const[equipe,setEquipe]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -26,7 +40,19 @@ export default function Equipe(){
     window.location.href="/";
   }
 
+  const[avisos,setAvisos]=useState(null);
+  const[testando,setTestando]=useState(null);
+  function carregarAvisos(){api.getAvisosStatus().then(setAvisos).catch(()=>setAvisos(null));}
+  async function testar(m){
+    setTestando(m.id);
+    const r=await api.testarAvisos(m.id).catch(()=>null);
+    setTestando(null);
+    carregarAvisos();
+    alertDialog(r?.ok?`Teste enviado pra ${m.nome.split(" ")[0]} (${r.aparelhos} aparelho${r.aparelhos>1?"s":""}).`:`Não chegou em nenhum aparelho de ${m.nome.split(" ")[0]}. Peça pra entrar no app e ativar os avisos de novo.`);
+  }
+
   useEffect(()=>{
+    carregarAvisos();
     api.getUsers().then(u=>{setEquipe(u);setLoading(false);})
       .catch(()=>{setErro("Erro ao carregar equipe. Tente novamente.");setLoading(false);});
   },[]);
@@ -56,6 +82,18 @@ export default function Equipe(){
                     </div>
                     <span className="equipe-status">Ativo</span>
                   </div>
+                  {avisos&&(()=>{const st=situacaoAvisos(avisos[m.id]);return(
+                    <div style={{display:"flex",alignItems:"center",gap:10,background:st.fundo,borderRadius:8,padding:"8px 10px"}}>
+                      <i className={`ti ti-${avisos[m.id]?"bell-ringing":"bell-off"}`} style={{color:st.cor,fontSize:18,flexShrink:0}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:600,color:st.cor}}>{st.titulo}</div>
+                        <div style={{fontSize:11,color:"var(--muted)",marginTop:1}}>{st.linha}</div>
+                      </div>
+                      {eu?.role==="admin_master"&&avisos[m.id]&&
+                        <button className="btn btn-ghost btn-sm" onClick={()=>testar(m)} disabled={testando!=null} style={{flexShrink:0}}>
+                          <i className={`ti ti-${testando===m.id?"loader":"send"}`} style={testando===m.id?{animation:"spin 1s linear infinite"}:undefined}/> Testar
+                        </button>}
+                    </div>);})()}
                   {eu?.role==="admin_master"&&m.role!=="admin_master"&&
                     <button className="btn btn-ghost btn-sm" style={{width:"100%"}} onClick={()=>abrirComo(m)} disabled={abrindo!=null}>
                       <i className={`ti ti-${abrindo===m.id?"loader":"eye"}`} style={abrindo===m.id?{animation:"spin 1s linear infinite"}:undefined}/> Ver como {m.nome.split(" ")[0]}

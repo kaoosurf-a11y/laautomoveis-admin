@@ -60,6 +60,8 @@ export const api = {
 
   // Equipe
   getUsers: () => req("GET", "/api/admin/users"),
+  getAvisosStatus: () => req("GET", "/api/push/status"),
+  testarAvisos: (id) => req("POST", `/api/push/teste/${id}`),
 
   // Lojas — status de assinatura (admin_master)
   getLojas: () => req("GET", "/api/lojas"),
