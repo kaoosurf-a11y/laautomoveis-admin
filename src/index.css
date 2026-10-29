@@ -1505,7 +1505,10 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-mais{margin-top:6px;width:100%}
 /* Corrida do dia (Felipe 29/10, gamificação). A posição (--p, 0 a 100) desconta 14px de cada ponta
    pro carrinho nunca sair da pista. Só tokens; anima só o carrinho andando. */
-.pista-wrap{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0;max-width:640px}
+.pista-wrap{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0}
+/* Pista até o fim da linha: as etiquetas do vendedor descem pra linha de baixo, alinhadas com a pista. */
+.pista-wrap~.rot-pills{order:4;flex-basis:100%;justify-content:flex-start}
+@media(min-width:601px){.pista-wrap~.rot-pills{padding-left:222px}.pista-wrap~.rot-pills:empty{display:none}}
 .pista{position:relative;flex:1;height:34px;border-radius:99px;background:var(--fill);border:1px solid var(--line);overflow:hidden}
 .pista::before{content:"";position:absolute;left:14px;right:30px;top:50%;border-top:2px dashed var(--line);opacity:.9}
 .pista-rastro{position:absolute;left:0;top:0;bottom:0;width:calc(14px + (100% - 44px) * var(--p) / 100);background:var(--brand-soft);transition:width .8s ease}
@@ -1518,12 +1521,12 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .pista-chegou .pista-rastro{background:var(--success-soft)}
 @keyframes pista-festa{50%{transform:translate(-50%,-75%)}}
 @media(prefers-reduced-motion:reduce){.pista-carro,.pista-rastro{transition:none}.pista-chegou .pista-carro{animation:none}}
-.pista-placar{display:flex;align-items:baseline;gap:3px;white-space:nowrap;min-width:112px}
+.pista-placar{display:flex;align-items:baseline;gap:5px;white-space:nowrap;min-width:190px}
 .pista-placar b{font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums}
 .pista-placar small{font-size:11px;color:var(--muted)}
 .pista-estrelas{display:inline-flex;gap:1px;margin-left:6px;font-size:16px;color:var(--muted);align-self:center}
 .pista-estrelas .on{color:var(--warning);font-weight:700}
-@media(min-width:601px){.rot-vend-head>.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+@media(min-width:601px){.rot-vend-head>.rot-av+.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 .rot-pos{font-size:13px;font-weight:800;color:var(--muted);min-width:22px;font-variant-numeric:tabular-nums}
 .rot-selo{display:inline-flex;align-items:center;gap:3px}
 .rot-cumprida{border-color:var(--success-line,var(--line));background:var(--success-soft)}

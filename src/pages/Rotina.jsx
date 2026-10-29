@@ -108,7 +108,9 @@ const MISSAO = {
   contato: { nome: "Contato pelo atalho", icone: "ti-phone" },
 };
 
-// Pista da corrida: carrinho anda de 0 até a chegada (meta); estrelas nos marcos.
+// Pista da corrida: carrinho anda de 0 a 100% até a chegada (meta). Felipe 29/10: pista até o fim da
+// linha, placar em porcentagem e 5 estrelas, uma a cada 20% do caminho.
+const marcosDe = (meta) => [1, 2, 3, 4, 5].map(i => Math.round((meta * i) / 5));
 function Pista({ pontos, meta, marcos }) {
   const pct = Math.min(100, Math.round((pontos / meta) * 100));
   const chegou = pontos >= meta;
@@ -124,7 +126,7 @@ function Pista({ pontos, meta, marcos }) {
         <i className="ti ti-car pista-carro" style={{ "--p": pct }} />
       </span>
       <span className="pista-placar">
-        <b>{pontos}</b><small>pts</small>
+        <b>{pct}%</b><small>{pontos} pts</small>
         <span className="pista-estrelas">
           {marcos.map((m, i) => <i key={m} className={`ti ti-star${i < estrelas ? " on" : ""}`} />)}
         </span>
@@ -152,7 +154,7 @@ function Vendedor({ v, inbox, dia, aberto, parado, joga, posicao, regras, avisar
     registrarAcaoRotina(l.id, tipo).then(r => {
       if (!r?.pontos) return;
       const antes = placar.current.pontos, pontos = antes + r.pontos;
-      const estrela = regras.estrelas.find(e => antes < e && pontos >= e);
+      const estrela = marcosDe(meta).find(e => antes < e && pontos >= e);
       placar.current = { pontos, missoes: [{ ...l, missao: "contato", pontos: r.pontos, em: new Date().toISOString() }, ...placar.current.missoes] };
       setJogo(placar.current);
       avisar(pontos >= meta && antes < meta ? `Chegou! ${pontos} pontos hoje.`
@@ -169,7 +171,7 @@ function Vendedor({ v, inbox, dia, aberto, parado, joga, posicao, regras, avisar
         {posicao && <span className="rot-pos">{posicao}º</span>}
         {v.foto_url ? <img className="rot-av" src={v.foto_url} alt="" /> : <span className="rot-av">{(v.nome || "?")[0]}</span>}
         <span className="rot-vend-nome">{v.nome}</span>
-        <Pista pontos={jogo.pontos} meta={meta} marcos={regras.estrelas} />
+        <Pista pontos={jogo.pontos} meta={meta} marcos={marcosDe(meta)} />
         <span className="rot-pills">
           {aFazer > 0 && <span className="badge badge-warning">{aFazer} pra hoje</span>}
           {v.acumulado.length > 0 && <span className="badge badge-danger">{v.acumulado.length} acumulado</span>}
