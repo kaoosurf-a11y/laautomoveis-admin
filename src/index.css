@@ -1391,3 +1391,40 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .crm-filtros .crm-contador{display:none}
   .crm-filtros .form-input{min-height:38px}
 }
+
+/* ── Botões padronizados (28/10/2026 noite, Felipe: "botões padronizados, intuitivos, sem
+   espaço em branco do lado do título"). ──
+   - Celular: o botão principal da tela (Novo veículo, Novo lead, Atualizar...) fica na
+     linha do título, compacto, em vez de uma faixa larga sozinha embaixo.
+   - Follow-up: os 3 filtros sobem pra linha do título quando cabem (quebram se não).
+   - Kanban (CRM e Follow-up): quando as últimas colunas estão vazias (estreitas), sobra
+     folga no fim pra a coluna cheia anterior não ficar cortada pela metade.
+   - Agenda: seta de cada lado do mês/semana.
+   - Ficha do lead: botões de agendar dividem a largura e empilham se não couberem.
+   - Lápis de editar em laranja de ação (é clicável). */
+.agm-nav-tit{min-width:0}
+.ficha-acoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ficha-acoes .btn{min-width:0;white-space:normal;line-height:1.2}
+.lapis-toque{color:var(--acao) !important}
+.fu-num{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:99px;font-size:11px;font-weight:700;background:var(--fill);color:inherit;font-variant-numeric:tabular-nums}
+.fu-num-alerta{background:var(--danger);color:#fff}
+@media(max-width:639px){
+  .page-header>div:first-child{flex:1 1 auto;min-width:0}
+  .page-header>.page-title{flex:0 1 auto;width:auto;min-width:0}
+  .page-header>.btn{flex:0 0 auto;min-height:38px;padding:0 14px;font-size:13px;gap:6px}
+  .page-header:has(.crm-filtros)>.btn{order:1}
+  .page-header .crm-filtros{order:2}
+  .page-header.fu-header>.fu-filtros{width:auto;flex:1 1 200px}
+  .fu-header .page-title{font-size:19px}
+  .fu-header .page-title i{display:none}
+  .fu-header .fu-filtros{gap:4px}
+  .fu-filtros .tab-btn{font-size:12px;padding:0 4px;white-space:nowrap;flex:1 1 auto}
+  .fu-num{margin-left:3px;padding:0 4px;min-width:16px;height:16px;font-size:10.5px}
+  .kanban-board:has(>.kanban-col-vazia:last-of-type)::after{content:"";flex:0 0 calc(100% - 96px)}
+  .agm-card-topo>.agm-nav{width:100%;justify-content:space-between}
+  .agm-nav .agm-nav-tit{flex:1 1 auto;text-align:center}
+  .agm-nav .btn-icon{min-width:42px;min-height:42px}
+  .dash-filtros .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .dash-filtros .seg::-webkit-scrollbar{display:none}
+  .dash-filtros .seg-btn{padding:0 7px;font-size:12.5px;flex:1 0 auto}
+}

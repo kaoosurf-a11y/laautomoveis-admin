@@ -608,7 +608,9 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             </div>
           ):(
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontSize:15,fontWeight:600,color:"var(--fg)"}}>{veiculoAtual}</div>
+              {veiculoAtual
+                ?<div style={{fontSize:15,fontWeight:600,color:"var(--fg)"}}>{veiculoAtual}</div>
+                :<div style={{fontSize:14,color:"var(--muted)"}}>Sem carro definido</div>}
               {!readOnly&&
                 <button onClick={()=>{setVeiculoInput(veiculoAtual);setEditandoVeiculo(true);}} title="Trocar veículo" className="lapis-toque"
                   style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:14,display:"flex"}}>
@@ -796,11 +798,11 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
                 <button className="btn btn-ghost" style={{padding:"6px 12px"}} onClick={()=>setManualAberto(false)}><i className="ti ti-x"/></button>
               </div>
             ):(
-              <div style={{display:"flex",gap:6}}>
-                <button className="btn btn-ghost" style={{flex:1}} onClick={handleAgendar} disabled={agendando||!telAtual} title={!telAtual?"Lead sem telefone":""}>
+              <div className="ficha-acoes">
+                <button className="btn btn-ghost" onClick={handleAgendar} disabled={agendando||!telAtual} title={!telAtual?"Lead sem telefone":""}>
                   {agendando?<span className="spinner"/>:<><i className="ti ti-calendar-plus"/> Lara tenta agendar</>}
                 </button>
-                <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setManualAberto(true)}>
+                <button className="btn btn-ghost" onClick={()=>setManualAberto(true)}>
                   <i className="ti ti-calendar-event"/> Marcar manualmente
                 </button>
               </div>

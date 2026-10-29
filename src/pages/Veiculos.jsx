@@ -583,27 +583,27 @@ export default function Veiculos() {
                   {v.cor && <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>Cor: {v.cor}</div>}
                 </div>
               </div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                <div>
-                  <div style={{fontSize:20,fontWeight:800,color:"var(--brand)"}}><PrecoInline v={v} brl={brl} onSalvo={load}/></div>
-                  <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{Number(v.km).toLocaleString("pt-BR")} km</div>
-                </div>
-                <div style={{display:"flex",gap:8}}>
+              {/* 2026-10-28 (Felipe): preço e km numa linha; Editar e Vendido dividem a largura
+                  do card embaixo, do mesmo tamanho (alvo de 44px pro dedo). */}
+              <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,marginBottom:12}}>
+                <div style={{fontSize:20,fontWeight:800,color:"var(--brand)"}}><PrecoInline v={v} brl={brl} onSalvo={load}/></div>
+                <div style={{fontSize:13,color:"var(--muted)",whiteSpace:"nowrap"}}>{Number(v.km).toLocaleString("pt-BR")} km</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                   {v.ativo ? (
                     <>
-                      <button className="btn btn-ghost" style={{padding:"8px 14px",fontSize:13}} onClick={() => abrirEditar(v)}>
+                      <button className="btn btn-ghost" style={{fontSize:14}} onClick={() => abrirEditar(v)}>
                         <i className="ti ti-edit"/> Editar
                       </button>
-                      <button className="btn" style={{background:"var(--success-soft)",color:"var(--success)",border:"1px solid var(--success-line)",fontWeight:600,padding:"8px 14px",fontSize:13}} onClick={() => abrirExcluir(v)}>
+                      <button className="btn" style={{background:"var(--success-soft)",color:"var(--success)",border:"1px solid var(--success-line)",fontWeight:600,fontSize:14}} onClick={() => abrirExcluir(v)}>
                         <i className="ti ti-check"/> Vendido
                       </button>
                     </>
                   ) : (
-                    <button className="btn btn-primary" style={{padding:"8px 14px",fontSize:13}} onClick={() => restaurar(v)} disabled={restaurando===v.id}>
+                    <button className="btn btn-primary" style={{fontSize:14,gridColumn:"1 / -1"}} onClick={() => restaurar(v)} disabled={restaurando===v.id}>
                       {restaurando===v.id ? <span className="spinner"/> : <><i className="ti ti-rotate-2"/> Restaurar</>}
                     </button>
                   )}
-                </div>
               </div>
             </div>
           </div>

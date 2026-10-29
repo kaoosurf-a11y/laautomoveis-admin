@@ -419,10 +419,12 @@ export default function FollowUps(){
               2026-10-07: os filtros subiram pra linha do título (menos espaço em branco). */}
       <div className="page-header fu-header"><h1 className="page-title"><i className="ti ti-clock"/> Follow-ups</h1>
           <div className="fu-filtros">
-            <button className={`tab-btn ${filtroData==="todos"?"active":""}`} onClick={()=>setFiltroData("todos")}>Todos ({totalEmFollowup})</button>
-            <button className={`tab-btn ${filtroData==="hoje"?"active":""}`} onClick={()=>setFiltroData("hoje")}>Hoje ({totalHoje})</button>
+            {/* 2026-10-28 (Felipe): número em pílula (o "111" não cabia na bolinha de 16px)
+                e sem parênteses, pra os 3 filtros caberem na linha do título no celular. */}
+            <button className={`tab-btn ${filtroData==="todos"?"active":""}`} onClick={()=>setFiltroData("todos")}>Todos <span className="fu-num">{totalEmFollowup}</span></button>
+            <button className={`tab-btn ${filtroData==="hoje"?"active":""}`} onClick={()=>setFiltroData("hoje")}>Hoje <span className="fu-num">{totalHoje}</span></button>
             <button className={`tab-btn ${filtroData==="vencidos"?"active":""}`} onClick={()=>setFiltroData("vencidos")} style={{color:totalVencidos>0?"var(--danger)":undefined}}>
-              Vencidos {totalVencidos>0&&<span style={{background:"var(--danger)",color:"white",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,marginLeft:4}}>{totalVencidos}</span>}
+              Vencidos {totalVencidos>0&&<span className="fu-num fu-num-alerta">{totalVencidos}</span>}
             </button>
           </div>
       </div>

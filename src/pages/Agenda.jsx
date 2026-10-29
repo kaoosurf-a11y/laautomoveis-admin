@@ -755,6 +755,17 @@ export default function Agenda(){
   // Aba Hoje: a lista de vendedores (e a loja de cada um) vem do resumo do mês do dia.
   useEffect(()=>{if(visao==="dia")getResumoMes(diaSel.getFullYear(),diaSel.getMonth()+1).then(setResumoMes).catch(()=>setResumoMes([]));},[visao,diaSel.getFullYear(),diaSel.getMonth()]);
 
+  // 2026-10-28 (Felipe): no celular, deslizar o dedo pro lado troca o mês (ou a semana).
+  // Só conta gesto claramente horizontal (60px e mais lateral que vertical), pra não
+  // atrapalhar a rolagem da página.
+  const toqueIni=useRef(null);
+  function deslizar(mudar){
+    return {
+      onTouchStart:e=>{const t=e.touches[0];toqueIni.current={x:t.clientX,y:t.clientY};},
+      onTouchEnd:e=>{const i=toqueIni.current;toqueIni.current=null;if(!i)return;const t=e.changedTouches[0];
+        const dx=t.clientX-i.x,dy=t.clientY-i.y;if(Math.abs(dx)>=60&&Math.abs(dx)>Math.abs(dy)*1.5)mudar(dx<0?1:-1);},
+    };
+  }
   function mudarMes(delta){
     setMesAtual(m=>{const n=new Date(m);n.setMonth(n.getMonth()+delta);return n;});
   }
@@ -817,15 +828,15 @@ export default function Agenda(){
       </div>
 
       {visao==="mes"&&(
-        <div className="agm-card">
+        <div className="agm-card" {...deslizar(mudarMes)}>
           <div className="agm-card-topo">
             <div className="agm-nav">
               <button className="btn btn-ghost btn-icon" aria-label="Mês anterior" onClick={()=>mudarMes(-1)}><i className="ti ti-chevron-left"/></button>
-              <button className="btn btn-ghost btn-icon" aria-label="Próximo mês" onClick={()=>mudarMes(1)}><i className="ti ti-chevron-right"/></button>
-              <div>
+              <div className="agm-nav-tit">
                 <div className="agm-sobre">{ehDono?"Agenda das lojas":`Agenda da loja${NOME_LOJA[getUser()?.loja_id]?` · ${NOME_LOJA[getUser()?.loja_id]}`:""}`}</div>
                 <div className="agm-mes">{MESES[mesAtual.getMonth()].toLowerCase()} de {mesAtual.getFullYear()}</div>
               </div>
+              <button className="btn btn-ghost btn-icon" aria-label="Próximo mês" onClick={()=>mudarMes(1)}><i className="ti ti-chevron-right"/></button>
             </div>
             <div className="agm-topo-dir">
             {vendedores.length>1&&<VendedoresMenu vendedores={vendedores} ocultos={ocultos} setOcultos={setOcultos} ordemVend={ordemVend} meuId={meuId} porLoja={ehDono}/>}
@@ -848,15 +859,15 @@ export default function Agenda(){
           ?`${semanaIni.getDate()} a ${fimSem.getDate()} de ${MESES[fimSem.getMonth()].toLowerCase()}`
           :`${semanaIni.getDate()} de ${MESES[semanaIni.getMonth()].toLowerCase()} a ${fimSem.getDate()} de ${MESES[fimSem.getMonth()].toLowerCase()}`;
         return(
-        <div className="agm-card">
+        <div className="agm-card" {...deslizar(mudarSemana)}>
           <div className="agm-card-topo">
             <div className="agm-nav">
               <button className="btn btn-ghost btn-icon" aria-label="Semana anterior" onClick={()=>mudarSemana(-1)}><i className="ti ti-chevron-left"/></button>
-              <button className="btn btn-ghost btn-icon" aria-label="Próxima semana" onClick={()=>mudarSemana(1)}><i className="ti ti-chevron-right"/></button>
-              <div>
+              <div className="agm-nav-tit">
                 <div className="agm-sobre">{estaSemana?"Esta semana":"Semana"}</div>
                 <div className="agm-mes">{faixa}</div>
               </div>
+              <button className="btn btn-ghost btn-icon" aria-label="Próxima semana" onClick={()=>mudarSemana(1)}><i className="ti ti-chevron-right"/></button>
               {!estaSemana&&<button className="btn btn-ghost btn-sm" onClick={()=>setSemanaIni(segundaDa(new Date()))}>Esta semana</button>}
             </div>
             <div className="agm-topo-dir">
