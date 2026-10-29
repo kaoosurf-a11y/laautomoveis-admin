@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../auth.js";
 import { getTema, alternarTema } from "../theme.js";
+import BaixarApp from "../components/BaixarApp.jsx";
 
 export default function Login() {
   const [usuario,  setUsuario]  = useState("");
@@ -30,12 +31,7 @@ export default function Login() {
       </button>
       {/* logo */}
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
-        <div style={{
-          width:60,height:60,borderRadius:16,
-          background:"var(--brand-fill)",
-          display:"flex",alignItems:"center",justifyContent:"center",
-          fontWeight:700,fontSize:20,color:"var(--on-brand)",letterSpacing:.5,
-        }}>LA</div>
+        <img src="/admin/logo-la-larga.png?v=2" alt="LA Multimarcas" width="180" height="85" style={{display:"block"}}/>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:20,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em",lineHeight:1.1}}>
             LA AUTOMÓVEIS
@@ -113,6 +109,8 @@ export default function Login() {
           Esqueci minha senha
         </button>
       </div>
+
+      <BaixarApp tipo="login"/>
 
       <p className="login-footer">© {new Date().getFullYear()} LA Automóveis · Curitibanos/SC</p>
     </div>

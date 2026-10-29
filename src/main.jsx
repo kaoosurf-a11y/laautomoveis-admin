@@ -7,9 +7,11 @@ import "./assets/icones/tabler-recorte.css";
 import "./index.css";
 import { getTema, aplicarTema } from "./theme.js";
 import { instalarModalGuard } from "./lib/modalGuard.js";
+import { ouvirInstalacao } from "./lib/instalarApp.js";
 
 aplicarTema(getTema());
 instalarModalGuard();
+ouvirInstalacao();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter basename="/admin">

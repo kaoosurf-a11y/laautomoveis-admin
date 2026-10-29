@@ -1428,3 +1428,11 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .dash-filtros .seg::-webkit-scrollbar{display:none}
   .dash-filtros .seg-btn{padding:0 7px;font-size:12.5px;flex:1 0 auto}
 }
+/* 2026-10-28 (Felipe): logo real e botão "Baixar o app" */
+.logo-img{background:#0c0c0a;object-fit:cover;padding:0}
+.baixar-app-item{margin-bottom:2px}
+.baixar-app-login{width:100%;max-width:380px}
+.baixar-app-topo{display:flex;align-items:center;gap:14px;font-size:14px;color:var(--fg);line-height:1.4;margin:4px 0 16px}
+.baixar-app-topo img{border-radius:13px;flex-shrink:0}
+.baixar-app-passos{margin:0 0 20px;padding-left:20px;font-size:14px;color:var(--fg);line-height:1.5}
+.baixar-app-passos li{margin-bottom:8px}

@@ -5,14 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <meta name="theme-color" content="#0c0c0a" />
     <!-- 2026-10-28 (Felipe): painel instalável como app no celular (tela inicial, tela cheia). -->
-    <link rel="manifest" href="/admin/manifest.json" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/admin/icon-192.png" />
-    <link rel="apple-touch-icon" href="/admin/apple-touch-icon.png" />
+    <!-- 2026-10-28 noite (Felipe): logo real da LA no ícone do app, favicon e prévia do link. -->
+    <link rel="manifest" href="/admin/manifest.json?v=2" />
+    <link rel="icon" href="/admin/favicon.ico?v=2" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/admin/favicon-32.png?v=2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/admin/icon-192.png?v=2" />
+    <link rel="apple-touch-icon" href="/admin/apple-touch-icon.png?v=2" />
+    <meta name="description" content="Painel de atendimento e vendas da LA Automóveis" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LA Automóveis" />
+    <meta property="og:title" content="LA Automóveis · Painel" />
+    <meta property="og:description" content="Painel de atendimento e vendas da LA Automóveis" />
+    <meta property="og:url" content="https://admin.laautomoveis.com.br/admin/" />
+    <meta property="og:image" content="https://admin.laautomoveis.com.br/admin/og-painel.png?v=2" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="LA Painel" />
-    <title>LA Automóveis — Admin</title>
+    <title>LA Automóveis · Painel</title>
     <script>
       // Aplica o tema salvo antes da primeira pintura (evita piscar escuro -> claro).
       try { if (localStorage.getItem("la_tema") === "light") { document.documentElement.setAttribute("data-theme", "light"); document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f2f2f7"); } } catch (e) {}

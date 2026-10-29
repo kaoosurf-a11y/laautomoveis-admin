@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { getUser, logout, isManager, isOwner, estaVendoComo, getDono, voltarParaMim, atualizarUsuario, sincronizarFoto } from "../auth.js";
 import { getAgenda, enviarMinhaFoto, removerMinhaFoto } from "../api.js";
 import { getTema, alternarTema } from "../theme.js";
+import BaixarApp from "./BaixarApp.jsx";
 
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -122,7 +123,7 @@ export default function Layout({ children }) {
           <div className="logo-wrap" role="link" tabIndex={0} title="Tela inicial" style={{cursor:"pointer"}}
             onClick={() => { setMenuOpen(false); navigate("/"); }}
             onKeyDown={e => { if (e.key === "Enter") { setMenuOpen(false); navigate("/"); } }}>
-            <div className="logo-badge">LA</div>
+            <img className="logo-badge logo-img" src="/admin/logo-la.png?v=2" alt="LA"/>
             <div><div className="logo-name">LA AUTOMÓVEIS</div><div className="logo-sub">Multimarcas</div></div>
           </div>
         </div>
@@ -136,6 +137,7 @@ export default function Layout({ children }) {
           )}
         </nav>
         <div className="sidebar-footer">
+          <BaixarApp onAbrir={() => setMenuOpen(false)}/>
           <div className="tema-linha">
             <button type="button" className="nav-item tema-item" onClick={() => setTema(alternarTema())}>
               <i className={`ti ti-${tema==="light"?"moon":"sun"}`}/><span>{tema==="light"?"Tema escuro":"Tema claro"}</span>
@@ -158,7 +160,7 @@ export default function Layout({ children }) {
       {/* Topbar mobile */}
       <header className="topbar-mobile">
         <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} role="link" title="Tela inicial" onClick={() => navigate("/")}>
-          <div className="logo-badge" style={{width:32,height:32,fontSize:12}}>LA</div>
+          <img className="logo-badge logo-img" style={{width:32,height:32}} src="/admin/logo-la.png?v=2" alt="LA"/>
           <span style={{fontSize:15,fontWeight:700,color:"var(--fg)",letterSpacing:"0.03em"}}>LA AUTOMÓVEIS</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
