@@ -24,6 +24,11 @@ self.addEventListener("notificationclick", e => {
   // Painel na raiz do app.laautomoveis.com.br desde 28/10: aviso com endereço antigo (/admin/...) vira o novo.
   const caminho = ((e.notification.data && e.notification.data.url) || "/").replace(/^\/admin(?=\/|$)/, "") || "/";
   const url = new URL(caminho, self.location.origin).href;
+  // 29/10 (Felipe): aviso de mensagem do cliente abre a conversa direto no Chatwoot (fora do painel).
+  if (url.startsWith("https://chat.laautomoveis.com.br/")) {
+    e.waitUntil(self.clients.openWindow(url));
+    return;
+  }
   e.waitUntil((async () => {
     const abertos = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const aba = abertos.find(c => c.url.startsWith(self.location.origin));
