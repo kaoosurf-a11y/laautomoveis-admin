@@ -1503,6 +1503,37 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-btn{gap:4px;white-space:nowrap}
 .rot-acoes .btn-chatwoot{min-height:32px;padding:6px 10px;font-size:12px}
 .rot-mais{margin-top:6px;width:100%}
+/* Corrida do dia (Felipe 29/10, gamificação). A posição (--p, 0 a 100) desconta 14px de cada ponta
+   pro carrinho nunca sair da pista. Só tokens; anima só o carrinho andando. */
+.pista-wrap{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0;max-width:640px}
+.pista{position:relative;flex:1;height:34px;border-radius:99px;background:var(--fill);border:1px solid var(--line);overflow:hidden}
+.pista::before{content:"";position:absolute;left:14px;right:30px;top:50%;border-top:2px dashed var(--line);opacity:.9}
+.pista-rastro{position:absolute;left:0;top:0;bottom:0;width:calc(14px + (100% - 44px) * var(--p) / 100);background:var(--brand-soft);transition:width .8s ease}
+.pista-carro,.pista-marco{position:absolute;top:50%;left:calc(14px + (100% - 44px) * var(--p) / 100);transform:translate(-50%,-50%)}
+.pista-carro{font-size:26px;color:var(--brand);transition:left .8s ease;z-index:2}
+.pista-marco{font-size:13px;color:var(--muted);z-index:1}
+.pista-marco.on{color:var(--warning)}
+.pista-chegada{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--fg)}
+.pista-chegou .pista-carro{color:var(--success);animation:pista-festa .6s ease 2}
+.pista-chegou .pista-rastro{background:var(--success-soft)}
+@keyframes pista-festa{50%{transform:translate(-50%,-75%)}}
+@media(prefers-reduced-motion:reduce){.pista-carro,.pista-rastro{transition:none}.pista-chegou .pista-carro{animation:none}}
+.pista-placar{display:flex;align-items:baseline;gap:3px;white-space:nowrap;min-width:112px}
+.pista-placar b{font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums}
+.pista-placar small{font-size:11px;color:var(--muted)}
+.pista-estrelas{display:inline-flex;gap:1px;margin-left:6px;font-size:16px;color:var(--muted);align-self:center}
+.pista-estrelas .on{color:var(--warning);font-weight:700}
+@media(min-width:601px){.rot-vend-head>.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.rot-pos{font-size:13px;font-weight:800;color:var(--muted);min-width:22px;font-variant-numeric:tabular-nums}
+.rot-selo{display:inline-flex;align-items:center;gap:3px}
+.rot-cumprida{border-color:var(--success-line,var(--line));background:var(--success-soft)}
+.rot-missao-ic{font-size:18px;color:var(--success);flex-shrink:0}
+.rot-missao-pts{font-weight:800;color:var(--success);font-variant-numeric:tabular-nums}
+.rot-missoes-tit{margin-top:14px}
+.rot-feito-item small{font-size:11px;color:var(--muted)}
+.rot-aviso{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:99px;background:var(--surface);color:var(--fg);border:1px solid var(--line);box-shadow:var(--float);font-weight:700;font-size:14px}
+.rot-aviso i{color:var(--warning)}
+@media(min-width:1024px){.rot-aviso{bottom:28px}}
 @media(max-width:1023px){
   .page-header>.rot-filtros{width:100%;flex-wrap:nowrap}
   .rot-filtros .seg{flex:1 1 auto;min-width:0}
@@ -1520,7 +1551,8 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .rot-lead{flex-wrap:wrap}
   .rot-acoes{width:100%}
   .rot-acoes>*{flex:1;justify-content:center;min-height:38px}
-  .rot-pills{justify-content:flex-start;flex-basis:100%;order:3}
+  .rot-pills{justify-content:flex-start;flex-basis:100%;order:4}
+  .pista-wrap{flex-basis:100%;max-width:none;order:3}
   .rot-feito-grade{grid-template-columns:repeat(3,1fr)}
   .rot-abas .seg-btn{padding:0 6px;font-size:12px;gap:4px}
 }

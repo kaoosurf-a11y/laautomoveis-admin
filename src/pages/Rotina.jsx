@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { getRotina } from "../api.js";
-import { isOwner, isManager } from "../auth.js";
+import { getRotina, registrarAcaoRotina } from "../api.js";
+import { isOwner, isManager, estaVendoComo } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
 
 // Rotina do dia (2026-10-29, Felipe): "na rotina diária aparecem os relatórios por loja do que cada
@@ -10,6 +10,11 @@ import { ChatwootLink } from "../components/ChatwootLink.jsx";
 // já fez, o que tem pra fazer e o que está acumulado". Vendedor vê só o dele, gerente a loja dele,
 // admin as duas. Só leitura: os botões abrem a conversa no Chatwoot, o discador ou o card no CRM.
 // Regras de cada lista: backend src/routes/rotina.js.
+//
+// Corrida do dia (Felipe 29/10, "quero gamificado"): pista com carrinho e chegada ao lado do nome do
+// vendedor; cada missão cumprida dá pontos (valores e chegada vêm do backend) e o carrinho avança;
+// estrelas nos marcos. Toque em Mensagem ou Ligar marca o lead como "missão cumprida" (+2, 1 por lead
+// por dia). Vendedor joga; gerente e admin veem a corrida de todos, em ordem de pontos.
 
 const LOJA_CURTA = { 1: "Curitibanos", 2: "Campos Novos" };
 
@@ -46,28 +51,29 @@ function nomeLead(l) {
   return d.length >= 4 ? `Sem nome (final ${d.slice(-4)})` : "Sem nome";
 }
 
-function LinhaLead({ l, inbox, info }) {
+function LinhaLead({ l, inbox, info, cumprida, onAcao }) {
   const tel = telLink(l.telefone);
   return (
-    <div className="rot-lead">
+    <div className={`rot-lead ${cumprida ? "rot-cumprida" : ""}`}>
       <div className="rot-lead-info">
         <div className="rot-lead-nome">
           {nomeLead(l)}
           {/* Só quente ganha etiqueta: quase todo lead é "morno" e a etiqueta repetida virava ruído. */}
           {l.temperatura === "quente" && <span className="badge badge-danger">quente</span>}
+          {cumprida && <span className="badge badge-success rot-selo"><i className="ti ti-circle-check" />Missão cumprida</span>}
         </div>
         <div className="rot-lead-sub">{[l.veiculo || "carro não informado", info].filter(Boolean).join(" | ")}</div>
       </div>
       <div className="rot-acoes">
-        {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox}>Mensagem</ChatwootLink> : null}
-        {tel && <a className="btn btn-ghost btn-sm rot-btn" href={tel}><i className="ti ti-phone" />Ligar</a>}
+        {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : null}
+        {tel && <a className="btn btn-ghost btn-sm rot-btn" href={tel} onClick={() => onAcao?.(l, "ligar")}><i className="ti ti-phone" />Ligar</a>}
         <Link className="btn btn-ghost btn-sm rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir card no CRM"><i className="ti ti-external-link" />Card</Link>
       </div>
     </div>
   );
 }
 
-function Grupo({ titulo, tom, itens, inbox, info, total, vazio }) {
+function Grupo({ titulo, tom, itens, inbox, info, total, vazio, cumpridas, onAcao }) {
   const [todos, setTodos] = useState(false);
   if (!itens.length && !vazio) return null;
   const LIM = 10;
@@ -82,7 +88,8 @@ function Grupo({ titulo, tom, itens, inbox, info, total, vazio }) {
       )}
       {!itens.length && <div className="rot-vazio">{vazio}</div>}
       <div className="rot-lista">
-        {mostra.map(l => <LinhaLead key={`${l.id}-${l.agenda_id || ""}`} l={l} inbox={inbox} info={info(l)} />)}
+        {mostra.map(l => <LinhaLead key={`${l.id}-${l.agenda_id || ""}`} l={l} inbox={inbox} info={info(l)}
+          cumprida={cumpridas?.has(l.id)} onAcao={onAcao} />)}
       </div>
       {itens.length > LIM && (
         <button type="button" className="btn btn-ghost btn-sm rot-mais" onClick={() => setTodos(!todos)}>
@@ -93,25 +100,81 @@ function Grupo({ titulo, tom, itens, inbox, info, total, vazio }) {
   );
 }
 
+const MISSAO = {
+  respondeu: { nome: "Respondeu o lead", icone: "ti-message-circle" },
+  moveu: { nome: "Moveu o card", icone: "ti-target" },
+  visita: { nome: "Visita feita", icone: "ti-building-store" },
+  venda: { nome: "Venda", icone: "ti-trophy" },
+  contato: { nome: "Contato pelo atalho", icone: "ti-phone" },
+};
+
+// Pista da corrida: carrinho anda de 0 até a chegada (meta); estrelas nos marcos.
+function Pista({ pontos, meta, marcos }) {
+  const pct = Math.min(100, Math.round((pontos / meta) * 100));
+  const chegou = pontos >= meta;
+  const estrelas = marcos.filter(m => pontos >= m).length;
+  return (
+    <span className={`pista-wrap ${chegou ? "pista-chegou" : ""}`} title={`${pontos} de ${meta} pontos`}>
+      <span className="pista" role="img" aria-label={`Corrida: ${pontos} de ${meta} pontos, ${estrelas} estrelas`}>
+        <span className="pista-rastro" style={{ "--p": pct }} />
+        {marcos.slice(0, -1).map(m => (
+          <i key={m} className={`ti ti-star${pontos >= m ? " on" : ""} pista-marco`} style={{ "--p": Math.round((m / meta) * 100) }} />
+        ))}
+        <i className="ti ti-flag-3 pista-chegada" />
+        <i className="ti ti-car pista-carro" style={{ "--p": pct }} />
+      </span>
+      <span className="pista-placar">
+        <b>{pontos}</b><small>pts</small>
+        <span className="pista-estrelas">
+          {marcos.map((m, i) => <i key={m} className={`ti ti-star${i < estrelas ? " on" : ""}`} />)}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 // Felipe 29/10 ("dá pra melhorar a organização"): uma lista por vez, em abas, em vez de tudo empilhado.
 // Abre na primeira aba que tem coisa: Hoje, depois Acumulado, depois Retomar.
-function Vendedor({ v, inbox, dia, aberto, parado }) {
+function Vendedor({ v, inbox, dia, aberto, parado, joga, posicao, regras, avisar }) {
   const aFazer = v.responder_hoje.length + v.visitas.length + v.confirmar.length;
-  const feito = v.feito.respondidos + v.feito.movidos + v.feito.visitas + v.feito.vendas;
   const emDia = !aFazer && !v.acumulado.length;
   const [aba, setAba] = useState(aFazer ? "hoje" : v.acumulado.length ? "acumulado" : v.retomar_total ? "retomar" : "hoje");
-  const ABAS = [["hoje", "Hoje", aFazer], ["acumulado", "Acumulado", v.acumulado.length], ["retomar", "Retomar", v.retomar_total], ["feito", "Feito", feito]];
+  // Placar local: o toque em Mensagem/Ligar já anda o carrinho na hora (o backend confirma os pontos).
+  const [jogo, setJogo] = useState({ pontos: v.pontos, missoes: v.missoes });
+  const placar = useRef(jogo);
+  placar.current = jogo;
+  useEffect(() => { setJogo({ pontos: v.pontos, missoes: v.missoes }); }, [v]);
+  const cumpridas = new Set(jogo.missoes.map(m => m.id));
+  const meta = v.meta;
+
+  const onAcao = joga ? (l, tipo) => {
+    if (placar.current.missoes.some(m => m.id === l.id && m.missao === "contato")) return;
+    registrarAcaoRotina(l.id, tipo).then(r => {
+      if (!r?.pontos) return;
+      const antes = placar.current.pontos, pontos = antes + r.pontos;
+      const estrela = regras.estrelas.find(e => antes < e && pontos >= e);
+      placar.current = { pontos, missoes: [{ ...l, missao: "contato", pontos: r.pontos, em: new Date().toISOString() }, ...placar.current.missoes] };
+      setJogo(placar.current);
+      avisar(pontos >= meta && antes < meta ? `Chegou! ${pontos} pontos hoje.`
+        : estrela ? `+${r.pontos} pontos. Nova estrela!` : `+${r.pontos} pontos. Missão cumprida!`);
+    }).catch(() => {});
+  } : null;
+
+  const contar = (k) => jogo.missoes.filter(m => m.missao === k).length;
+  const ABAS = [["hoje", "Hoje", aFazer], ["acumulado", "Acumulado", v.acumulado.length], ["retomar", "Retomar", v.retomar_total], ["feito", "Missões", jogo.missoes.length]];
+  const g = { inbox, cumpridas, onAcao };
   return (
     <details className="card rot-vend" open={aberto}>
       <summary className="rot-vend-head">
+        {posicao && <span className="rot-pos">{posicao}º</span>}
         {v.foto_url ? <img className="rot-av" src={v.foto_url} alt="" /> : <span className="rot-av">{(v.nome || "?")[0]}</span>}
         <span className="rot-vend-nome">{v.nome}</span>
+        <Pista pontos={jogo.pontos} meta={meta} marcos={regras.estrelas} />
         <span className="rot-pills">
           {aFazer > 0 && <span className="badge badge-warning">{aFazer} pra hoje</span>}
           {v.acumulado.length > 0 && <span className="badge badge-danger">{v.acumulado.length} acumulado</span>}
           {v.retomar_total > 0 && <span className="badge badge-muted">{v.retomar_total} retomar</span>}
           {emDia && <span className="badge badge-success">em dia</span>}
-          <span className="badge badge-brand">{feito} feito</span>
         </span>
         <i className="ti ti-chevron-down rot-seta" />
       </summary>
@@ -127,23 +190,38 @@ function Vendedor({ v, inbox, dia, aberto, parado }) {
       </div>
 
       {aba === "hoje" && <>
-        <Grupo titulo="Responder agora" tom="danger" itens={v.responder_hoje} inbox={inbox}
+        <Grupo {...g} titulo="Responder agora" tom="danger" itens={v.responder_hoje}
           info={l => `passado às ${quando(l.passado_em, dia)}`} vazio="Nenhum lead novo esperando resposta." />
-        <Grupo titulo="Visitas do dia" tom="success" itens={v.visitas} inbox={inbox}
+        <Grupo {...g} titulo="Visitas do dia" tom="success" itens={v.visitas}
           info={l => `${quando(l.data_hora, dia)} | ${String(l.status || "").replace(/_/g, " ")}`} />
-        <Grupo titulo="Confirmar visita que o cliente mencionou" tom="warning" itens={v.confirmar} inbox={inbox}
+        <Grupo {...g} titulo="Confirmar visita que o cliente mencionou" tom="warning" itens={v.confirmar}
           info={l => `mencionou ${quando(l.data_hora, dia)}`} />
       </>}
-      {aba === "acumulado" && <Grupo titulo="Passados em outros dias e ainda sem resposta" tom="danger" itens={v.acumulado.slice().reverse()}
-        inbox={inbox} info={l => `passado ${quando(l.passado_em, dia)}`} vazio="Nada acumulado. Tudo respondido." />}
-      {aba === "retomar" && <Grupo titulo={`Em negociação, sem conversa há ${parado}+ dias (quentes primeiro)`} tom="muted" itens={v.retomar}
-        total={v.retomar_total} inbox={inbox} info={l => `último contato ${quando(l.ultimo_em, dia)}`} vazio="Nenhuma negociação parada." />}
+      {aba === "acumulado" && <Grupo {...g} titulo="Passados em outros dias e ainda sem resposta" tom="danger" itens={v.acumulado.slice().reverse()}
+        info={l => `passado ${quando(l.passado_em, dia)}`} vazio="Nada acumulado. Tudo respondido." />}
+      {aba === "retomar" && <Grupo {...g} titulo={`Em negociação, sem conversa há ${parado}+ dias (quentes primeiro)`} tom="muted" itens={v.retomar}
+        total={v.retomar_total} info={l => `último contato ${quando(l.ultimo_em, dia)}`} vazio="Nenhuma negociação parada." />}
       {aba === "feito" && (
         <div className="rot-grupo">
           <div className="rot-feito-grade">
-            {[["Chegaram", v.chegaram], ["Respondidos", v.feito.respondidos], ["Cards movidos", v.feito.movidos],
-              ["Visitas feitas", v.feito.visitas], ["Vendas", v.feito.vendas]].map(([n, q]) => (
-              <div key={n} className="rot-feito-item"><b>{q}</b><span>{n}</span></div>
+            {[["respondeu", "Respondidos"], ["moveu", "Cards movidos"], ["visita", "Visitas feitas"], ["venda", "Vendas"], ["contato", "Contatos"]].map(([k, n]) => (
+              <div key={k} className="rot-feito-item"><b>{contar(k)}</b><span>{n}</span><small>+{regras.pontos[k]} cada</small></div>
+            ))}
+          </div>
+          <div className="rot-grupo-tit rot-missoes-tit">
+            <span className="rot-dot rot-success" />Missões cumpridas<span className="rot-num">{jogo.pontos} pts</span>
+          </div>
+          {!jogo.missoes.length && <div className="rot-vazio">{joga ? "Nenhuma missão ainda. Responda um lead ou toque em Mensagem ou Ligar pra largar na frente." : "Nenhuma missão cumprida ainda."}</div>}
+          <div className="rot-lista">
+            {jogo.missoes.map((m, i) => (
+              <div key={`${m.missao}-${m.id}-${i}`} className="rot-lead rot-missao">
+                <i className={`ti ${MISSAO[m.missao]?.icone || "ti-check"} rot-missao-ic`} />
+                <div className="rot-lead-info">
+                  <div className="rot-lead-nome">{MISSAO[m.missao]?.nome || m.missao}</div>
+                  <div className="rot-lead-sub">{[nomeLead(m), quando(m.em, dia)].filter(Boolean).join(" | ")}</div>
+                </div>
+                <span className="rot-missao-pts">+{m.pontos}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -152,8 +230,9 @@ function Vendedor({ v, inbox, dia, aberto, parado }) {
   );
 }
 
-function Loja({ loja, dia, souVendedor, parado }) {
-  const vs = loja.vendedores;
+function Loja({ loja, dia, souVendedor, parado, regras, avisar }) {
+  // Gerente e admin veem a corrida: vendedores em ordem de pontos, com a posição.
+  const vs = souVendedor ? loja.vendedores : [...loja.vendedores].sort((a, b) => b.pontos - a.pontos);
   const soma = (f) => vs.reduce((s, v) => s + f(v), 0);
   const comIA = loja.chegaram.filter(c => !c.vendedor_nome).length;
   const porVend = vs.map(v => [v.nome, v.chegaram]).filter(([, n]) => n > 0);
@@ -167,7 +246,7 @@ function Loja({ loja, dia, souVendedor, parado }) {
         <div className="metric-card"><div className="metric-label">Visitas</div><div className="metric-value">{soma(v => v.visitas.length + v.confirmar.length)}</div></div>
         <div className="metric-card"><div className="metric-label">Acumulado</div><div className="metric-value">{soma(v => v.acumulado.length)}</div></div>
         <div className="metric-card"><div className="metric-label">Retomar</div><div className="metric-value">{soma(v => v.retomar_total)}</div></div>
-        <div className="metric-card"><div className="metric-label">Feito</div><div className="metric-value">{soma(v => v.feito.respondidos + v.feito.movidos + v.feito.visitas + v.feito.vendas)}</div></div>
+        <div className="metric-card"><div className="metric-label">Pontos</div><div className="metric-value">{soma(v => v.pontos)}</div></div>
       </div>}
 
       {!souVendedor && (
@@ -186,7 +265,8 @@ function Loja({ loja, dia, souVendedor, parado }) {
         </details>
       )}
 
-      {vs.map(v => <Vendedor key={v.id} v={v} inbox={loja.inbox_id} dia={dia} aberto={souVendedor} parado={parado} />)}
+      {vs.map((v, i) => <Vendedor key={v.id} v={v} inbox={loja.inbox_id} dia={dia} aberto={souVendedor} parado={parado}
+        joga={souVendedor && !estaVendoComo() && dia === hojeISO()} posicao={souVendedor ? null : i + 1} regras={regras} avisar={avisar} />)}
       {!vs.length && <div className="empty-state"><p>Nenhum vendedor ativo nesta loja.</p></div>}
     </section>
   );
@@ -199,6 +279,9 @@ export default function Rotina() {
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
   const [carregando, setCarregando] = useState(false);
+  const [aviso, setAviso] = useState(null);
+  const tAviso = useRef(null);
+  const avisar = useCallback((t) => { setAviso(t); clearTimeout(tAviso.current); tAviso.current = setTimeout(() => setAviso(null), 2800); }, []);
 
   const carregar = useCallback(() => {
     setCarregando(true); setErro(null);
@@ -233,7 +316,9 @@ export default function Rotina() {
       {dados && <p className="rot-sub">{dataBR(dados.dia)}</p>}
       {erro && <div className="empty-state"><i className="ti ti-alert-triangle" /><p>{erro}</p></div>}
       {!dados && !erro && <div className="empty-state"><span className="spinner" /><p>Carregando...</p></div>}
-      {dados && dados.lojas.map(l => <Loja key={l.id} loja={l} dia={dados.dia} souVendedor={souVendedor} parado={dados.parado_dias} />)}
+      {dados && dados.lojas.map(l => <Loja key={l.id} loja={l} dia={dados.dia} souVendedor={souVendedor} parado={dados.parado_dias}
+        regras={{ pontos: dados.pontos, estrelas: dados.estrelas }} avisar={avisar} />)}
+      {aviso && <div className="rot-aviso" role="status"><i className="ti ti-star" />{aviso}</div>}
     </div>
   );
 }
