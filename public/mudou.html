@@ -10,7 +10,7 @@
 <meta property="og:image" content="https://app.laautomoveis.com.br/og-painel.png?v=2">
 <link rel="icon" href="https://app.laautomoveis.com.br/favicon.ico?v=2">
 <style>
-  /* 2026-10-28 (Felipe): aviso do endereço antigo (admin.laautomoveis.com.br). Some sozinho em 12/11. */
+  /* 2026-10-28 (Felipe): aviso do endereço antigo (admin.laautomoveis.com.br). Desde 29/10 leva direto pro app novo (a tela só aparece por um instante). */
   :root{--bg:#0c0c0a;--card:#161614;--fg:#f4f1e8;--muted:#a8a395;--brand:#c9a94e;--on:#0c0c0a;--line:#2a2924}
   *{box-sizing:border-box}
   body{margin:0;min-height:100dvh;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px 16px}
@@ -36,15 +36,21 @@
 </main>
 <script>
   // Leva junto a tela que a pessoa queria (ex.: /admin/crm?lead=10 vira /crm?lead=10).
-  var destino = "https://app.laautomoveis.com.br" + (location.pathname.replace(/^\/admin(?=\/|$)/, "") || "/") + location.search;
+  var caminho = location.pathname.replace(/^\/admin(?=\/|$)/, "") || "/";
+  if (caminho === "/mudou.html") caminho = "/"; // no endereço novo esta página não pode chamar ela mesma
+  var destino = "https://app.laautomoveis.com.br" + caminho + location.search;
   document.getElementById("abrir").href = destino;
-  // Desliga os avisos e o service worker do endereço antigo (evita aviso em dobro).
-  try { navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) {
-    r.pushManager.getSubscription().then(function (s) { if (s) s.unsubscribe(); }).catch(function () {});
-    r.unregister();
-  }); }); } catch (e) {}
-  // Depois de 12/11 vai direto, sem aviso.
-  if (new Date() >= new Date("2026-11-12T00:00:00-03:00")) location.replace(destino);
+  // Desliga os avisos e o service worker do endereço antigo (evita aviso em dobro) e já leva pro app novo.
+  // 2026-10-29 (Felipe): vai direto, sem esperar 12/11. Lá o painel pede pra baixar o app e ativar os avisos.
+  var foi = false;
+  function ir() { if (!foi) { foi = true; location.replace(destino); } }
+  setTimeout(ir, 1500); // nunca fica preso aqui
+  try { navigator.serviceWorker.getRegistrations().then(function (rs) {
+    return Promise.all(rs.map(function (r) {
+      return r.pushManager.getSubscription().then(function (s) { if (s) return s.unsubscribe(); }).catch(function () {})
+        .then(function () { return r.unregister(); }).catch(function () {});
+    }));
+  }).then(ir, ir); } catch (e) { ir(); }
 </script>
 </body>
 </html>
