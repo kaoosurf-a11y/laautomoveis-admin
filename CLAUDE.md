@@ -1,6 +1,6 @@
 # LA Automóveis — Admin Panel
 
-React (Vite) SPA served at `admin.laautomoveis.com.br/admin/`.
+React (Vite) SPA served at **`app.laautomoveis.com.br/`** (raiz, desde 28/10/2026). `admin.laautomoveis.com.br` (qualquer caminho) mostra `public/mudou.html` ("o painel mudou", vai direto sozinho a partir de 12/11) e `/admin/sw.js` serve `sw-antigo.js`, que desliga o service worker e os avisos do endereço antigo. Os dois hosts chegam no mesmo container; o nginx separa por `server_name`.
 
 **Fonte de verdade (2026-07-24):** GitHub `kaoosurf-a11y/laautomoveis-admin` branch **`main`**.
 
@@ -55,3 +55,9 @@ Claude cannot log into this admin panel — typing any password (even the shared
 - **`src/memoria.js`**: CRM (`kanban:`), Follow-up e Veículos guardam a última resposta na memória da aba. Ao voltar pra tela, mostra na hora e atualiza por baixo. Só memória (nada de lead no `localStorage`); chave por usuário, limpa no `logout()`. `App.jsx` pré-busca os três 2,5 s depois de abrir.
 - **Fotos de Veículos** saem por `?w=` (redimensionador do backend, `imageResize.js`, cache de 1 ano): capa de ~400 KB vira ~60 KB.
 - **App instalável**: `public/manifest.json` + ícones em `public/` (sem service worker, de propósito: nada de versão velha presa no aparelho).
+
+## Avisos do app e primeira vez (2026-10-28)
+
+- `public/sw.js` só cuida de push e do toque no aviso (sem `fetch`, sem cache). Aviso com link antigo `/admin/...` é convertido pra raiz.
+- `src/lib/avisos.js` + `components/Avisos.jsx` (menu e faixa) + `components/PrimeiraVez.jsx` (baixar app, ativar avisos, ajustar aparelho; marca `la_primeira_vez_v1`). Backend: `src/lib/push.js` e `/api/push/*`.
+- Sair do painel desliga o aparelho daquele usuário (`/api/push/sair`).
