@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { estadoAvisos, ativarAvisos, testarAvisos, aoMudarAvisos } from "../lib/avisos.js";
+import { estadoAvisos, ativarAvisos, testarAvisos, desligarAvisos, desligouDeProposito, aoMudarAvisos } from "../lib/avisos.js";
+import { estaVendoComo } from "../auth.js";
 import { aoMudarInstalacao, instalarApp } from "../lib/instalarApp.js";
 
 // 2026-10-28 (Felipe): avisos do app pra todos (lead novo, mensagem do cliente, agendamento, cliente esperando).
 // tipo "nav": linha no rodapé do menu. tipo "faixa": faixa no topo até a pessoa ativar (fecha por sessão).
+// 2026-10-29 (Felipe): no menu é um botão só que liga e desliga (sem "Testar"; ao ligar já chega um aviso de teste).
+// No "Ver como" o botão fica travado: o aparelho é do dono, não da pessoa que ele está olhando.
 function useEstado() {
   const [estado, setEstado] = useState(null);
   useEffect(() => {
@@ -29,29 +32,32 @@ export default function Avisos({ tipo = "nav", onAbrir }) {
     window.addEventListener("la-faixa-avisos", f);
     return () => window.removeEventListener("la-faixa-avisos", f);
   }, []);
+  const [ocupado, setOcupado] = useState(false);
   if (!estado || estado === "sem-suporte") return null;
+  const vendoComo = estaVendoComo();
 
   async function ligar() {
-    onAbrir?.();
-    if (estado === "precisa-app") { if (!(await instalarApp())) setAjuda("iphone"); return; }
-    if (estado === "negado") { setAjuda("negado"); return; }
+    if (estado === "precisa-app") { onAbrir?.(); if (!(await instalarApp())) setAjuda("iphone"); return; }
+    if (estado === "negado") { onAbrir?.(); setAjuda("negado"); return; }
     try {
       const ok = await ativarAvisos();
       if (!ok) setAjuda("negado");
       else { setMsg("Avisos ligados"); testarAvisos().catch(() => {}); }
     } catch { setMsg("Não deu pra ligar agora. Tente de novo."); }
   }
-  async function testar() {
-    setMsg("Enviando teste…");
-    try { const r = await testarAvisos(); setMsg(r.ok ? "Teste enviado: confira o aviso" : "Este aparelho não recebeu. Toque em Ativar de novo."); }
-    catch { setMsg("Não deu pra testar agora."); }
-    setTimeout(() => setMsg(null), 5000);
+  async function alternar() {
+    if (vendoComo || ocupado) return;
+    setOcupado(true); setMsg(null);
+    try {
+      if (estado === "ligado") { await desligarAvisos(); setMsg("Avisos desligados"); }
+      else await ligar();
+    } finally { setOcupado(false); setTimeout(() => setMsg(null), 4000); }
   }
 
   const modal = ajuda && createPortal(<AjudaAvisos tipo={ajuda} onClose={() => setAjuda(null)}/>, document.body);
 
   if (tipo === "faixa") {
-    if (estado === "ligado" || fechada) return modal || null;
+    if (estado === "ligado" || fechada || vendoComo || desligouDeProposito()) return modal || null;
     const fechar = () => { setFechada(true); try { sessionStorage.setItem("la_faixa_avisos", "1"); } catch {} };
     return (
       <>
@@ -66,16 +72,16 @@ export default function Avisos({ tipo = "nav", onAbrir }) {
     );
   }
 
+  const ligado = estado === "ligado";
+  const texto = vendoComo ? "Avisos: só no seu usuário"
+    : msg || (ligado ? "Avisos ligados" : estado === "negado" ? "Avisos bloqueados" : "Avisos desligados");
   return (
     <>
-      {estado === "ligado"
-        ? <div className="tema-linha">
-            <div className="nav-item tema-item avisos-ligados"><i className="ti ti-bell"/><span>{msg || "Avisos ligados"}</span></div>
-            <button type="button" className="btn btn-ghost btn-sm avisos-testar" onClick={testar}>Testar</button>
-          </div>
-        : <button type="button" className="nav-item tema-item avisos-ativar" onClick={ligar}>
-            <i className="ti ti-bell"/><span>{msg || (estado === "negado" ? "Avisos bloqueados" : "Ativar avisos")}</span>
-          </button>}
+      <button type="button" className={`nav-item tema-item avisos-botao${ligado ? " ligado" : ""}`} role="switch" aria-checked={ligado}
+        disabled={vendoComo} title={vendoComo ? "Volte pro seu usuário pra ligar ou desligar os avisos deste aparelho" : undefined} onClick={alternar}>
+        <i className={ligado ? "ti ti-bell" : "ti ti-bell-off"}/><span>{texto}</span>
+        {!vendoComo && <span className="avisos-chave" aria-hidden="true">{ocupado ? <span className="spinner"/> : <span className="avisos-bolinha"/>}</span>}
+      </button>
       {modal}
     </>
   );

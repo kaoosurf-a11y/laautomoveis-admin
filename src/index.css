@@ -1441,10 +1441,15 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .avisos-faixa>i{color:var(--brand);font-size:18px;flex-shrink:0}
 .avisos-faixa>span{flex:1;min-width:0}
 .avisos-faixa .btn-sm{min-height:34px;padding:6px 12px;flex-shrink:0}
-.avisos-ativar i{color:var(--brand)}
-.avisos-ligados{cursor:default}
-.avisos-ligados i{color:var(--success)}
-.avisos-testar{min-height:32px;padding:4px 10px;flex-shrink:0}
+.avisos-botao i{color:var(--muted)}
+.avisos-botao.ligado i{color:var(--success)}
+.avisos-botao>span:not(.avisos-chave){flex:1;min-width:0}
+.avisos-botao:disabled{opacity:.6;cursor:default}
+.avisos-chave{flex-shrink:0;width:38px;height:22px;border-radius:11px;background:var(--border);position:relative;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.avisos-botao.ligado .avisos-chave{background:var(--success)}
+.avisos-bolinha{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s var(--ease)}
+.avisos-botao.ligado .avisos-bolinha{transform:translateX(16px)}
+.avisos-chave .spinner{width:14px;height:14px}
 /* 2026-10-28 (Felipe): passo a passo da primeira vez (baixar app, ativar avisos, ajustar aparelho) */
 .pv-modal{max-width:380px}
 .pv-topo{display:flex;align-items:center;gap:12px;margin:2px 0 14px}

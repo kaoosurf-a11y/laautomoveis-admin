@@ -1,6 +1,6 @@
 // 2026-10-28 (Felipe): avisos do app no celular e no PC (aparecem por cima e com a tela bloqueada).
 // O aparelho fica ligado ao usuário logado; ao sair do painel, ele para de receber.
-import { getToken } from "../auth.js";
+import { getToken, estaVendoComo } from "../auth.js";
 import { rodandoComoApp, ehIphone } from "./instalarApp.js";
 
 const BASE = import.meta.env.VITE_API_URL || "https://api.laautomoveis.com.br";
@@ -64,8 +64,13 @@ async function inscrever() {
   await api("/inscrever", { inscricao: s.toJSON() });
 }
 
+// 2026-10-29 (Felipe): um botão só liga e desliga. Quem desligou fica desligado (o painel não religa sozinho ao abrir).
+const DESLIGOU = "la_avisos_desligados";
+export function desligouDeProposito() { try { return localStorage.getItem(DESLIGOU) === "1"; } catch { return false; } }
+
 // Precisa vir de um toque (o navegador só pede a permissão assim).
 export async function ativarAvisos() {
+  try { localStorage.removeItem(DESLIGOU); } catch {}
   const p = await Notification.requestPermission();
   if (p !== "granted") { avisar(); return false; }
   await inscrever();
@@ -74,12 +79,21 @@ export async function ativarAvisos() {
 }
 
 // Ao abrir o painel logado: se este aparelho já tinha permissão, garante que está ligado a este usuário.
+// No "Ver como" não mexe: o aparelho é do dono e não pode passar a receber os avisos de quem ele está olhando.
 export async function sincronizarAvisos() {
-  try { if (suporta() && Notification.permission === "granted" && getToken()) { await inscrever(); avisar(); } }
+  try { if (suporta() && Notification.permission === "granted" && getToken() && !estaVendoComo() && !desligouDeProposito()) { await inscrever(); avisar(); } }
   catch (e) { console.warn("avisos: não sincronizou", e); }
 }
 
 export async function testarAvisos() { return api("/teste", {}); }
+
+// Desliga os avisos neste aparelho (pelo botão do menu).
+export async function desligarAvisos() {
+  try { localStorage.setItem(DESLIGOU, "1"); } catch {}
+  await desligarAvisosDoAparelho();
+  try { const s = await (await pronto()).pushManager.getSubscription(); await s?.unsubscribe(); } catch {}
+  avisar();
+}
 
 // Antes de sair: desliga o aparelho deste usuário (outro que logar no mesmo celular não recebe os avisos dele).
 export async function desligarAvisosDoAparelho() {
