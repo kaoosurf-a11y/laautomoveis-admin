@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { aoMudarInstalacao, rodandoComoApp, instalarApp, ehIphone } from "../lib/instalarApp.js";
+import { aoMudarInstalacao, jaTemApp, instalarApp, ehIphone } from "../lib/instalarApp.js";
 
 // 2026-10-28 (Felipe): "Baixar o app" pra todos (menu lateral e tela de login).
-// Some quando o painel já está aberto como app.
+// Some quando o painel já está aberto como app ou o app já foi instalado neste aparelho.
 export default function BaixarApp({ tipo = "nav", onAbrir }) {
   const [, setV] = useState(0);
   const [ajuda, setAjuda] = useState(false);
   useEffect(() => aoMudarInstalacao(() => setV(v => v + 1)), []);
-  if (rodandoComoApp()) return null;
+  if (jaTemApp()) return null;
 
   async function clicar() {
     onAbrir?.();

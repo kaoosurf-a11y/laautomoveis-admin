@@ -21,7 +21,14 @@ export default function Avisos({ tipo = "nav", onAbrir }) {
   const estado = useEstado();
   const [ajuda, setAjuda] = useState(null);
   const [msg, setMsg] = useState(null);
-  const [fechada, setFechada] = useState(() => { try { return sessionStorage.getItem("la_faixa_avisos") === "1"; } catch { return false; } });
+  const lerFechada = () => { try { return sessionStorage.getItem("la_faixa_avisos") === "1"; } catch { return false; } };
+  const [fechada, setFechada] = useState(lerFechada);
+  // 2026-10-29: o passo a passo da primeira vez já pede os avisos; a faixa não aparece junto (um pedido por vez).
+  useEffect(() => {
+    const f = () => setFechada(lerFechada());
+    window.addEventListener("la-faixa-avisos", f);
+    return () => window.removeEventListener("la-faixa-avisos", f);
+  }, []);
   if (!estado || estado === "sem-suporte") return null;
 
   async function ligar() {
@@ -50,7 +57,7 @@ export default function Avisos({ tipo = "nav", onAbrir }) {
       <>
         <div className="avisos-faixa">
           <i className="ti ti-bell"/>
-          <span>{estado === "precisa-app" ? "Baixe o app pra receber lead novo e mensagem de cliente na hora." : "Ative os avisos pra receber lead novo e mensagem de cliente na hora."}</span>
+          <span>{estado === "precisa-app" ? "Baixe o app pra receber os avisos." : "Ative os avisos de lead e cliente."}</span>
           <button type="button" className="btn btn-primary btn-sm" onClick={ligar}>{estado === "precisa-app" ? "Como baixar" : "Ativar"}</button>
           <button type="button" className="icon-btn" aria-label="Fechar" onClick={fechar}><i className="ti ti-x"/></button>
         </div>

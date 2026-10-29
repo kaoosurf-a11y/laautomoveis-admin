@@ -5,9 +5,22 @@ let pedido = null;
 const ouvintes = new Set();
 const avisar = () => ouvintes.forEach(f => f());
 
+// 2026-10-29 (Felipe: pediu pra baixar de novo depois de já ter baixado): guarda que o app já foi
+// instalado neste aparelho. No Android e no PC o app e o navegador dividem a mesma memória, então a
+// aba do navegador para de oferecer o app. No iPhone o Safari não enxerga o app (memória separada).
+const INSTALADO = "la_app_instalado";
+export function marcarInstalado() { try { localStorage.setItem(INSTALADO, "1"); } catch {} }
+
 export function ouvirInstalacao() {
+  if (rodandoComoApp()) marcarInstalado();
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); pedido = e; avisar(); });
-  window.addEventListener("appinstalled", () => { pedido = null; avisar(); });
+  window.addEventListener("appinstalled", () => { pedido = null; marcarInstalado(); avisar(); });
+}
+
+// Já tem o app neste aparelho (aberto como app agora ou instalado antes por este navegador).
+export function jaTemApp() {
+  if (rodandoComoApp()) return true;
+  try { return localStorage.getItem(INSTALADO) === "1"; } catch { return false; }
 }
 
 export function aoMudarInstalacao(f) { ouvintes.add(f); return () => ouvintes.delete(f); }
@@ -30,7 +43,9 @@ export async function instalarApp() {
   if (!pedido) return false;
   const p = pedido; pedido = null;
   p.prompt();
-  try { await p.userChoice; } catch {}
+  let ok = false;
+  try { ok = (await p.userChoice)?.outcome === "accepted"; } catch {}
+  if (ok) marcarInstalado();
   avisar();
   return true;
 }
