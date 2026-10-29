@@ -1455,3 +1455,55 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .pv-ok{color:var(--success)}
 .pv-btn{width:100%;margin-top:8px}
 .pv-erro{font-size:13px;color:var(--danger);margin-bottom:10px}
+
+/* Rotina do dia (Felipe 29/10): um card por vendedor, listas com atalho pra mensagem, ligação e card. */
+.rot-filtros{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rot-sub{color:var(--muted);font-size:13px;margin:-12px 0 14px}
+.rot-loja{margin-bottom:22px}
+.rot-loja-tit{font-size:17px;font-weight:700;color:var(--fg);display:flex;align-items:center;gap:8px;margin:6px 0 12px}
+.rot-loja-tit i{color:var(--brand)}
+.rot-loja .metrics-grid{margin-bottom:12px}
+.rot-vend{margin-bottom:10px;padding:0}
+.rot-vend-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;min-height:44px;flex-wrap:wrap}
+.rot-vend-head::-webkit-details-marker{display:none}
+.rot-vend-nome{font-weight:700;font-size:14px;color:var(--fg)}
+.rot-av{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--fill);color:var(--fg);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.rot-pills{display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:flex-end}
+.rot-seta{color:var(--acao);transition:transform .15s}
+.rot-vend[open] .rot-seta{transform:rotate(180deg)}
+.rot-feito{display:flex;flex-wrap:wrap;gap:6px 14px;padding:0 14px 10px;font-size:12px;color:var(--muted)}
+.rot-feito b{color:var(--fg);font-variant-numeric:tabular-nums}
+.rot-grupo{border-top:1px solid var(--line);padding:10px 14px}
+.rot-grupo-tit{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--fg);margin-bottom:6px}
+.rot-num{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rot-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rot-danger{background:var(--danger)}.rot-warning{background:var(--warning)}.rot-success{background:var(--success)}.rot-muted{background:var(--muted)}
+.rot-vazio{font-size:12px;color:var(--muted);padding:2px 0 4px}
+.rot-lead{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.rot-lead:first-of-type{border-top:none}
+.rot-lead-info{flex:1;min-width:0}
+.rot-lead-nome{font-size:13px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rot-lead-sub{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rot-acoes{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.rot-btn{gap:4px;white-space:nowrap}
+.rot-acoes .btn-chatwoot{min-height:32px;padding:6px 10px;font-size:12px}
+.rot-mais{margin-top:6px;width:100%}
+@media(max-width:1023px){
+  .page-header>.rot-filtros{width:100%;flex-wrap:nowrap}
+  .rot-filtros .seg{flex:1 1 auto;min-width:0}
+  .rot-filtros .seg-btn{flex:1;padding:0 8px;min-height:34px}
+  .rot-filtros .rot-atualizar{flex:0 0 40px;min-height:40px;padding:0}
+}
+@media(max-width:600px){
+  .rot-filtros{flex-wrap:wrap!important}
+  .rot-filtros .seg:first-child{flex:1 1 calc(100% - 50px)}
+  .rot-filtros .seg:nth-child(2){order:3;flex-basis:100%}
+  .rot-loja .metrics-grid{grid-template-columns:repeat(3,1fr);gap:8px}
+  .rot-loja .metric-card{padding:10px}
+  .rot-loja .metric-value{font-size:20px}
+  .rot-loja .metric-label{font-size:10px}
+  .rot-lead{flex-wrap:wrap}
+  .rot-acoes{width:100%}
+  .rot-acoes>*{flex:1;justify-content:center;min-height:38px}
+  .rot-pills{justify-content:flex-start;flex-basis:100%;order:3}
+}

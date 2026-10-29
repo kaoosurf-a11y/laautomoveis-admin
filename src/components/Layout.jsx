@@ -68,7 +68,8 @@ export default function Layout({ children }) {
     ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dashboard", section:"VISÃO GERAL" }] : []),
     // Resultado mensal (2026-10-07): leads, vendas e verba mês a mês, por loja. Só admin_master.
     ...(isOwner() ? [{ to:"/mensal", icon:"ti-report-analytics", label:"Resultado mensal", section:null }] : []),
-    { to:"/crm",       icon:"ti-target",        label:"CRM Pipeline", section:"COMERCIAL" },
+    { to:"/rotina",    icon:"ti-list-check",    label:"Rotina do dia", section:"COMERCIAL" },
+    { to:"/crm",       icon:"ti-target",        label:"CRM Pipeline", section:null },
     { to:"/followups", icon:"ti-clock",          label:"Follow-ups",   section:null },
     { to:"/agenda",    icon:"ti-calendar-event", label:"Agenda",       badge:agendaHoje||null, section:null },
     { to:"/veiculos",  icon:"ti-car",            label:"Veículos",     section:"ESTOQUE" },
@@ -102,11 +103,12 @@ export default function Layout({ children }) {
   });
 
   const bottomItems = [
+    { to:"/rotina",    icon:"ti-list-check",       label:"Rotina"    },
     { to:"/crm",       icon:"ti-target",          label:"CRM"       },
     { to:"/followups", icon:"ti-clock",            label:"Follow-up" },
     { to:"/agenda",    icon:"ti-calendar-event",   label:"Agenda"    },
-    { to:"/veiculos",  icon:"ti-car",              label:"Veículos"  },
-    ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dash" }] : []),
+    // Rotina do dia (29/10) entrou na frente; a barra só tem 5 lugares: gerente e admin trocam Veículos pelo Dash.
+    ...(isManager() ? [{ to:"/dashboard", icon:"ti-layout-dashboard", label:"Dash" }] : [{ to:"/veiculos", icon:"ti-car", label:"Veículos" }]),
   ];
 
   const fmtH = iso => { const d=new Date(iso); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };

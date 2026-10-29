@@ -66,6 +66,8 @@ export async function criarLeadCRM(d)      { return req("/api/crm/leads",{method
 export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`,{method:"PATCH",body:JSON.stringify(d)}); }
 export async function excluirLeadCRM(id) { return req(`/api/crm/leads/${id}`,{method:"DELETE"}); }
 export async function getResultadoMensal() { return req("/api/dashboard/mensal"); }
+// Rotina do dia (Felipe 29/10): o backend recorta por papel (vendedor, gerente, admin).
+export async function getRotina(data, loja) { const q = new URLSearchParams({ data }); if (loja) q.set("loja", loja); return req(`/api/rotina?${q}`); }
 export async function getClientesValidados() { return req("/api/crm/clientes"); }
 export async function getDisparador(params={}) {
   const qs = new URLSearchParams(params).toString();

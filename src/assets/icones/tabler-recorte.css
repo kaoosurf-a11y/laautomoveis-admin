@@ -1,4 +1,4 @@
-/* Gerado por scripts/icones.py (Tabler Icons 3.0.0, 102 icones). Nao editar a mao. */
+/* Gerado por scripts/icones.py (Tabler Icons 3.0.0, 104 icones). Nao editar a mao. */
 @font-face{font-family:"tabler-icons";font-style:normal;font-weight:400;font-display:block;src:url("./tabler-recorte.woff") format("woff")}
 .ti{font-family:"tabler-icons" !important;speak:none;font-style:normal;font-weight:normal;font-variant:normal;text-transform:none;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .ti-ad:before{content:"\ea02"}
@@ -60,6 +60,7 @@
 .ti-key:before{content:"\eac7"}
 .ti-layout-dashboard:before{content:"\f02c"}
 .ti-link:before{content:"\eade"}
+.ti-list-check:before{content:"\eb6a"}
 .ti-list-details:before{content:"\ef40"}
 .ti-loader:before{content:"\eca3"}
 .ti-lock:before{content:"\eae2"}
@@ -74,6 +75,7 @@
 .ti-moon:before{content:"\eaf8"}
 .ti-pencil:before{content:"\eb04"}
 .ti-percentage:before{content:"\ecf4"}
+.ti-phone:before{content:"\eb09"}
 .ti-phone-off:before{content:"\ecf5"}
 .ti-photo:before{content:"\eb0a"}
 .ti-photo-off:before{content:"\ecf6"}
