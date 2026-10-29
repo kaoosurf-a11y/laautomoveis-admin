@@ -484,17 +484,19 @@ export default function Veiculos() {
               <thead><tr><th></th><th>Foto</th><th>Veículo</th><th>Ano</th><th>Preço</th><th>KM</th><th>Badge</th><th></th></tr></thead>
               <tbody>
                 {veiculos.map((v,i) => (
-                  <tr key={v.id} style={!v.ativo ? {opacity:.45} : undefined}>
+                  <tr key={v.id} className={!v.ativo ? "linha-apagada" : undefined}>
                     <td style={{width:56}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
                         <button className="btn btn-ghost btn-icon" style={{padding:2,minHeight:0,height:20}} onClick={() => mover(v,"cima")} disabled={i===0 || movendo===v.id} title="Mover pra cima"><i className="ti ti-chevron-up"/></button>
                         <button className="btn btn-ghost btn-icon" style={{padding:2,minHeight:0,height:20}} onClick={() => mover(v,"baixo")} disabled={i===veiculos.length-1 || movendo===v.id} title="Mover pra baixo"><i className="ti ti-chevron-down"/></button>
                       </div>
                     </td>
-                    <td style={{width:70}}>
-                      {v.fotos?.[0]
-                        ? <img src={mini(v.fotos[0],160)} alt="" loading="lazy" decoding="async" style={{width:60,height:46,objectFit:"cover",borderRadius:8}}/>
-                        : <div style={{width:60,height:46,background:"var(--surface2)",borderRadius:8}}/>}
+                    <td className="td-foto" style={{width:136}}>
+                      <div className={"foto-veiculo" + (!v.ativo && v.removido_motivo==="vendido" ? " vendido" : "")}>
+                        {v.fotos?.[0]
+                          ? <img src={mini(v.fotos[0],320)} alt="" loading="lazy" decoding="async"/>
+                          : <div className="foto-vazia"/>}
+                      </div>
                     </td>
                     <td>
                       <div style={{fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
@@ -563,6 +565,7 @@ export default function Veiculos() {
               {v.fotos?.[0]
                 ? <img src={mini(v.fotos[0],720)} alt="" loading="lazy" decoding="async" style={{width:"100%",height:200,objectFit:"cover",display:"block"}}/>
                 : <div style={{width:"100%",height:v.badge||!v.ativo?60:0,background:"var(--surface2)"}}/>}
+              {!v.ativo && v.removido_motivo==="vendido" && v.fotos?.[0] && <div className="pelicula-vendido"><i className="ti ti-check"/></div>}
               {v.badge && <span className="badge badge-brand" style={{position:"absolute",top:10,right:10,fontSize:11}}>{v.badge}</span>}
               {v.id===capaId && (
                 <span className="badge badge-brand" style={{position:"absolute",top:10,left:10,fontSize:11}}>
