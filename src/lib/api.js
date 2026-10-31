@@ -62,6 +62,7 @@ export const api = {
   getUsers: () => req("GET", "/api/admin/users"),
   getAvisosStatus: () => req("GET", "/api/push/status"),
   testarAvisos: (id) => req("POST", `/api/push/teste/${id}`),
+  setFunilPrazo: (id, ativo) => req("PATCH", `/api/admin/users/${id}/funil-prazo`, { ativo }),
   getUsoApp: (dias = 30) => req("GET", `/api/uso?dias=${dias}`),
   getSiteMapa: (q) => req("GET", `/api/site/mapa?${new URLSearchParams(q)}`),
 

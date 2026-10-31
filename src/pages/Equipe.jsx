@@ -52,6 +52,15 @@ export default function Equipe(){
     alertDialog(r?.ok?`Teste enviado pra ${m.nome.split(" ")[0]} (${r.aparelhos} aparelho${r.aparelhos>1?"s":""}).`:`Não chegou em nenhum aparelho de ${m.nome.split(" ")[0]}. Peça pra entrar no app e ativar os avisos de novo.`);
   }
 
+  const[funilSalvando,setFunilSalvando]=useState(null);
+  async function trocarFunil(m,ativo){
+    setFunilSalvando(m.id);
+    const r=await api.setFunilPrazo(m.id,ativo).catch(()=>null);
+    setFunilSalvando(null);
+    if(!r){alertDialog("Não consegui salvar. Tente de novo.");return;}
+    setEquipe(l=>l.map(p=>p.id===m.id?{...p,funil_prazo_ativo:r.funil_prazo_ativo}:p));
+  }
+
   useEffect(()=>{
     carregarAvisos();
     api.getUsers().then(u=>{setEquipe(u);setLoading(false);})
@@ -95,6 +104,14 @@ export default function Equipe(){
                           <i className={`ti ti-${testando===m.id?"loader":"send"}`} style={testando===m.id?{animation:"spin 1s linear infinite"}:undefined}/> Testar
                         </button>}
                     </div>);})()}
+                  {eu?.role==="admin_master"&&m.role!=="admin_master"&&
+                    <label className="form-check" style={{alignItems:"flex-start",cursor:funilSalvando===m.id?"wait":"pointer"}}>
+                      <input type="checkbox" checked={m.funil_prazo_ativo!==false} disabled={funilSalvando===m.id} onChange={e=>trocarFunil(m,e.target.checked)}/>
+                      <span>
+                        <span style={{display:"block",fontSize:12,fontWeight:600}}>Funil automático da IA</span>
+                        <span style={{display:"block",fontSize:11,color:"var(--muted)",marginTop:1}}>{m.funil_prazo_ativo!==false?"A IA segue os leads parados. O lead continua com o vendedor.":"Desligado: a IA não move nem faz follow-up por prazo."}</span>
+                      </span>
+                    </label>}
                   {eu?.role==="admin_master"&&m.role!=="admin_master"&&
                     <button className="btn btn-ghost btn-sm" style={{width:"100%"}} onClick={()=>abrirComo(m)} disabled={abrindo!=null}>
                       <i className={`ti ti-${abrindo===m.id?"loader":"eye"}`} style={abrindo===m.id?{animation:"spin 1s linear infinite"}:undefined}/> Ver como {m.nome.split(" ")[0]}
