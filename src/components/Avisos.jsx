@@ -43,13 +43,13 @@ export default function Avisos({ tipo = "nav", onAbrir }) {
       const ok = await ativarAvisos();
       if (!ok) setAjuda("negado");
       else { setMsg("Avisos ligados"); testarAvisos().catch(() => {}); }
-    } catch { setMsg("Não deu pra ligar agora. Tente de novo."); }
+    } catch { setMsg("Tente de novo"); }
   }
   async function alternar() {
     if (vendoComo || ocupado) return;
     setOcupado(true); setMsg(null);
     try {
-      if (estado === "ligado") { await desligarAvisos(); setMsg("Avisos desligados"); }
+      if (estado === "ligado") { await desligarAvisos(); setMsg("Desligados"); }
       else await ligar();
     } finally { setOcupado(false); setTimeout(() => setMsg(null), 4000); }
   }
@@ -73,8 +73,8 @@ export default function Avisos({ tipo = "nav", onAbrir }) {
   }
 
   const ligado = estado === "ligado";
-  const texto = vendoComo ? "Avisos: só no seu usuário"
-    : msg || (ligado ? "Avisos ligados" : estado === "negado" ? "Avisos bloqueados" : "Avisos desligados");
+  const texto = vendoComo ? "Avisos: do seu login"
+    : msg || (ligado ? "Avisos ligados" : estado === "negado" ? "Bloqueados" : "Ligar avisos");
   return (
     <>
       <button type="button" className={`nav-item tema-item avisos-botao${ligado ? " ligado" : ""}`} role="switch" aria-checked={ligado}

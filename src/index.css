@@ -71,7 +71,7 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 }
 .sidebar.open{transform:translateX(0);box-shadow:var(--float)}
 @media(min-width:1024px){
-  .sidebar{transform:translateX(0)!important;box-shadow:none;width:220px;position:fixed}
+  .sidebar{transform:translateX(0)!important;box-shadow:none;width:200px;position:fixed}
 }
 .sidebar-overlay{
   display:none;position:fixed;inset:0;background:var(--overlay);z-index:299;
@@ -111,7 +111,7 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
   padding:16px 14px calc(var(--bottom-h) + 16px + env(safe-area-inset-bottom));
 }
 @media(min-width:1024px){
-  .main-content{margin-left:220px;padding:32px 36px 48px}
+  .main-content{margin-left:200px;padding:32px 36px 48px}
 }
 @media(min-width:480px) and (max-width:1023px){
   .main-content{padding:20px 20px calc(var(--bottom-h) + 20px)}
@@ -723,12 +723,28 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   th{padding:8px 12px}td{padding:8px 12px}
   .form-group{margin-bottom:10px}
   .form-input,.form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),.form-group select{min-height:36px;padding:7px 12px;font-size:14px}
-  .sidebar-header{padding:14px 16px 8px}
-  .nav-section{padding:12px 12px 4px}
-  .nav-item{min-height:34px;padding:6px 12px;font-size:14px;margin-bottom:1px;border-radius:10px}
-  .nav-item i{font-size:18px}
-  .sidebar-footer{padding:6px 8px}
-  .user-info{padding:6px 8px}
+  /* 06/11/2026 (Felipe): menu lateral mais enxuto no computador pra sobrar tela pro conteúdo */
+  .sidebar-header{padding:10px 12px 4px}
+  .logo-wrap{gap:8px}
+  .logo-badge{width:30px;height:30px;border-radius:8px}
+  .logo-name{font-size:12.5px}
+  .logo-sub{font-size:10px;margin-top:0}
+  .sidebar-nav{padding:2px 8px 6px}
+  .nav-section{padding:10px 10px 3px;font-size:10px}
+  .nav-item{min-height:32px;padding:5px 10px;font-size:13.5px;gap:10px;margin-bottom:1px;border-radius:9px;line-height:1.2}
+  .nav-item i{font-size:17px;width:20px}
+  .nav-badge{min-width:18px;height:18px;font-size:10px}
+  .sidebar-footer{padding:4px 6px;padding-bottom:calc(4px + env(safe-area-inset-bottom))}
+  .sidebar-footer .icon-btn{width:34px;height:34px;font-size:19px}
+  .avisos-botao{gap:8px}
+  .avisos-botao>span:not(.avisos-chave){font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .avisos-chave{width:30px;height:18px}
+  .avisos-bolinha{width:12px;height:12px}
+  .avisos-botao.ligado .avisos-bolinha{transform:translateX(12px)}
+  .user-info{padding:4px 6px;gap:8px}
+  .avatar{width:30px;height:30px;font-size:11px}
+  .user-name{font-size:12.5px}
+  .user-role{font-size:10.5px;margin-top:0}
   .kanban-board{height:calc(100vh - 92px)}
   .fu-kanban-cards{max-height:calc(100vh - 210px)}
 }
