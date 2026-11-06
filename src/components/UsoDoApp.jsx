@@ -2,6 +2,9 @@
 // fica, último acesso, mapa de calor por dia da semana e hora, telas mais usadas e as aberturas de
 // hoje. Só proprietários veem. Mapa no neon dos gráficos (pedido dele): azul pouco, roxo médio,
 // magenta muito.
+// 2026-11-06 (Felipe, "precisamos acompanhar e monitorar isso"): tabela da semana no topo, por
+// pessoa: quantas vezes abriu (abrir de novo em menos de 5 min é a mesma abertura), em quantos
+// dias, tempo, cartões que arrastou no CRM e agendamentos que criou na mão. Zero fica em vermelho.
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { NEON } from "./Graficos.jsx";
@@ -25,6 +28,8 @@ function quando(d) {
   return new Date(d).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 const hora = d => new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const th = { padding: "6px 4px", fontWeight: 500, textAlign: "right", whiteSpace: "nowrap" };
+const num = (v) => ({ padding: "8px 4px", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", color: v ? "var(--fg)" : "var(--danger)" });
 const primeiro = n => n.split(" ")[0];
 
 function Metrica({ titulo, valor, sub }) {
@@ -92,6 +97,37 @@ export default function UsoDoApp() {
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           Contando desde {new Date(dados.desde).toLocaleDateString("pt-BR")} ({dados.dias_medidos} dia{dados.dias_medidos > 1 ? "s" : ""}). Só conta o tempo com o app aberto na tela.
         </div>
+        <div className="sec-label">Esta semana{dados.semana_inicio ? `, desde segunda ${new Date(dados.semana_inicio).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}` : ""}</div>
+        <div style={{ overflowX: "auto", marginBottom: 16 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 520 }}>
+            <thead><tr style={{ color: "var(--muted)", fontSize: 11, textAlign: "left" }}>
+              <th style={{ padding: "6px 4px", fontWeight: 500 }}>Pessoa</th>
+              <th style={th}>Abriu</th>
+              <th style={th}>Dias</th>
+              <th style={th}>Tempo</th>
+              <th style={th}>Arrastou lead</th>
+              <th style={th}>Agendou</th>
+            </tr></thead>
+            <tbody>
+              {pessoas.map(x => {
+                const w = x.semana || {};
+                return (
+                  <tr key={x.id} onClick={() => setSel(x.id)} style={{ cursor: "pointer", borderTop: "1px solid var(--border)", background: x.id === p?.id ? "var(--brand-soft)" : undefined }}>
+                    <td style={{ padding: "8px 4px", whiteSpace: "nowrap" }}>{primeiro(x.nome)}<span style={{ color: "var(--muted)", fontSize: 11 }}> · {x.role === "gerente" ? "gerente" : x.loja}</span></td>
+                    <td style={num(w.visitas)}>{w.visitas || 0}</td>
+                    <td style={num(w.dias)}>{w.dias || 0}</td>
+                    <td style={num(w.minutos)}>{duracao(w.minutos)}</td>
+                    <td style={num(w.arrastos)}>{w.arrastos || 0}{w.arrastos && w.leads !== w.arrastos ? <span style={{ color: "var(--muted)", fontSize: 11 }}> ({w.leads} leads)</span> : ""}</td>
+                    <td style={num(w.agendamentos)}>{w.agendamentos || 0}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Abrir de novo em menos de 5 min conta como a mesma abertura. "Arrastou lead" é cartão movido na mão no CRM; "Agendou" é agendamento criado na mão.</div>
+
+        <div className="sec-label" style={{ marginTop: 10 }}>Últimos {dados.dias_medidos} dias</div>
         <div style={{ overflowX: "auto", marginBottom: 14 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 420 }}>
             <thead><tr style={{ color: "var(--muted)", fontSize: 11, textAlign: "left" }}>
@@ -116,7 +152,7 @@ export default function UsoDoApp() {
         {p && (<>
           <div className="sec-label" style={{ marginTop: 6 }}>{p.nome}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, marginBottom: 14 }}>
-            <Metrica titulo="Aberturas por dia" valor={String(p.aberturas_dia).replace(".", ",")} sub={`${p.sessoes} no total`} />
+            <Metrica titulo="Aberturas por dia" valor={String(p.aberturas_dia).replace(".", ",")} sub={`${p.visitas ?? p.sessoes} no total`} />
             <Metrica titulo="Tempo no app por dia" valor={duracao(p.minutos_dia)} sub={`usou em ${p.dias_com_uso} de ${dados.dias_medidos} dias`} />
             <Metrica titulo="Do aviso de lead até abrir" valor={p.aviso?.abertos ? duracao(p.aviso.mediana_min) : "–"}
               sub={p.aviso ? `abriu ${p.aviso.abertos} de ${p.aviso.avisos} avisos` : "sem aviso de lead ainda"} />
