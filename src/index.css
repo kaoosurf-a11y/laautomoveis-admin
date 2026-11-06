@@ -71,7 +71,7 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 }
 .sidebar.open{transform:translateX(0);box-shadow:var(--float)}
 @media(min-width:1024px){
-  .sidebar{transform:translateX(0)!important;box-shadow:none;width:200px;position:fixed}
+  .sidebar{transform:translateX(0)!important;box-shadow:none;width:190px;position:fixed}
 }
 .sidebar-overlay{
   display:none;position:fixed;inset:0;background:var(--overlay);z-index:299;
@@ -96,6 +96,13 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 .nav-item:hover,.nav-item:focus-visible{background:var(--fill)}
 .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
 .nav-item.active i{color:var(--brand)}
+/* 06/11/2026 (Felipe): opções do menu em maiúsculas, seção discreta e marcador na opção ativa */
+.sidebar-nav .nav-item{position:relative}
+.sidebar-nav .nav-item>span:not(.nav-badge){text-transform:uppercase;font-size:12px;font-weight:600;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sidebar-nav .nav-item.active>span:not(.nav-badge){font-weight:700}
+.sidebar-nav .nav-item.active::before{content:"";position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:55%;border-radius:0 3px 3px 0;background:var(--brand)}
+.nav-section{font-size:9.5px;letter-spacing:.14em;font-weight:700}
+.nav-section:first-child{padding-top:6px}
 .nav-badge{margin-left:auto;background:var(--brand-fill);color:var(--on-brand);font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 6px;font-variant-numeric:tabular-nums}
 
 .sidebar-footer{padding:10px 8px;border-top:1px solid var(--border);flex-shrink:0;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
@@ -111,7 +118,7 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
   padding:16px 14px calc(var(--bottom-h) + 16px + env(safe-area-inset-bottom));
 }
 @media(min-width:1024px){
-  .main-content{margin-left:200px;padding:32px 36px 48px}
+  .main-content{margin-left:190px;padding:32px 36px 48px}
 }
 @media(min-width:480px) and (max-width:1023px){
   .main-content{padding:20px 20px calc(var(--bottom-h) + 20px)}
@@ -724,24 +731,28 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .form-group{margin-bottom:10px}
   .form-input,.form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),.form-group select{min-height:36px;padding:7px 12px;font-size:14px}
   /* 06/11/2026 (Felipe): menu lateral mais enxuto no computador pra sobrar tela pro conteúdo */
-  .sidebar-header{padding:10px 12px 4px}
+  .sidebar-header{padding:12px 10px 6px}
   .logo-wrap{gap:8px}
-  .logo-badge{width:30px;height:30px;border-radius:8px}
-  .logo-name{font-size:12.5px}
-  .logo-sub{font-size:10px;margin-top:0}
-  .sidebar-nav{padding:2px 8px 6px}
-  .nav-section{padding:10px 10px 3px;font-size:10px}
-  .nav-item{min-height:32px;padding:5px 10px;font-size:13.5px;gap:10px;margin-bottom:1px;border-radius:9px;line-height:1.2}
-  .nav-item i{font-size:17px;width:20px}
+  .logo-badge{width:28px;height:28px;border-radius:8px}
+  .logo-name{font-size:12px;letter-spacing:.06em}
+  .logo-sub{font-size:9.5px;margin-top:0;text-transform:uppercase;letter-spacing:.08em}
+  .sidebar-nav{padding:2px 6px 6px}
+  .nav-section{padding:11px 8px 3px}
+  .nav-item{min-height:30px;padding:0 6px;font-size:13px;gap:8px;margin-bottom:1px;border-radius:8px;line-height:1.2}
+  .nav-item i{font-size:17px;width:18px}
+  .sidebar-nav .nav-item>span:not(.nav-badge){font-size:10.5px;letter-spacing:.04em}
+  .sidebar-nav .nav-item.active::before{left:-6px}
   .nav-badge{min-width:18px;height:18px;font-size:10px}
-  .sidebar-footer{padding:4px 6px;padding-bottom:calc(4px + env(safe-area-inset-bottom))}
-  .sidebar-footer .icon-btn{width:34px;height:34px;font-size:19px}
+  .sidebar-footer{padding:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .sidebar-footer .nav-item{min-height:30px;padding:0 8px;font-size:12.5px;color:var(--muted)}
+  .sidebar-footer .nav-item i{font-size:16px}
+  .sidebar-footer .icon-btn{width:32px;height:32px;font-size:18px}
   .avisos-botao{gap:8px}
-  .avisos-botao>span:not(.avisos-chave){font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .avisos-botao>span:not(.avisos-chave){font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .avisos-chave{width:30px;height:18px}
   .avisos-bolinha{width:12px;height:12px}
   .avisos-botao.ligado .avisos-bolinha{transform:translateX(12px)}
-  .user-info{padding:4px 6px;gap:8px}
+  .user-info{padding:4px 6px;gap:8px;margin-top:2px}
   .avatar{width:30px;height:30px;font-size:11px}
   .user-name{font-size:12.5px}
   .user-role{font-size:10.5px;margin-top:0}
