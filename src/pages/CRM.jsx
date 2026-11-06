@@ -5,6 +5,7 @@ import { api as veiculosApi } from "../lib/api.js";
 import { lembrado } from "../memoria.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
+import BotaoLigar from "../components/BotaoLigar.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 import { useVisivel } from "../lib/useVisivel.js";
 import RedeIcone from "../components/RedeIcone.jsx";
@@ -661,11 +662,14 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             </select>
           </div>
         }
-        {readOnly?(
+        {/* 2026-11-06 (Felipe): vendedor ve o numero mascarado (****1234) e nao edita o telefone; liga pelo botao,
+            que fica registrado. */}
+        {(readOnly||getRole()==="vendedor")?(
           telAtual&&
-            <div style={{marginBottom:14}}>
+            <div style={{marginBottom:14,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
               {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. */}
               <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
+              {getRole()==="vendedor"&&<BotaoLigar leadId={lead.id} telefone={telAtual} origem="crm"/>}
             </div>
         ):(
           <div className="form-group">

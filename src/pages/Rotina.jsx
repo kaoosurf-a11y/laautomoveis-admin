@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getRotina, registrarAcaoRotina } from "../api.js";
 import { isOwner, isManager, estaVendoComo } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
+import BotaoLigar from "../components/BotaoLigar.jsx";
 
 // Rotina do dia (2026-10-29, Felipe): "na rotina diária aparecem os relatórios por loja do que cada
 // um tem pra fazer no dia, os leads que chegaram por loja e por vendedor; pros gerentes o resumo do
@@ -36,13 +37,6 @@ function quando(ts, dia) {
   const dias = Math.round((new Date(dia) - new Date(diaTs)) / 864e5);
   return dias === 1 ? "ontem" : `há ${dias} dias`;
 }
-// Só número de telefone de verdade vira botão de ligar (contato @lid não tem número).
-function telLink(tel) {
-  const d = String(tel || "").replace(/\D/g, "");
-  if (d.length < 10 || d.length > 13) return null;
-  return `tel:+${d.startsWith("55") ? d : "55" + d}`;
-}
-
 // Nome só de emoji ou vazio vira "Sem nome" com o final do telefone, pra dar pra achar.
 function nomeLead(l) {
   const n = String(l.nome || "").trim();
@@ -52,7 +46,6 @@ function nomeLead(l) {
 }
 
 function LinhaLead({ l, inbox, info, cumprida, onAcao }) {
-  const tel = telLink(l.telefone);
   return (
     <div className={`rot-lead ${cumprida ? "rot-cumprida" : ""}`}>
       <div className="rot-lead-info">
@@ -66,7 +59,8 @@ function LinhaLead({ l, inbox, info, cumprida, onAcao }) {
       </div>
       <div className="rot-acoes">
         {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : null}
-        {tel && <a className="btn btn-ghost btn-sm rot-btn" href={tel} onClick={() => onAcao?.(l, "ligar")}><i className="ti ti-phone" />Ligar</a>}
+        {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
+        <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => onAcao?.(l, "ligar")} />
         <Link className="btn btn-ghost btn-sm rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir card no CRM"><i className="ti ti-external-link" />Card</Link>
       </div>
     </div>

@@ -132,6 +132,8 @@ export async function getContatosNaoProcessados() { return req("/api/contatos/na
 export async function resolverContato(id) { return req(`/api/contatos/${id}/resolver`,{method:"PATCH"}); }
 export async function getContatoChatwoot(id) { return req(`/api/contatos/${id}/chatwoot`); }
 export async function getLeadChatwoot(id) { return req(`/api/crm/leads/${id}/chatwoot`); }
+// 2026-11-06 (Felipe): vendedor ve o numero mascarado; o numero pra discar so vem daqui, e cada toque fica registrado.
+export async function ligarLead(id, origem) { return req(`/api/crm/leads/${id}/ligar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ origem }) }); }
 
 const MOCK_VEICULOS=[
   {id:1,nome:"HB20 2022 1.0T Comfort",preco:52900,km:28000,cambio:"Automático",combustivel:"Flex",ano:2022,badge:"DESTAQUE",foto_url:null,publicado:true},
