@@ -1512,9 +1512,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-av{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--fill);color:var(--fg);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 .rot-pills{display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:flex-end}
 .rot-seta{color:var(--acao);transition:transform .15s}
-.rot-vend[open] .rot-seta{transform:rotate(180deg)}
+.rot-vend[open]>summary .rot-seta{transform:rotate(180deg)}
 .rot-vend[open] .rot-pills{display:none}
-.rot-vend[open] .rot-seta{margin-left:auto}
+.rot-vend[open]>summary .rot-seta{margin-left:auto}
 .rot-abas{padding:0 14px 10px}
 .rot-abas .seg{width:100%}
 .rot-abas .seg-btn{flex:1}
@@ -1540,29 +1540,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-btn{gap:4px;white-space:nowrap}
 .rot-acoes .btn-chatwoot{min-height:32px;padding:6px 10px;font-size:12px}
 .rot-mais{margin-top:6px;width:100%}
-/* Corrida do dia (Felipe 29/10, gamificação). A posição (--p, 0 a 100) desconta 14px de cada ponta
-   pro carrinho nunca sair da pista. Só tokens; anima só o carrinho andando. */
-.pista-wrap{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0}
-/* Pista até o fim da linha: as etiquetas do vendedor descem pra linha de baixo, alinhadas com a pista. */
-.pista-wrap~.rot-pills{order:4;flex-basis:100%;justify-content:flex-start}
-@media(min-width:601px){.pista-wrap~.rot-pills{padding-left:222px}.pista-wrap~.rot-pills:empty{display:none}}
-.pista{position:relative;flex:1;height:34px;border-radius:99px;background:var(--fill);border:1px solid var(--line);overflow:hidden}
-.pista::before{content:"";position:absolute;left:14px;right:30px;top:50%;border-top:2px dashed var(--line);opacity:.9}
-.pista-rastro{position:absolute;left:0;top:0;bottom:0;width:calc(14px + (100% - 44px) * var(--p) / 100);background:var(--brand-soft);transition:width .8s ease}
-.pista-carro,.pista-marco{position:absolute;top:50%;left:calc(14px + (100% - 44px) * var(--p) / 100);transform:translate(-50%,-50%)}
-.pista-carro{font-size:26px;color:var(--brand);transition:left .8s ease;z-index:2}
-.pista-marco{font-size:13px;color:var(--muted);z-index:1}
-.pista-marco.on{color:var(--warning)}
-.pista-chegada{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--fg)}
-.pista-chegou .pista-carro{color:var(--success);animation:pista-festa .6s ease 2}
-.pista-chegou .pista-rastro{background:var(--success-soft)}
-@keyframes pista-festa{50%{transform:translate(-50%,-75%)}}
-@media(prefers-reduced-motion:reduce){.pista-carro,.pista-rastro{transition:none}.pista-chegou .pista-carro{animation:none}}
-.pista-placar{display:flex;align-items:baseline;gap:5px;white-space:nowrap;min-width:190px}
-.pista-placar b{font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums}
-.pista-placar small{font-size:11px;color:var(--muted)}
-.pista-estrelas{display:inline-flex;gap:1px;margin-left:6px;font-size:16px;color:var(--muted);align-self:center}
-.pista-estrelas .on{color:var(--warning);font-weight:700}
+/* Corrida do dia (29/10): a pista saiu em 07/11 (tela simples); pontos e estrelas ficam compactos em .rot-estrelas. */
 @media(min-width:601px){.rot-vend-head>.rot-av+.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 .rot-pos{font-size:13px;font-weight:800;color:var(--muted);min-width:22px;font-variant-numeric:tabular-nums}
 .rot-selo{display:inline-flex;align-items:center;gap:3px}
@@ -1592,11 +1570,66 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .rot-acoes{width:100%}
   .rot-acoes>*{flex:1;justify-content:center;min-height:38px}
   .rot-pills{justify-content:flex-start;flex-basis:100%;order:4}
-  .pista-wrap{flex-basis:100%;max-width:none;order:3}
   .rot-feito-grade{grid-template-columns:repeat(3,1fr)}
   .rot-abas .seg-btn{padding:0 6px;font-size:12px;gap:4px}
 }
 
+/* Rotina do dia simples (Felipe 07/11): frase no topo, uma lista "Responder agora", feito hoje; gerente com uma linha por vendedor */
+.rot-resumo{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;margin-bottom:12px}
+.rot-resumo>i{font-size:26px;flex-shrink:0;margin-top:1px}
+.rot-resumo-pend{background:var(--danger-soft);border-color:var(--danger-line,var(--line))}
+.rot-resumo-pend>i{color:var(--danger)}
+.rot-resumo-ok{background:var(--success-soft)}
+.rot-resumo-ok>i{color:var(--success)}
+.rot-resumo-tit{font-size:17px;font-weight:700;color:var(--fg);line-height:1.3}
+.rot-resumo-sub{font-size:13px;color:var(--fg);opacity:.85;margin-top:3px}
+.rot-bloco{padding:0;margin-bottom:12px}
+.rot-bloco>.rot-sec,.rot-bloco>.rot-feito{padding-left:14px;padding-right:14px}
+.rot-bloco>.rot-sec{padding-top:12px}
+.rot-corpo{padding:12px 14px 14px}
+.rot-vend .rot-corpo{border-top:1px solid var(--line)}
+.rot-sec{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--fg);margin:0 0 10px}
+.rot-corpo .rot-sec:not(:first-child),.rot-parados{margin-top:16px}
+.rot-parados>summary{list-style:none;cursor:pointer;min-height:36px;width:100%}
+.rot-parados>summary::-webkit-details-marker{display:none}
+.rot-parados[open] .rot-seta{transform:rotate(180deg)}
+.rot-sec .rot-seta{margin-left:6px}
+.rot-espera{font-size:12px;font-weight:600;color:var(--muted);margin-top:3px}
+.rot-atencao{color:var(--warning)}
+.rot-tarde{color:var(--danger)}
+.rot-ok{color:var(--success);font-size:16px}
+.rot-vazio-ok{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--success);padding:4px 0}
+.rot-feito{padding-bottom:14px}
+.rot-feito-grade{grid-template-columns:repeat(6,1fr)}
+.rot-feito-pts{display:flex;justify-content:flex-end;margin-top:10px}
+.rot-estrelas{display:inline-flex;align-items:center;gap:1px;font-size:14px;color:var(--muted);white-space:nowrap}
+.rot-estrelas .on{color:var(--warning)}
+.rot-estrelas b{font-size:14px;color:var(--fg);margin-left:6px;font-variant-numeric:tabular-nums}
+.rot-estrelas small{font-size:11px;color:var(--muted);margin-left:2px}
+.rot-vend-deve{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
+.rot-vend-deve .rot-espera{margin-top:0}
+.rot-vend-fez{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums}
+.rot-vend-fez>span:not(.rot-estrelas){display:inline-flex;align-items:center;gap:3px}
+.rot-fez-rot{color:var(--muted)}
+.rot-vend-fez>span:not(.rot-estrelas):not(.rot-fez-rot)+span:not(.rot-estrelas){padding-left:10px;border-left:1px solid var(--line)}
+.rot-numeros .metric-value.rot-tarde{color:var(--danger)}
+.rot-valor-texto{font-size:18px}
+@media(min-width:601px){.rot-vend-head>.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+@media(max-width:600px){
+  .rot-feito-grade{grid-template-columns:repeat(3,1fr)}
+  .rot-vend-deve{order:3;flex-basis:100%}
+  .rot-vend-fez{order:4;flex-basis:100%;flex-wrap:wrap;gap:4px 10px;font-size:12px}
+  .rot-vend-fez>span{white-space:nowrap}
+  .rot-vend-fez>span:not(.rot-estrelas):not(.rot-fez-rot)+span:not(.rot-estrelas){padding-left:0;border-left:0}
+  .rot-vend-fez .rot-estrelas{margin-left:auto}
+  .rot-valor-texto{white-space:normal;line-height:1.2}
+  .rot-vend-head .rot-seta{margin-left:auto}
+  .rot-valor-texto{font-size:14px}
+}
+
+/* Sem filtro de loja (vendedor e gerente): so o botao de atualizar, pequeno, na linha do titulo */
+.page-header>.rot-filtros.rot-filtros-so{width:auto;margin-left:auto}
+.rot-filtros-so .rot-atualizar{width:40px!important;flex:0 0 40px!important;min-height:40px}
 /* Veiculos (Felipe 29/10): foto maior no PC; vendido ganha pelicula verde com check e nao fica apagado */
 .linha-apagada td:not(.td-foto){opacity:.45}
 .linha-apagada .foto-veiculo:not(.vendido){opacity:.45}
