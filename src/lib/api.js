@@ -46,6 +46,7 @@ export const api = {
   getVendaOpcoes: (loja, q, extra = {}) => req("GET", `/api/veiculos/admin/venda-opcoes?loja=${loja}&q=${encodeURIComponent(q || "")}&modelo=${encodeURIComponent(extra.modelo || "")}&saida=${extra.saida || ""}`),
   getVendasSemCliente: () => req("GET", "/api/veiculos/admin/vendas-sem-cliente"),
   vincularCliente: (saidaId, crmLeadId) => req("PATCH", `/api/veiculos/admin/saidas/${saidaId}/cliente`, { crm_lead_id: crmLeadId }),
+  registrarVendaForaDoSite: (crmLeadId, carro, valor) => req("POST", "/api/veiculos/admin/venda-fora-do-site", { crm_lead_id: crmLeadId, carro, valor }),
   restaurarVeiculo: (id) => req("PATCH", `/api/veiculos/${id}/restaurar`),
   moverVeiculo: (id, direcao, site) => req("PATCH", `/api/veiculos/${id}/mover`, { direcao, site }),
 
