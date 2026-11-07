@@ -13,7 +13,8 @@ function diaMesCurto(iso){if(!iso)return "";const d=new Date(iso);if(isNaN(d))re
 //  1) carro do estoque: é o mesmo "Registrar venda" da tela Veículos, já com este lead
 //     (tira do site, grava a venda no nome de quem confirmou e o servidor move o card);
 //  2) já tirei do site: vincula este lead a uma venda dele que ficou sem cliente;
-//  3) não estava no site: só move o card.
+//  3) não estava no site: 2026-11-07 (Felipe) pede o carro e o valor e grava a venda também
+//     (veiculos_saidas sem carro do estoque), pra contar igual no Dashboard, Rotina e Meta.
 // Fechar sem escolher não move nada (igual ao "Vai pensar"). Usada no CRM (arrastar e
 // menu do lead) e na Agenda ("Veio e comprou"). onFeito(motivo): motivo só vem na opção 3,
 // pra quem chamou mover o card; nas outras o servidor já moveu.
@@ -29,6 +30,8 @@ export default function QualCarroComprou({lead,estoque:estoqueProp,onClose,onFei
   const[pendentes,setPendentes]=useState(null);
   const[saidaSel,setSaidaSel]=useState(null);
   const[salvando,setSalvando]=useState(false);
+  const[carroFora,setCarroFora]=useState(lead.veiculo_interesse||"");
+  const[valorFora,setValorFora]=useState("");
   // Loja da venda: a do lead; sem ela (Agenda), a de quem está logado; o dono sem loja escolhe.
   const lojaConhecida=Number(lead.loja_id)||Number(getUser()?.loja_id)||null;
   const[lojaEscolhida,setLojaEscolhida]=useState("");
@@ -47,7 +50,7 @@ export default function QualCarroComprou({lead,estoque:estoqueProp,onClose,onFei
     ?ativos.filter(v=>semAcento(`${v.marca} ${v.modelo} ${v.versao||""} ${v.ano}`).includes(q)).slice(0,8)
     :ativos.map(v=>[v,pontos(v)]).filter(([,p])=>p>0).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([v])=>v);
   function escolherCarro(v){setCarro(v);setValor(String(Math.round(Number(v.preco)||0)||""));setConfirmo(false);}
-  const pronto=!lojaLead&&opcao!=="fora"?false:opcao==="estoque"?(carro&&Number(valor)>0&&confirmo):opcao==="removido"?!!saidaSel:opcao==="fora";
+  const pronto=!lojaLead&&opcao!=="fora"?false:opcao==="estoque"?(carro&&Number(valor)>0&&confirmo):opcao==="removido"?!!saidaSel:opcao==="fora"?(!lead.id||(carroFora.trim().length>=2&&Number(valorFora)>0)):false;
   async function confirmar(){
     if(!pronto||salvando)return;
     setSalvando(true);
@@ -57,6 +60,9 @@ export default function QualCarroComprou({lead,estoque:estoqueProp,onClose,onFei
         await onFeito(null);
       }else if(opcao==="removido"){
         await veiculosApi.vincularCliente(saidaSel.id,lead.id);
+        await onFeito(null);
+      }else if(lead.id){
+        await veiculosApi.registrarVendaForaDoSite(lead.id,carroFora.trim(),Number(valorFora));
         await onFeito(null);
       }else{
         await onFeito("Venda de carro que não estava no site");
@@ -69,7 +75,7 @@ export default function QualCarroComprou({lead,estoque:estoqueProp,onClose,onFei
       <strong>{titulo}</strong>{sub&&<div style={{fontSize:12,color:"var(--muted)"}}>{sub}</div>}
     </button>
   );
-  const OPCOES=[["estoque","ti-car","Carro do estoque","Sai do site agora"],["removido","ti-link","Já tirei do site","Ligar a uma venda que ficou sem cliente"],["fora","ti-car-off","Não estava no site","Só move o card"]];
+  const OPCOES=[["estoque","ti-car","Carro do estoque","Sai do site agora"],["removido","ti-link","Já tirei do site","Ligar a uma venda que ficou sem cliente"],["fora","ti-car-off","Não estava no site","Registra a venda sem mexer no site"]];
   return(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:440,maxHeight:"92vh",overflowY:"auto"}}>
@@ -134,7 +140,15 @@ export default function QualCarroComprou({lead,estoque:estoqueProp,onClose,onFei
             </div>}
           </div>
         )}
-        {opcao==="fora"&&<p style={{fontSize:13,color:"var(--muted)",margin:"0 0 14px"}}>O card vai para Venda concluída sem carro ligado. Nada sai do site.</p>}
+        {opcao==="fora"&&(lead.id?(
+          <div style={{marginBottom:14}}>
+            <label className="form-label">Carro vendido *</label>
+            <input className="form-input" placeholder="Ex: Gol 2015" value={carroFora} onChange={e=>setCarroFora(e.target.value.slice(0,120))}/>
+            <label className="form-label" style={{marginTop:10}}>Valor da venda (R$) *</label>
+            <input className="form-input" inputMode="numeric" placeholder="Ex: 49.900" value={valorFora?Number(valorFora).toLocaleString("pt-BR"):""} onChange={e=>setValorFora(e.target.value.replace(/\D/g,"").slice(0,9))}/>
+            <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>A venda fica registrada com o vendedor do card. Nada sai do site.</div>
+          </div>
+        ):<p style={{fontSize:13,color:"var(--muted)",margin:"0 0 14px"}}>O card vai para Venda concluída sem carro ligado. Nada sai do site.</p>)}
         <div style={{display:"flex",gap:10}}>
           <button className="btn btn-ghost" style={{flex:1}} onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" style={{flex:1,opacity:pronto?1:.45}} disabled={!pronto||salvando} onClick={confirmar}>
