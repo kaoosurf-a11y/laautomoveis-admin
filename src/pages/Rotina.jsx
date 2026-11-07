@@ -14,8 +14,11 @@ import BotaoLigar from "../components/BotaoLigar.jsx";
 //
 // Corrida do dia (Felipe 29/10, "quero gamificado"): pista com carrinho e chegada ao lado do nome do
 // vendedor; cada missão cumprida dá pontos (valores e chegada vêm do backend) e o carrinho avança;
-// estrelas nos marcos. Toque em Mensagem ou Ligar marca o lead como "missão cumprida" (+2, 1 por lead
-// por dia). Vendedor joga; gerente e admin veem a corrida de todos, em ordem de pontos.
+// estrelas nos marcos. Toque em Mensagem (+2) ou Ligar (+3) marca o lead como "missão cumprida" (1 de cada
+// por lead por dia). Vendedor joga; gerente e admin veem a corrida de todos, em ordem de pontos.
+// 2026-11-07 (Felipe): todo toque em Mensagem/Ligar vai pro backend (rotina_cliques) mesmo sem ponto, e o
+// cartão do vendedor mostra quantas mensagens e ligações ele fez pela rotina no dia. Mensagem abre a conversa
+// no Chatwoot (no celular abre no navegador: o app oficial do Chatwoot não abre link de servidor próprio).
 
 const LOJA_CURTA = { 1: "Curitibanos", 2: "Campos Novos" };
 
@@ -99,7 +102,8 @@ const MISSAO = {
   moveu: { nome: "Moveu o card", icone: "ti-target" },
   visita: { nome: "Visita feita", icone: "ti-building-store" },
   venda: { nome: "Venda", icone: "ti-trophy" },
-  contato: { nome: "Contato pelo atalho", icone: "ti-phone" },
+  mensagem: { nome: "Mandou mensagem pela rotina", icone: "ti-message-2" },
+  ligar: { nome: "Ligou pela rotina", icone: "ti-phone" },
 };
 
 // Pista da corrida: carrinho anda de 0 a 100% até a chegada (meta). Felipe 29/10: pista até o fim da
@@ -136,20 +140,24 @@ function Vendedor({ v, inbox, dia, aberto, parado, joga, posicao, regras, avisar
   const emDia = !aFazer && !v.acumulado.length;
   const [aba, setAba] = useState(aFazer ? "hoje" : v.acumulado.length ? "acumulado" : v.retomar_total ? "retomar" : "hoje");
   // Placar local: o toque em Mensagem/Ligar já anda o carrinho na hora (o backend confirma os pontos).
-  const [jogo, setJogo] = useState({ pontos: v.pontos, missoes: v.missoes });
+  const inicial = () => ({ pontos: v.pontos, missoes: v.missoes, cliques: { mensagem: 0, ligar: 0, ...(v.cliques || {}) } });
+  const [jogo, setJogo] = useState(inicial);
   const placar = useRef(jogo);
   placar.current = jogo;
-  useEffect(() => { setJogo({ pontos: v.pontos, missoes: v.missoes }); }, [v]);
+  useEffect(() => { setJogo(inicial()); }, [v]);
   const cumpridas = new Set(jogo.missoes.map(m => m.id));
   const meta = v.meta;
 
+  // Todo toque vai pro backend (conta o clique); ponto só na primeira vez de cada tipo no lead no dia.
   const onAcao = joga ? (l, tipo) => {
-    if (placar.current.missoes.some(m => m.id === l.id && m.missao === "contato")) return;
+    const cl = { ...placar.current.cliques, [tipo]: (placar.current.cliques[tipo] || 0) + 1 };
+    placar.current = { ...placar.current, cliques: cl };
+    setJogo(placar.current);
     registrarAcaoRotina(l.id, tipo).then(r => {
       if (!r?.pontos) return;
       const antes = placar.current.pontos, pontos = antes + r.pontos;
       const estrela = marcosDe(meta).find(e => antes < e && pontos >= e);
-      placar.current = { pontos, missoes: [{ ...l, missao: "contato", pontos: r.pontos, em: new Date().toISOString() }, ...placar.current.missoes] };
+      placar.current = { ...placar.current, pontos, missoes: [{ ...l, missao: tipo, pontos: r.pontos, em: new Date().toISOString() }, ...placar.current.missoes] };
       setJogo(placar.current);
       avisar(pontos >= meta && antes < meta ? `Chegou! ${pontos} pontos hoje.`
         : estrela ? `+${r.pontos} pontos. Nova estrela!` : `+${r.pontos} pontos. Missão cumprida!`);
@@ -171,6 +179,11 @@ function Vendedor({ v, inbox, dia, aberto, parado, joga, posicao, regras, avisar
           {v.acumulado.length > 0 && <span className="badge badge-danger">{v.acumulado.length} acumulado</span>}
           {v.retomar_total > 0 && <span className="badge badge-muted">{v.retomar_total} retomar</span>}
           {emDia && <span className="badge badge-success">em dia</span>}
+          {(jogo.cliques.mensagem > 0 || jogo.cliques.ligar > 0) && (
+            <span className="badge badge-muted" title="Toques em Mensagem e Ligar pela rotina hoje">
+              <i className="ti ti-message-2" />{jogo.cliques.mensagem} <i className="ti ti-phone" />{jogo.cliques.ligar}
+            </span>
+          )}
         </span>
         <i className="ti ti-chevron-down rot-seta" />
       </summary>
@@ -200,7 +213,7 @@ function Vendedor({ v, inbox, dia, aberto, parado, joga, posicao, regras, avisar
       {aba === "feito" && (
         <div className="rot-grupo">
           <div className="rot-feito-grade">
-            {[["respondeu", "Respondidos"], ["moveu", "Cards movidos"], ["visita", "Visitas feitas"], ["venda", "Vendas"], ["contato", "Contatos"]].map(([k, n]) => (
+            {[["respondeu", "Respondidos"], ["moveu", "Cards movidos"], ["visita", "Visitas feitas"], ["venda", "Vendas"], ["mensagem", "Mensagens"], ["ligar", "Ligações"]].map(([k, n]) => (
               <div key={k} className="rot-feito-item"><b>{contar(k)}</b><span>{n}</span><small>+{regras.pontos[k]} cada</small></div>
             ))}
           </div>
