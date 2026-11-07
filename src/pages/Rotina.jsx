@@ -11,7 +11,7 @@ import BotaoLigar from "../components/BotaoLigar.jsx";
 //   agora" (quem espera há mais tempo primeiro, mesmo tempo do boletim dos gerentes, só loja aberta), visitas do dia,
 //   negociações paradas fechadas por padrão e "Feito hoje" com os pontos.
 // - Gerente e dono: por loja, 3 números e uma linha por vendedor (quem deve mais primeiro); toque abre a lista dele.
-// - Saíram a pista grande, as abas e o "Ontem" (a lista é sempre o estado de agora, igual ao boletim).
+// - Saíram as abas e o "Ontem" (a lista é sempre o estado de agora, igual ao boletim). A pista do carrinho fica.
 // Quem está esperando vem da regra única la_vw_nao_atendidos (a mesma do boletim). Toque em Mensagem (+2) ou Ligar
 // (+3) conta clique e pontua 1 vez por tipo por cliente no dia. Mensagem abre a conversa no Chatwoot (no celular,
 // no navegador: o app oficial do Chatwoot não abre link de servidor próprio).
@@ -41,6 +41,34 @@ function nomeLead(l) {
 }
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 const tomEspera = (min) => (min == null ? "" : min >= DIA_LOJA ? "rot-tarde" : min >= 60 ? "rot-atencao" : "");
+
+// Pista da corrida (Felipe 29/10, "quero gamificado"): carrinho anda de 0 a 100% até a chegada (meta), placar em
+// porcentagem e 5 estrelas, uma a cada 20%. 07/11: tinha saído na tela simples sem ele pedir; voltou ("eu nao pedi pra
+// remover o carrinho da gamificacao"), igual pra todos os vendedores: no topo da tela dele e na linha de cada um pro gerente.
+const marcosDe = (meta) => [1, 2, 3, 4, 5].map(i => Math.round((meta * i) / 5));
+function Pista({ pontos, meta, marcos }) {
+  const pct = Math.min(100, Math.round((pontos / meta) * 100));
+  const chegou = pontos >= meta;
+  const estrelas = marcos.filter(m => pontos >= m).length;
+  return (
+    <span className={`pista-wrap ${chegou ? "pista-chegou" : ""}`} title={`${pontos} de ${meta} pontos`}>
+      <span className="pista" role="img" aria-label={`Corrida: ${pontos} de ${meta} pontos, ${estrelas} estrelas`}>
+        <span className="pista-rastro" style={{ "--p": pct }} />
+        {marcos.slice(0, -1).map(m => (
+          <i key={m} className={`ti ti-star${pontos >= m ? " on" : ""} pista-marco`} style={{ "--p": Math.round((m / meta) * 100) }} />
+        ))}
+        <i className="ti ti-flag-3 pista-chegada" />
+        <i className="ti ti-car pista-carro" style={{ "--p": pct }} />
+      </span>
+      <span className="pista-placar">
+        <b>{pct}%</b><small>{pontos} pts</small>
+        <span className="pista-estrelas">
+          {marcos.map((m, i) => <i key={m} className={`ti ti-star${i < estrelas ? " on" : ""}`} />)}
+        </span>
+      </span>
+    </span>
+  );
+}
 
 // Lista de quem espera: junta "hoje" e "acumulado", quem espera há mais tempo primeiro.
 function esperando(v) {
@@ -84,16 +112,6 @@ function Lista({ itens, limite = 8, render }) {
   );
 }
 
-function Estrelas({ pontos, meta }) {
-  const n = Math.min(5, Math.floor((pontos / meta) * 5));
-  return (
-    <span className="rot-estrelas" aria-label={`${pontos} pontos, ${n} de 5 estrelas`} title={`${pontos} de ${meta} pontos`}>
-      {[0, 1, 2, 3, 4].map(i => <i key={i} className={`ti ti-star${i < n ? " on" : ""}`} />)}
-      <b>{pontos}</b><small>pts</small>
-    </span>
-  );
-}
-
 function tempoPainel(min) {
   if (!min) return "não abriu";
   return min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, "0")}`;
@@ -119,7 +137,6 @@ function FeitoHoje({ v, jogo, pontos }) {
           </div>
         ))}
       </div>
-      <div className="rot-feito-pts"><span>Total de hoje</span><Estrelas pontos={jogo.pontos} meta={v.meta} /></div>
       <div className="rot-seu-dia">
         <div><i className="ti ti-device-mobile" /><span>Tempo no painel hoje</span><b>{tempoPainel(v.painel_min)}</b></div>
         <div><i className="ti ti-robot" /><span>Cartões seus que o sistema moveu</span><b>{v.sistema_moveu || 0}</b></div>
@@ -205,6 +222,10 @@ function MeuDia({ v, inbox, parado, pontos, avisar }) {
           </div>
         </div>
       </div>
+      <div className="card rot-corrida">
+        <h3 className="rot-sec"><i className="ti ti-car rot-sec-ic" />Sua corrida hoje</h3>
+        <Pista pontos={jogo.pontos} meta={v.meta} marcos={marcosDe(v.meta)} />
+      </div>
       <div className="card rot-bloco"><Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} parado={parado} /></div>
       <div className="card rot-bloco">
         <h3 className="rot-sec"><span className="rot-dot rot-success" />Seus pontos hoje</h3>
@@ -225,6 +246,9 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
       <summary className="rot-vend-head">
         {v.foto_url ? <img className="rot-av" src={v.foto_url} alt="" /> : <span className="rot-av">{(v.nome || "?")[0]}</span>}
         <span className="rot-vend-nome">{v.nome}</span>
+        <Pista pontos={jogo.pontos} meta={v.meta} marcos={marcosDe(v.meta)} />
+        <i className="ti ti-chevron-down rot-seta" />
+        <span className="rot-vend-linha2">
         <span className="rot-vend-deve">
           {lista.length
             ? <><span className="badge badge-danger">{plural(lista.length, "sem resposta", "sem resposta")}</span>
@@ -237,9 +261,8 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
           <span>{plural(conta("respondeu"), "respondido", "respondidos")}</span>
           <span>{plural(jogo.cliques.mensagem, "mensagem", "mensagens")}</span>
           <span>{plural(jogo.cliques.ligar, "ligação", "ligações")}</span>
-          <Estrelas pontos={jogo.pontos} meta={v.meta} />
         </span>
-        <i className="ti ti-chevron-down rot-seta" />
+        </span>
       </summary>
       <Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} parado={parado} />
     </details>

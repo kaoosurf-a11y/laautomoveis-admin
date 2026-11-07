@@ -1540,7 +1540,33 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-btn{gap:4px;white-space:nowrap}
 .rot-acoes .btn-chatwoot{min-height:32px;padding:6px 10px;font-size:12px}
 .rot-mais{margin-top:6px;width:100%}
-/* Corrida do dia (29/10): a pista saiu em 07/11 (tela simples); pontos e estrelas ficam compactos em .rot-estrelas. */
+/* Corrida do dia (Felipe 29/10, gamificacao): carrinho anda ate a chegada (--p 0 a 100, desconta 14px de cada ponta).
+   07/11: voltou (Felipe nao pediu pra tirar). Vendedor: card .rot-corrida no topo; gerente: na linha de cada vendedor. */
+.pista-wrap{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0}
+.pista-wrap~.rot-pills{order:4;flex-basis:100%;justify-content:flex-start}
+.pista{position:relative;flex:1;height:34px;border-radius:99px;background:var(--fill);border:1px solid var(--line);overflow:hidden}
+.pista::before{content:"";position:absolute;left:14px;right:30px;top:50%;border-top:2px dashed var(--line);opacity:.9}
+.pista-rastro{position:absolute;left:0;top:0;bottom:0;width:calc(14px + (100% - 44px) * var(--p) / 100);background:var(--brand-soft);transition:width .8s ease}
+.pista-carro,.pista-marco{position:absolute;top:50%;left:calc(14px + (100% - 44px) * var(--p) / 100);transform:translate(-50%,-50%)}
+.pista-carro{font-size:26px;color:var(--brand);transition:left .8s ease;z-index:2}
+.pista-marco{font-size:13px;color:var(--muted);z-index:1}
+.pista-marco.on{color:var(--warning)}
+.pista-chegada{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--fg)}
+.pista-chegou .pista-carro{color:var(--success);animation:pista-festa .6s ease 2}
+.pista-chegou .pista-rastro{background:var(--success-soft)}
+@keyframes pista-festa{50%{transform:translate(-50%,-75%)}}
+@media(prefers-reduced-motion:reduce){.pista-carro,.pista-rastro{transition:none}.pista-chegou .pista-carro{animation:none}}
+.pista-placar{display:flex;align-items:baseline;gap:5px;white-space:nowrap;min-width:190px}
+.pista-placar b{font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums}
+.pista-placar small{font-size:11px;color:var(--muted)}
+.pista-estrelas{display:inline-flex;gap:1px;margin-left:6px;font-size:16px;color:var(--muted);align-self:center}
+.pista-estrelas .on{color:var(--warning);font-weight:700}
+.rot-corrida{padding:12px 14px;margin-bottom:12px}
+.rot-corrida .pista-wrap{flex:1 1 auto}
+.rot-sec-ic{color:var(--brand);font-size:18px}
+.rot-vend-head .pista-wrap{flex:1 1 260px}
+.rot-vend-linha2{order:5;flex-basis:100%;display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;justify-content:space-between}
+@media(min-width:601px){.rot-vend-linha2{padding-left:190px}}
 @media(min-width:601px){.rot-vend-head>.rot-av+.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 .rot-pos{font-size:13px;font-weight:800;color:var(--muted);min-width:22px;font-variant-numeric:tabular-nums}
 .rot-selo{display:inline-flex;align-items:center;gap:3px}
@@ -1607,27 +1633,22 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-seu-dia>div{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);background:var(--fill);border-radius:var(--radius);padding:10px 12px}
 .rot-seu-dia i{font-size:20px;color:var(--muted)}
 .rot-seu-dia b{margin-left:auto;font-size:18px;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
-.rot-estrelas{display:inline-flex;align-items:center;gap:1px;font-size:14px;color:var(--muted);white-space:nowrap}
-.rot-estrelas .on{color:var(--warning)}
-.rot-estrelas b{font-size:14px;color:var(--fg);margin-left:6px;font-variant-numeric:tabular-nums}
-.rot-estrelas small{font-size:11px;color:var(--muted);margin-left:2px}
 .rot-vend-deve{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
 .rot-vend-deve .rot-espera{margin-top:0}
 .rot-vend-fez{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums}
-.rot-vend-fez>span:not(.rot-estrelas){display:inline-flex;align-items:center;gap:3px}
 .rot-fez-rot{color:var(--muted)}
-.rot-vend-fez>span:not(.rot-estrelas):not(.rot-fez-rot)+span:not(.rot-estrelas){padding-left:10px;border-left:1px solid var(--line)}
 .rot-numeros .metric-value.rot-tarde{color:var(--danger)}
 .rot-valor-texto{font-size:18px}
 @media(min-width:601px){.rot-vend-head>.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 @media(max-width:600px){
   .rot-feito-grade{grid-template-columns:repeat(3,1fr)}
   .rot-seu-dia{grid-template-columns:1fr}
-  .rot-vend-deve{order:3;flex-basis:100%}
-  .rot-vend-fez{order:4;flex-basis:100%;flex-wrap:wrap;gap:4px 10px;font-size:12px}
+  .rot-vend-head .pista-wrap{flex-basis:100%;order:4}
+  .pista-placar{min-width:0}
+  .pista-estrelas{font-size:13px;margin-left:2px}
+  .rot-vend-deve{flex-basis:100%}
+  .rot-vend-fez{flex-basis:100%;flex-wrap:wrap;gap:4px 10px;font-size:12px}
   .rot-vend-fez>span{white-space:nowrap}
-  .rot-vend-fez>span:not(.rot-estrelas):not(.rot-fez-rot)+span:not(.rot-estrelas){padding-left:0;border-left:0}
-  .rot-vend-fez .rot-estrelas{margin-left:auto}
   .rot-valor-texto{white-space:normal;line-height:1.2}
   .rot-vend-head .rot-seta{margin-left:auto}
   .rot-valor-texto{font-size:14px}
