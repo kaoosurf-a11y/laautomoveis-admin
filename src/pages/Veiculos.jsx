@@ -168,7 +168,7 @@ export default function Veiculos() {
   // 2026-10-18 (Felipe): a venda fica sempre com quem removeu e confirmou (o servidor
   // grava req.admin.id); por isso não há mais escolha de vendedor, só a confirmação.
   // 2026-10-28 (Felipe): "não está no CRM" pede o telefone do comprador.
-  const SAIDA_VAZIA = { motivo:"", valor:"", loja:"1", lead:null, semLead:false, telefone:"", nome:"", confirmo:false };
+  const SAIDA_VAZIA = { motivo:"", valor:"", loja:"1", lead:null, semLead:false, telefone:"", confirmo:false };
   const [saida, setSaida] = useState(SAIDA_VAZIA);
   const souMaster = getUser()?.role === "admin_master";
 
@@ -385,7 +385,6 @@ export default function Veiculos() {
       crm_lead_id: vendido && saida.lead ? saida.lead.id : null,
       comprador_sem_lead: vendido && !saida.lead && saida.semLead,
       comprador_telefone: vendido && !saida.lead && saida.semLead ? saida.telefone : null,
-      comprador_nome: vendido && !saida.lead && saida.semLead ? saida.nome : null,
     }).catch(() => {});
     setConfirmarDel(null);
     await load();
@@ -815,10 +814,7 @@ export default function Veiculos() {
                       <label className="form-label">Telefone do comprador *</label>
                       <input className="form-input" inputMode="tel" placeholder="(49) 99999-9999"
                         value={saida.telefone} onChange={e=>setSaida(s=>({...s,telefone:e.target.value.replace(/\D/g,"").slice(0,13)}))}/>
-                      <label className="form-label" style={{marginTop:10}}>Nome do comprador</label>
-                      <input className="form-input" placeholder="Nome e sobrenome"
-                        value={saida.nome} onChange={e=>setSaida(s=>({...s,nome:e.target.value.slice(0,120)}))}/>
-                      <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>O card deste cliente vai para Venda feita no Kanban. Se ele ainda não tem card, o painel cria um no seu nome.</div>
+                      <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>Com o telefone, o cliente aparece de sugestão quando você for vincular depois.</div>
                     </div>
                   )}
                 </div>
