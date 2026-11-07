@@ -1639,6 +1639,8 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-seu-dia{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .rot-seu-dia>div{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);background:var(--fill);border-radius:var(--radius);padding:10px 12px}
 .rot-seu-dia i{font-size:20px;color:var(--muted)}
+.rot-seu-dia small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.rot-seu-dia-acoes{grid-column:1/-1}
 .rot-seu-dia b{margin-left:auto;font-size:18px;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
 .rot-vend-deve{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
 .rot-vend-deve .rot-espera{margin-top:0}

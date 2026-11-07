@@ -112,6 +112,15 @@ function Lista({ itens, limite = 8, render }) {
   );
 }
 
+// 2026-11-07 (Felipe: "alem do tempo de painel aberto tambem tem que contar se ele fez alguma coisa dentro do
+// painel"): ações que mudaram algo (backend painel_acoes), por área.
+const AREA_ACAO = { carro: ["carro", "carros"], foto: ["foto", "fotos"], cliente: ["cliente", "clientes"],
+  agenda: ["agenda", "agenda"], followup: ["follow-up", "follow-ups"], rotina: ["toque na rotina", "toques na rotina"],
+  ligacao: ["ligação", "ligações"], campanha: ["campanha", "campanha"], outro: ["outra", "outras"] };
+function detalheAcoes(areas) {
+  return Object.entries(areas || {}).sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `${n} ${(AREA_ACAO[k] || [k, k])[n === 1 ? 0 : 1]}`).join(", ");
+}
 function tempoPainel(min) {
   if (!min) return "não abriu";
   return min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, "0")}`;
@@ -140,6 +149,9 @@ function FeitoHoje({ v, jogo, pontos }) {
       <div className="rot-seu-dia">
         <div><i className="ti ti-device-mobile" /><span>Tempo no painel hoje</span><b>{tempoPainel(v.painel_min)}</b></div>
         <div><i className="ti ti-robot" /><span>Cartões seus que o sistema moveu</span><b>{v.sistema_moveu || 0}</b></div>
+        <div className="rot-seu-dia-acoes"><i className="ti ti-circle-check" />
+          <span>Ações no painel hoje{v.acoes ? <small>{detalheAcoes(v.acoes_area)}</small> : <small>abrir e não fazer nada não conta</small>}</span>
+          <b>{v.acoes || 0}</b></div>
       </div>
     </div>
   );
@@ -258,6 +270,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
         </span>
         <span className="rot-vend-fez">
           <span className="rot-fez-rot">Hoje:</span>
+          <span title={v.acoes ? detalheAcoes(v.acoes_area) : "Nenhuma ação no painel hoje"}>{plural(v.acoes || 0, "ação no painel", "ações no painel")}</span>
           <span>{plural(conta("respondeu"), "respondido", "respondidos")}</span>
           <span>{plural(jogo.cliques.mensagem, "mensagem", "mensagens")}</span>
           <span>{plural(jogo.cliques.ligar, "ligação", "ligações")}</span>
