@@ -94,19 +94,36 @@ function Estrelas({ pontos, meta }) {
   );
 }
 
-// O que o vendedor fez no dia (missões do backend + toques que ele acabou de dar).
-function FeitoHoje({ jogo, meta }) {
+function tempoPainel(min) {
+  if (!min) return "não abriu";
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, "0")}`;
+}
+
+// 2026-11-07 (Felipe: "para os vendedores devem aparecer somente as metricas pertinentes a ele e que gerem pontos,
+// coloca tambem o tempo de permanencia no painel, quantos cards ele moveu e quantos cards o sistema moveu automatico
+// pra ele"). Cada métrica mostra quantas vezes e quantos pontos já rendeu; mensagem e ligação contam a que pontuou
+// (1 por cliente por dia). Embaixo, o dia dele no painel (sem pontos).
+function FeitoHoje({ v, jogo, pontos }) {
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
   const itens = [
-    ["Respondeu", conta("respondeu")], ["Mensagens", jogo.cliques.mensagem], ["Ligações", jogo.cliques.ligar],
-    ["Cartões movidos", conta("moveu")], ["Visitas", conta("visita")], ["Vendas", conta("venda")],
+    ["respondeu", "Clientes respondidos"], ["mensagem", "Mensagens pela rotina"], ["ligar", "Ligações pela rotina"],
+    ["moveu", "Cartões que você moveu"], ["visita", "Visitas feitas"], ["venda", "Vendas"],
   ];
   return (
     <div className="rot-feito">
       <div className="rot-feito-grade">
-        {itens.map(([n, q]) => <div key={n} className="rot-feito-item"><b>{q}</b><span>{n}</span></div>)}
+        {itens.map(([k, n]) => (
+          <div key={k} className="rot-feito-item">
+            <b>{conta(k)}</b><span>{n}</span>
+            <small className={conta(k) ? "rot-ganhou" : ""}>{conta(k) ? `+${conta(k) * pontos[k]} pts` : `vale ${pontos[k]} pts`}</small>
+          </div>
+        ))}
       </div>
-      <div className="rot-feito-pts"><Estrelas pontos={jogo.pontos} meta={meta} /></div>
+      <div className="rot-feito-pts"><span>Total de hoje</span><Estrelas pontos={jogo.pontos} meta={v.meta} /></div>
+      <div className="rot-seu-dia">
+        <div><i className="ti ti-device-mobile" /><span>Tempo no painel hoje</span><b>{tempoPainel(v.painel_min)}</b></div>
+        <div><i className="ti ti-robot" /><span>Cartões seus que o sistema moveu</span><b>{v.sistema_moveu || 0}</b></div>
+      </div>
     </div>
   );
 }
@@ -169,7 +186,7 @@ function useJogo(v, joga, avisar) {
 }
 
 // Tela do vendedor: frase do topo, tarefas e o que já fez.
-function MeuDia({ v, inbox, parado, avisar }) {
+function MeuDia({ v, inbox, parado, pontos, avisar }) {
   const [jogo, onAcao] = useJogo(v, !estaVendoComo(), avisar);
   const lista = esperando(v);
   const antigo = lista[0];
@@ -190,8 +207,8 @@ function MeuDia({ v, inbox, parado, avisar }) {
       </div>
       <div className="card rot-bloco"><Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} parado={parado} /></div>
       <div className="card rot-bloco">
-        <h3 className="rot-sec"><span className="rot-dot rot-success" />Feito hoje</h3>
-        <FeitoHoje jogo={jogo} meta={v.meta} />
+        <h3 className="rot-sec"><span className="rot-dot rot-success" />Seus pontos hoje</h3>
+        <FeitoHoje v={v} jogo={jogo} pontos={pontos} />
       </div>
     </section>
   );
@@ -293,7 +310,7 @@ export default function Rotina() {
       {erro && <div className="empty-state"><i className="ti ti-alert-triangle" /><p>{erro}</p></div>}
       {!dados && !erro && <div className="empty-state"><span className="spinner" /><p>Carregando...</p></div>}
       {dados && souVendedor && (meu
-        ? <MeuDia v={meu[0]} inbox={meu[1].inbox_id} parado={dados.parado_dias} avisar={avisar} />
+        ? <MeuDia v={meu[0]} inbox={meu[1].inbox_id} parado={dados.parado_dias} pontos={dados.pontos} avisar={avisar} />
         : <div className="empty-state"><p>Sua conta não está como vendedor ativo.</p></div>)}
       {dados && !souVendedor && dados.lojas.map(l => <Loja key={l.id} loja={l} parado={dados.parado_dias} avisar={avisar} />)}
       {aviso && <div className="rot-aviso" role="status"><i className="ti ti-star" />{aviso}</div>}

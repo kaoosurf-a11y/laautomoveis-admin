@@ -1601,7 +1601,12 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-vazio-ok{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--success);padding:4px 0}
 .rot-feito{padding-bottom:14px}
 .rot-feito-grade{grid-template-columns:repeat(6,1fr)}
-.rot-feito-pts{display:flex;justify-content:flex-end;margin-top:10px}
+.rot-feito-pts{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}
+.rot-ganhou{color:var(--success)!important;font-weight:700}
+.rot-seu-dia{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.rot-seu-dia>div{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);background:var(--fill);border-radius:var(--radius);padding:10px 12px}
+.rot-seu-dia i{font-size:20px;color:var(--muted)}
+.rot-seu-dia b{margin-left:auto;font-size:18px;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
 .rot-estrelas{display:inline-flex;align-items:center;gap:1px;font-size:14px;color:var(--muted);white-space:nowrap}
 .rot-estrelas .on{color:var(--warning)}
 .rot-estrelas b{font-size:14px;color:var(--fg);margin-left:6px;font-variant-numeric:tabular-nums}
@@ -1617,6 +1622,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 @media(min-width:601px){.rot-vend-head>.rot-vend-nome{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 @media(max-width:600px){
   .rot-feito-grade{grid-template-columns:repeat(3,1fr)}
+  .rot-seu-dia{grid-template-columns:1fr}
   .rot-vend-deve{order:3;flex-basis:100%}
   .rot-vend-fez{order:4;flex-basis:100%;flex-wrap:wrap;gap:4px 10px;font-size:12px}
   .rot-vend-fez>span{white-space:nowrap}
