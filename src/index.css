@@ -38,8 +38,12 @@
 }
 html{font-family:var(--font);background:var(--bg);color:var(--fg);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
 body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:none;background:var(--bg)}
-::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar{width:3px;height:14px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+/* Barra horizontal grossa em todas as telas (Felipe 07/11): fácil de pegar com o mouse */
+::-webkit-scrollbar-track:horizontal{background:var(--surface2);border-radius:8px}
+::-webkit-scrollbar-thumb:horizontal{background:var(--scroll);border-radius:8px;border:3px solid var(--surface2)}
+::-webkit-scrollbar-thumb:horizontal:hover{background:var(--muted)}
 /* Cores de categoria (estágio, origem, vendedor) vêm em hex claro direto das telas,
    pensadas pro fundo escuro. No tema claro elas são escurecidas aqui, num lugar só,
    pra o texto continuar legível sem mexer nas telas. */
@@ -281,7 +285,7 @@ tr:hover td{background:var(--hover)}
    cabe na tela no primeiro carregamento, sem depender de scroll vertical prévio.
    230px de desconto ≈ padding do main-content + cabeçalho da página + busca/contador
    acima do board (medido ao vivo, com folga). */
-.kanban-board{display:flex;gap:12px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:var(--scroll) transparent;cursor:grab;height:calc(100vh - 230px);min-height:320px}
+.kanban-board{display:flex;gap:12px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;cursor:grab;height:calc(100vh - 230px);min-height:320px}
 /* 2026-07-27: mobile (<1024px) sempre mostra o board agora (CRM.jsx não troca mais
    pra lista vertical) — mas tem chrome extra que o desktop não tem (.topbar-mobile
    fixo em cima + .bottom-nav fixo embaixo), então os mesmos 230px de desconto do
@@ -337,7 +341,7 @@ tr:hover td{background:var(--hover)}
    por vez, rolando o board inteiro) uma coluna vazia virava um vão preto enorme.
    Agora cada coluna tem só a altura do próprio conteúdo, e o "card" de fundo
    (abaixo) deixa claro que é uma área vazia, não a tela quebrada. */
-.fu-kanban-board{display:flex;align-items:flex-start;gap:14px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:auto;scrollbar-color:var(--scroll) transparent;cursor:grab}
+.fu-kanban-board{display:flex;align-items:flex-start;gap:14px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;cursor:grab}
 .fu-kanban-board.grabbing{cursor:grabbing;user-select:none}
 .fu-kanban-board::-webkit-scrollbar{height:14px}
 .fu-kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
@@ -607,7 +611,10 @@ img{max-width:100%;height:auto}
 .main-content>*{animation:telaIn .22s ease}
 @keyframes telaIn{from{opacity:0}to{opacity:1}}
 /* Rolagem fina dentro das colunas e da lateral (some a barra grossa com setas no Windows) */
-.kanban-cards,.fu-kanban-cards,.sidebar-nav,.modal,.table-wrap{scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
+.kanban-cards,.fu-kanban-cards,.sidebar-nav,.modal{scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
+/* Chrome/Edge ignoram o ::-webkit-scrollbar (barra grossa) quando scrollbar-width/color estão no elemento;
+   por isso o padrão só vale no navegador sem ::-webkit-scrollbar (Firefox), com a barra no máximo (auto) */
+@supports not selector(::-webkit-scrollbar){.kanban-board,.fu-kanban-board,.table-wrap{scrollbar-width:auto;scrollbar-color:var(--scroll) transparent}}
 /* Kanban: nome com mais presença e respiro entre as linhas do card */
 .kanban-card-nome{font-size:14px;letter-spacing:-.01em;margin-bottom:3px}
 .kanban-card-veiculo{font-size:12px;margin-bottom:8px}
