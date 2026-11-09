@@ -4,6 +4,7 @@ import { getRotina, registrarAcaoRotina } from "../api.js";
 import { isOwner, isManager, estaVendoComo } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
 import BotaoLigar from "../components/BotaoLigar.jsx";
+import BotaoRepassar from "../components/BotaoRepassar.jsx";
 
 // Rotina do dia. 2026-11-07 (Felipe): "a pagina de rotina deve ser simples, clara e objetiva, o que os vendedores
 // precisam fazer e o que deixaram de fazer, deve ser intuitiva e simples". Refeita em cima da de 29/10:
@@ -76,6 +77,18 @@ function esperando(v) {
 }
 
 function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao }) {
+  // 2026-11-09 (Felipe): "Nao posso atender" passa o lead pro proximo vendedor; a linha mostra pra quem foi.
+  const [passadoPara, setPassadoPara] = useState(null);
+  if (passadoPara) {
+    return (
+      <div className="rot-lead rot-cumprida">
+        <div className="rot-lead-info">
+          <div className="rot-lead-nome">{nomeLead(l)}</div>
+          <div className="rot-lead-sub">Passado para {passadoPara}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`rot-lead ${feito ? "rot-cumprida" : ""}`}>
       <div className="rot-lead-info">
@@ -91,6 +104,7 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao }) {
         {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : null}
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
         <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => onAcao?.(l, "ligar")} />
+        <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")}>Passar</BotaoRepassar>
         <Link className="btn btn-ghost btn-sm btn-icon rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir o card no CRM" title="Abrir o card no CRM"><i className="ti ti-external-link" /></Link>
       </div>
     </div>

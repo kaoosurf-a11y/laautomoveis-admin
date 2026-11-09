@@ -6,6 +6,7 @@ import { lembrado } from "../memoria.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import BotaoLigar from "../components/BotaoLigar.jsx";
+import BotaoRepassar from "../components/BotaoRepassar.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 import { useVisivel } from "../lib/useVisivel.js";
 import RedeIcone from "../components/RedeIcone.jsx";
@@ -664,12 +665,16 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
         }
         {/* 2026-11-06 (Felipe): vendedor ve o numero mascarado (****1234) e nao edita o telefone; liga pelo botao,
             que fica registrado. */}
+        {getRole()==="vendedor"&&!telAtual&&
+          <div style={{marginBottom:14}}><BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/></div>}
         {(readOnly||getRole()==="vendedor")?(
           telAtual&&
             <div style={{marginBottom:14,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
               {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. */}
               <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
               {getRole()==="vendedor"&&<BotaoLigar leadId={lead.id} telefone={telAtual} origem="crm"/>}
+              {/* 2026-11-09 (Felipe): "Nao posso atender" passa pro proximo vendedor da loja (limites no backend). */}
+              <BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/>
             </div>
         ):(
           <div className="form-group">

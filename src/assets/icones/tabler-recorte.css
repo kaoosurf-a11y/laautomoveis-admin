@@ -1,4 +1,4 @@
-/* Gerado por scripts/icones.py (Tabler Icons 3.0.0, 108 icones). Nao editar a mao. */
+/* Gerado por scripts/icones.py (Tabler Icons 3.0.0, 111 icones). Nao editar a mao. */
 @font-face{font-family:"tabler-icons";font-style:normal;font-weight:400;font-display:block;src:url("./tabler-recorte.woff") format("woff")}
 .ti{font-family:"tabler-icons" !important;speak:none;font-style:normal;font-weight:normal;font-variant:normal;text-transform:none;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .ti-ad:before{content:"\ea02"}
@@ -6,9 +6,12 @@
 .ti-alert-circle:before{content:"\ea05"}
 .ti-alert-octagon:before{content:"\ecc6"}
 .ti-alert-triangle:before{content:"\ea06"}
+.ti-arrow-forward-up:before{content:"\eb78"}
 .ti-arrows-exchange:before{content:"\f1f4"}
+.ti-beach:before{content:"\ef3d"}
 .ti-bell:before{content:"\ea35"}
 .ti-bell-off:before{content:"\ece9"}
+.ti-bell-ringing:before{content:"\ed07"}
 .ti-bolt:before{content:"\ea38"}
 .ti-brand-meta:before{content:"\efb0"}
 .ti-brand-whatsapp:before{content:"\ec74"}
@@ -46,6 +49,7 @@
 .ti-currency-real:before{content:"\ee63"}
 .ti-device-floppy:before{content:"\eb62"}
 .ti-device-mobile:before{content:"\ea8a"}
+.ti-dots:before{content:"\ea95"}
 .ti-edit:before{content:"\ea98"}
 .ti-external-link:before{content:"\ea99"}
 .ti-eye:before{content:"\ea9a"}
@@ -100,7 +104,6 @@
 .ti-target:before{content:"\eb35"}
 .ti-temperature:before{content:"\eb38"}
 .ti-trash:before{content:"\eb41"}
-.ti-trophy:before{content:"\eb45"}
 .ti-upload:before{content:"\eb47"}
 .ti-user:before{content:"\eb4d"}
 .ti-user-circle:before{content:"\ef68"}
