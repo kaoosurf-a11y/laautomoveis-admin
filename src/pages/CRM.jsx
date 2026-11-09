@@ -803,7 +803,9 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             </div>
           </div>
         )}
-        {!readOnly&&lead.vendedor_id&&(
+        {/* 2026-11-09 (Felipe): Lara tenta agendar, Marcar manualmente e Retomar contato depois ficam so pra gerente e dono;
+            pro vendedor carregavam a ficha e quase nao eram usados (0, 1 e 0 usos na historia). */}
+        {!readOnly&&getRole()!=="vendedor"&&lead.vendedor_id&&(
           <div style={{marginBottom:14}}>
             {agendado?(
               <span className="badge badge-success" style={{display:"inline-flex"}}><i className="ti ti-check" style={{fontSize:12}}/>&nbsp;Lara vai iniciar o agendamento</span>
@@ -825,7 +827,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             )}
           </div>
         )}
-        {!readOnly&&lead.vendedor_id&&!agendado&&!manualAberto&&(
+        {!readOnly&&getRole()!=="vendedor"&&lead.vendedor_id&&!agendado&&!manualAberto&&(
           <div style={{marginBottom:14}}>
             {retomadaAberto?(
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
