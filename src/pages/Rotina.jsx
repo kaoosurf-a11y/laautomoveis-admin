@@ -77,14 +77,14 @@ function esperando(v) {
 }
 
 function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao }) {
-  // 2026-11-09 (Felipe): "Nao posso atender" passa o lead pro proximo vendedor; a linha mostra pra quem foi.
+  // 2026-11-09 (Felipe): "Transferir" passa o lead pro proximo vendedor; a linha mostra pra quem foi.
   const [passadoPara, setPassadoPara] = useState(null);
   if (passadoPara) {
     return (
       <div className="rot-lead rot-cumprida">
         <div className="rot-lead-info">
           <div className="rot-lead-nome">{nomeLead(l)}</div>
-          <div className="rot-lead-sub">Passado para {passadoPara}</div>
+          <div className="rot-lead-sub">Transferido para {passadoPara}</div>
         </div>
       </div>
     );
@@ -104,7 +104,7 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao }) {
         {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : null}
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
         <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => onAcao?.(l, "ligar")} />
-        <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")}>Passar</BotaoRepassar>
+        <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
         <Link className="btn btn-ghost btn-sm btn-icon rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir o card no CRM" title="Abrir o card no CRM"><i className="ti ti-external-link" /></Link>
       </div>
     </div>
@@ -163,6 +163,8 @@ function FeitoHoje({ v, jogo, pontos }) {
       <div className="rot-seu-dia">
         <div><i className="ti ti-device-mobile" /><span>Tempo no painel hoje</span><b>{tempoPainel(v.painel_min)}</b></div>
         <div><i className="ti ti-robot" /><span>Cartões seus que o sistema moveu</span><b>{v.sistema_moveu || 0}</b></div>
+        {/* 2026-11-09 (Felipe): quantas vezes ele transferiu pro próximo vendedor (botão Transferir). */}
+        <div><i className="ti ti-arrow-forward-up" /><span>Leads que você transferiu<small>{v.transferencias?.fez_mes || 0} no mês, pode 3 por dia</small></span><b>{v.transferencias?.fez_dia || 0}</b></div>
         <div className="rot-seu-dia-acoes"><i className="ti ti-circle-check" />
           <span>Ações no painel hoje{v.acoes ? <small>{detalheAcoes(v.acoes_area)}</small> : <small>abrir e não fazer nada não conta</small>}</span>
           <b>{v.acoes || 0}</b></div>
@@ -281,6 +283,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
                 {antigo?.espera && <span className={`rot-espera ${tomEspera(antigo.espera_min)}`}>mais antigo {antigo.espera.replace("esperando ", "")}</span>}</>
             : <span className="badge badge-success">em dia</span>}
           {v.retomar_total > 0 && <span className="badge badge-muted">{plural(v.retomar_total, "negociação parada", "negociações paradas")}</span>}
+          {v.transferencias?.fez_mes > 0 && <span className="badge badge-muted" title={`Recebeu ${v.transferencias.recebeu_mes || 0} de colegas no mês`}>{plural(v.transferencias.fez_mes, "transferido no mês", "transferidos no mês")}</span>}
         </span>
         <span className="rot-vend-fez">
           <span className="rot-fez-rot">Hoje:</span>
@@ -288,6 +291,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
           <span>{plural(conta("respondeu"), "respondido", "respondidos")}</span>
           <span>{plural(jogo.cliques.mensagem, "mensagem", "mensagens")}</span>
           <span>{plural(jogo.cliques.ligar, "ligação", "ligações")}</span>
+          <span>{plural(v.transferencias?.fez_dia || 0, "transferência", "transferências")}</span>
         </span>
         </span>
       </summary>

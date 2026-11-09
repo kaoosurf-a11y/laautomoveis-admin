@@ -669,11 +669,11 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
           <div style={{marginBottom:14}}><BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/></div>}
         {(readOnly||getRole()==="vendedor")?(
           telAtual&&
-            <div style={{marginBottom:14,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+            <div className="lead-acoes">
               {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. */}
               <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
               {getRole()==="vendedor"&&<BotaoLigar leadId={lead.id} telefone={telAtual} origem="crm"/>}
-              {/* 2026-11-09 (Felipe): "Nao posso atender" passa pro proximo vendedor da loja (limites no backend). */}
+              {/* 2026-11-09 (Felipe): "Transferir" pro proximo vendedor da loja (limites no backend), na mesma linha do Ligar. */}
               <BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/>
             </div>
         ):(

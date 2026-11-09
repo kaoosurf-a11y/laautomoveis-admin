@@ -1602,6 +1602,10 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .rot-lead{flex-wrap:wrap}
   .rot-acoes{width:100%}
   .rot-acoes>*{flex:1;justify-content:center;min-height:38px}
+  /* 2026-11-09: com o Transferir sao 4 botoes; encolhem por igual e o de abrir o card fica so com o icone. */
+  .rot-acoes>*:not(.modal-overlay){min-width:0;padding-left:6px;padding-right:6px;overflow:hidden;text-overflow:ellipsis}
+  .rot-acoes>.btn-icon{flex:0 0 38px}
+  .rot-acoes>:not(.btn-icon):not(.modal-overlay) i{display:none}
   .rot-pills{justify-content:flex-start;flex-basis:100%;order:4}
   .rot-feito-grade{grid-template-columns:repeat(3,1fr)}
   .rot-abas .seg-btn{padding:0 6px;font-size:12px;gap:4px}
@@ -1680,3 +1684,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .site-mapa-grade>.card{min-width:0}
 .site-mapa-grade.pc{grid-template-columns:1fr}
 @media(max-width:900px){.site-mapa-grade{grid-template-columns:1fr}}
+
+/* 2026-11-09 (Felipe, print do celular: "Nao posso atender" caia sozinho na linha de baixo): telefone, Ligar e
+   Transferir do card dividem a linha em partes iguais, sem quebrar. */
+.lead-acoes{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;margin-bottom:14px}
+.lead-acoes>*:not(.modal-overlay){flex:1 1 0;min-width:0;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead-acoes>.btn,.lead-acoes>a,.lead-acoes>button{padding-left:8px;padding-right:8px}

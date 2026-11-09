@@ -3,10 +3,12 @@ import { repassarLead } from "../api.js";
 import { getRole } from "../auth.js";
 import { alertDialog } from "./Dialog.jsx";
 
-// 2026-11-09 (Felipe): "Não posso atender". O vendedor passa o lead dele pro próximo vendedor do rodízio da mesma
+// 2026-11-09 (Felipe): "Transferir" (era "Não posso atender"; Felipe pediu o nome Transferir no mesmo dia). O vendedor passa o lead dele pro próximo vendedor do rodízio da mesma
 // loja. Limites no backend (lib/repasse.js): só Para atender e Parou de responder, 1 vez por lead, 3 por dia por
 // vendedor. O cliente não recebe nada; o novo vendedor recebe aviso e a conversa fica atribuída a ele no Chatwoot.
 export const ESTAGIOS_REPASSE = ["novo_lead", "parou_responder"];
+// Nome com letra vira o primeiro nome; nome só de emoji (comum no WhatsApp) vira "o cliente".
+const nomeCurto = (n) => { const p = String(n || "").trim().split(/\s+/)[0] || ""; return /[A-Za-zÀ-ú]/.test(p) ? p : "o cliente"; };
 const MOTIVOS = [["folga", "Estou de folga", "ti-beach"], ["ocupado", "Ocupado com outro cliente", "ti-users"], ["outro", "Outro motivo", "ti-dots"]];
 
 export default function BotaoRepassar({ leadId, estagio, nome, className = "btn btn-ghost btn-sm", onRepassado, children }) {
@@ -21,12 +23,12 @@ export default function BotaoRepassar({ leadId, estagio, nome, className = "btn 
       const r = await repassarLead(leadId, motivo);
       setAberto(false);
       const resto = r?.restantes ?? 0;
-      await alertDialog(`Lead passado para ${r?.para?.nome || "o próximo vendedor"}.\n${resto ? `Você ainda pode passar ${resto} hoje.` : "Você não pode passar mais nenhum hoje."}`,
+      await alertDialog(`Lead transferido para ${r?.para?.nome || "o próximo vendedor"}.\n${resto ? `Você ainda pode transferir ${resto} hoje.` : "Você não pode transferir mais nenhum hoje."}`,
         { title: "Pronto" });
       onRepassado?.(r);
     } catch (err) {
       setAberto(false);
-      await alertDialog(err?.message && !/^\d+$/.test(err.message) ? err.message : "Não foi possível passar o lead agora. Tente de novo.");
+      await alertDialog(err?.message && !/^\d+$/.test(err.message) ? err.message : "Não foi possível transferir o lead agora. Tente de novo.");
     }
     setEnviando(false);
   }
@@ -34,8 +36,8 @@ export default function BotaoRepassar({ leadId, estagio, nome, className = "btn 
   return (
     <>
       <button type="button" className={className} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAberto(true); }}
-        title="Não posso atender: passa pro próximo vendedor da loja">
-        <i className="ti ti-arrow-forward-up" />{children ?? "Não posso atender"}
+        title="Transferir pro próximo vendedor da loja">
+        <i className="ti ti-arrow-forward-up" />{children ?? "Transferir"}
       </button>
       {aberto && (
         <div className="modal-overlay" data-dialog onClick={() => !enviando && setAberto(false)}>
@@ -43,9 +45,9 @@ export default function BotaoRepassar({ leadId, estagio, nome, className = "btn 
             <div className="modal-handle" />
             <div style={{ textAlign: "center", padding: "6px 0 16px" }}>
               <i className="ti ti-arrow-forward-up" style={{ fontSize: 44, color: "var(--brand)", marginBottom: 10, display: "block" }} />
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--fg)", marginBottom: 6 }}>Passar {nome ? nome.split(" ")[0] : "o cliente"} pro próximo vendedor?</h2>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--fg)", marginBottom: 6 }}>Transferir {nomeCurto(nome)} pro próximo vendedor?</h2>
               <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
-                Vai pro próximo da sua loja. Cada lead só pode ser passado 1 vez e você pode passar até 3 por dia. O cliente não recebe mensagem.
+                Vai pro próximo vendedor da sua loja. Cada lead só pode ser transferido 1 vez e você pode transferir até 3 por dia. O cliente não recebe mensagem.
               </p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
