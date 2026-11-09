@@ -1693,3 +1693,19 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .lead-acoes{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;margin-bottom:14px}
 .lead-acoes>*:not(.modal-overlay){flex:1 1 0;min-width:0;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lead-acoes>.btn,.lead-acoes>a,.lead-acoes>button{padding-left:8px;padding-right:8px}
+
+/* 2026-11-09 (Felipe: "deixa padrao os botoes da rotina, cada um ficou de um tamanho; so o que abre a ficha fica diferente").
+   Mensagem (btn-chatwoot), Ligar, Transferir e "Ja atendi pelo meu WhatsApp" com a mesma altura, canto, fonte e largura;
+   so o de abrir a ficha (btn-icon) fica quadrado. Vem por ultimo e com seletor mais forte pra vencer .btn-sm e .btn-chatwoot. */
+.rot-lead .rot-acoes{align-items:stretch}
+.rot-lead .rot-acoes>:not(.modal-overlay),.rot-lead .rot-celular{box-sizing:border-box;height:38px;min-height:38px;padding:0 10px;
+  font-size:13px;font-weight:600;line-height:1;border-radius:10px;gap:6px;justify-content:center;white-space:nowrap}
+.rot-lead .rot-acoes>:not(.btn-icon):not(.modal-overlay){width:118px;flex:0 0 118px}
+.rot-lead .rot-acoes>.btn-icon{width:38px;flex:0 0 38px;padding:0}
+.rot-lead .rot-acoes>:not(.modal-overlay) i,.rot-lead .rot-celular i{font-size:15px}
+.rot-lead .rot-celular{border-style:solid;margin-top:2px}
+@media(max-width:600px){
+  /* mesma largura em todo card (3 por linha), com 2 ou 3 botoes; a setinha fica sempre na ponta direita */
+  .rot-lead .rot-acoes>:not(.btn-icon):not(.modal-overlay){width:auto;flex:0 0 calc((100% - 38px - 18px) / 3);min-width:0;padding:0 6px}
+  .rot-lead .rot-acoes>.btn-icon{margin-left:auto}
+}
