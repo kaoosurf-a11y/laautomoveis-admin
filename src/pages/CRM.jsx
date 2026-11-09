@@ -11,6 +11,7 @@ import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 import { useVisivel } from "../lib/useVisivel.js";
 import RedeIcone from "../components/RedeIcone.jsx";
 import QualCarroComprou from "../components/QualCarroComprou.jsx";
+import BotaoAtendiCelular from "../components/BotaoAtendiCelular.jsx";
 
 // Rótulos pro badge "Follow-up ativo" no card/modal. Pra sem_credito/vai_pensar/
 // nao_achou_carro/parou_responder o rótulo é o mesmo da coluna do Kanban (o tipo
@@ -668,7 +669,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
         {getRole()==="vendedor"&&!telAtual&&
           <div style={{marginBottom:14}}><BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/></div>}
         {(readOnly||getRole()==="vendedor")?(
-          telAtual&&
+          telAtual&&<>
             <div className="lead-acoes">
               {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. */}
               <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
@@ -676,6 +677,11 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
               {/* 2026-11-09 (Felipe): "Transferir" pro proximo vendedor da loja (limites no backend), na mesma linha do Ligar. */}
               <BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/>
             </div>
+            {/* 2026-11-09 (Felipe): ja falou pelo celular particular? escolhe a coluna e o lead sai de Responder agora. */}
+            {!["fechado_ganho","fechado_perdido","bau","pos_venda","fornecedor"].includes(lead.estagio)&&
+              <BotaoAtendiCelular leadId={lead.id} nome={lead.nome} className="btn btn-ghost rot-celular" style={{width:"100%",marginBottom:14}}
+                onFeito={async r=>{await alertDialog(`Pronto. ${r.pontos?`+${r.pontos} pontos. `:""}O lead foi pra ${r.label}.`,{title:"Atendido"});onAtualizado?.();onClose?.();}}/>}
+          </>
         ):(
           <div className="form-group">
             <label className="form-label">Telefone</label>

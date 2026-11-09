@@ -5,6 +5,7 @@ import { isOwner, isManager, estaVendoComo } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
 import BotaoLigar from "../components/BotaoLigar.jsx";
 import BotaoRepassar from "../components/BotaoRepassar.jsx";
+import BotaoAtendiCelular from "../components/BotaoAtendiCelular.jsx";
 
 // Rotina do dia. 2026-11-07 (Felipe): "a pagina de rotina deve ser simples, clara e objetiva, o que os vendedores
 // precisam fazer e o que deixaram de fazer, deve ser intuitiva e simples". Refeita em cima da de 29/10:
@@ -93,9 +94,21 @@ function esperando(v) {
   return [...v.responder_hoje, ...v.acumulado].sort((a, b) => (b.espera_min ?? -1) - (a.espera_min ?? -1));
 }
 
-function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao }) {
+function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular }) {
   // 2026-11-09 (Felipe): "Transferir" passa o lead pro proximo vendedor; a linha mostra pra quem foi.
   const [passadoPara, setPassadoPara] = useState(null);
+  // 2026-11-09 (Felipe): "Ja atendi pelo meu WhatsApp" (so em Responder agora); a linha mostra pra qual coluna foi.
+  const [atendido, setAtendido] = useState(null);
+  if (atendido) {
+    return (
+      <div className="rot-lead rot-cumprida">
+        <div className="rot-lead-info">
+          <div className="rot-lead-nome">{nomeLead(l)}<i className="ti ti-circle-check rot-ok" aria-hidden="true" /></div>
+          <div className="rot-lead-sub">Atendido pelo seu WhatsApp, foi pra {atendido}</div>
+        </div>
+      </div>
+    );
+  }
   if (passadoPara) {
     return (
       <div className="rot-lead rot-cumprida">
@@ -124,6 +137,8 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao }) {
         <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
         <Link className="btn btn-ghost btn-sm btn-icon rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir o card no CRM" title="Abrir o card no CRM"><i className="ti ti-external-link" /></Link>
       </div>
+      {celular && <BotaoAtendiCelular leadId={l.id} nome={l.nome} className="btn btn-ghost btn-sm rot-celular"
+        onFeito={r => { setAtendido(r.label); onCelular?.(l, r.pontos); }} />}
     </div>
   );
 }
@@ -166,6 +181,7 @@ function FeitoHoje({ v, jogo, pontos }) {
   const itens = [
     ["respondeu", "Clientes respondidos"], ["mensagem", "Mensagens pela rotina"], ["ligar", "Ligações pela rotina"],
     ["moveu", "Cartões que você moveu"], ["visita", "Visitas feitas"], ["venda", "Vendas"],
+    ["celular", "Atendidos pelo seu WhatsApp"],
   ];
   return (
     <div className="rot-feito">
@@ -191,7 +207,7 @@ function FeitoHoje({ v, jogo, pontos }) {
 }
 
 // Corpo do vendedor: o mesmo pro vendedor (a tela dele) e pro gerente (ao abrir a linha).
-function Tarefas({ v, inbox, jogo, onAcao, parado }) {
+function Tarefas({ v, inbox, jogo, onAcao, onCelular, parado }) {
   const lista = esperando(v);
   const tocados = new Set(jogo.missoes.filter(m => m.missao === "mensagem" || m.missao === "ligar").map(m => m.id));
   const visitas = [...v.visitas, ...v.confirmar];
@@ -201,7 +217,7 @@ function Tarefas({ v, inbox, jogo, onAcao, parado }) {
       {lista.length
         ? <Lista itens={lista} render={l => (
             <LinhaCliente key={l.id} l={l} inbox={inbox} sub={subEspera(l)}
-              subTom={tomEspera(l.espera_min)} feito={tocados.has(l.id)} onAcao={onAcao} />)} />
+              subTom={tomEspera(l.espera_min)} feito={tocados.has(l.id)} onAcao={onAcao} celular onCelular={onCelular} />)} />
         : <div className="rot-vazio rot-vazio-ok"><i className="ti ti-circle-check" />Nenhum cliente esperando resposta.</div>}
 
       {/* 2026-11-09e (Felipe: todo lead passado pro vendedor aparece na rotina): ja respondido, esperando o cliente. */}
@@ -244,20 +260,23 @@ function useJogo(v, joga, avisar) {
   const onAcao = joga ? (l, tipo) => {
     ref.current = { ...ref.current, cliques: { ...ref.current.cliques, [tipo]: (ref.current.cliques[tipo] || 0) + 1 } };
     setJogo(ref.current);
-    registrarAcaoRotina(l.id, tipo).then(r => {
-      if (!r?.pontos) return;
-      const antes = ref.current.pontos, pontos = antes + r.pontos;
-      ref.current = { ...ref.current, pontos, missoes: [{ ...l, missao: tipo, pontos: r.pontos, em: new Date().toISOString() }, ...ref.current.missoes] };
-      setJogo(ref.current);
-      avisar(pontos >= v.meta && antes < v.meta ? `Meta do dia batida! ${pontos} pontos.` : `+${r.pontos} pontos`);
-    }).catch(() => {});
+    registrarAcaoRotina(l.id, tipo).then(r => somar(l, tipo, r?.pontos)).catch(() => {});
   } : null;
-  return [jogo, onAcao];
+  function somar(l, tipo, pts) {
+    if (!pts) return;
+    const antes = ref.current.pontos, pontos = antes + pts;
+    ref.current = { ...ref.current, pontos, missoes: [{ ...l, missao: tipo, pontos: pts, em: new Date().toISOString() }, ...ref.current.missoes] };
+    setJogo(ref.current);
+    avisar(pontos >= v.meta && antes < v.meta ? `Meta do dia batida! ${pontos} pontos.` : `+${pts} pontos`);
+  }
+  // 2026-11-09: "Ja atendi pelo meu WhatsApp" (o registro ja foi feito pelo botao; aqui so soma na corrida).
+  const onCelular = joga ? (l, pts) => somar(l, "celular", pts) : null;
+  return [jogo, onAcao, onCelular];
 }
 
 // Tela do vendedor: frase do topo, tarefas e o que já fez.
 function MeuDia({ v, inbox, parado, pontos, avisar }) {
-  const [jogo, onAcao] = useJogo(v, !estaVendoComo(), avisar);
+  const [jogo, onAcao, onCelular] = useJogo(v, !estaVendoComo(), avisar);
   const lista = esperando(v);
   const antigo = lista[0];
   return (
@@ -279,7 +298,7 @@ function MeuDia({ v, inbox, parado, pontos, avisar }) {
         <h3 className="rot-sec"><i className="ti ti-car rot-sec-ic" />Sua corrida hoje</h3>
         <Pista pontos={jogo.pontos} meta={v.meta} marcos={marcosDe(v.meta)} />
       </div>
-      <div className="card rot-bloco"><Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} parado={parado} /></div>
+      <div className="card rot-bloco"><Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} onCelular={onCelular} parado={parado} /></div>
       <div className="card rot-bloco">
         <h3 className="rot-sec"><span className="rot-dot rot-success" />Seus pontos hoje</h3>
         <FeitoHoje v={v} jogo={jogo} pontos={pontos} />

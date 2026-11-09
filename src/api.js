@@ -69,6 +69,8 @@ export async function getResultadoMensal() { return req("/api/dashboard/mensal")
 // Rotina do dia (Felipe 29/10): o backend recorta por papel (vendedor, gerente, admin).
 export async function getRotina(data, loja) { const q = new URLSearchParams({ data }); if (loja) q.set("loja", loja); return req(`/api/rotina?${q}`); }
 // Toque em Mensagem/Ligar na rotina = missão de contato (backend só pontua o vendedor dono do lead, 1 por lead por dia).
+// 2026-11-09 (Felipe): "Ja atendi pelo meu WhatsApp" com a coluna escolhida.
+export async function atendiCelular(lead_id, estagio) { return req("/api/rotina/atendi-celular", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lead_id, estagio }) }); }
 export async function registrarAcaoRotina(lead_id, tipo) { return req("/api/rotina/acao", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lead_id, tipo }) }); }
 export async function getClientesValidados() { return req("/api/crm/clientes"); }
 export async function getDisparador(params={}) {
