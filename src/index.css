@@ -1721,3 +1721,11 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .ficha-coluna:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--cor) 30%,transparent)}
 .ficha-coluna-dot{position:absolute;left:14px;width:12px;height:12px;border-radius:50%;background:var(--cor);pointer-events:none}
 .ficha-coluna-seta{position:absolute;right:14px;font-size:20px;color:var(--cor);pointer-events:none}
+
+/* 2026-11-09 (Felipe): na ficha do lead o Transferir cortava em celular de 360px (texto 106px num botao de 102px).
+   Telefone, Ligar e Transferir no mesmo padrao dos botoes da Rotina: mesma altura, canto e letra, padding menor. */
+.modal .lead-acoes{align-items:stretch}
+.modal .lead-acoes>:not(.modal-overlay){box-sizing:border-box;height:40px;min-height:40px;padding:0 4px;font-size:13px;font-weight:600;
+  line-height:1;border-radius:10px;gap:5px;justify-content:center}
+.modal .lead-acoes>:not(.modal-overlay) i{font-size:15px}
+.modal .rot-celular{box-sizing:border-box;min-height:40px;border-radius:10px;font-size:13px}
