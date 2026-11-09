@@ -134,6 +134,7 @@ export async function getContatoChatwoot(id) { return req(`/api/contatos/${id}/c
 export async function getLeadChatwoot(id) { return req(`/api/crm/leads/${id}/chatwoot`); }
 // 2026-11-06 (Felipe): vendedor ve o numero mascarado; o numero pra discar so vem daqui, e cada toque fica registrado.
 // 2026-11-09 (Felipe): "Não posso atender", passa o lead pro próximo vendedor da loja (limites no backend).
+export async function podemTransferir(ids) { return req(`/api/crm/repasse/podem?ids=${ids.join(",")}`); }
 export async function repassarLead(id, motivo) { return req(`/api/crm/leads/${id}/repassar`, { method: "POST", body: JSON.stringify({ motivo }) }); }
 export async function ligarLead(id, origem) { return req(`/api/crm/leads/${id}/ligar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ origem }) }); }
 
