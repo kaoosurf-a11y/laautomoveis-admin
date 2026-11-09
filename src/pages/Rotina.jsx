@@ -71,6 +71,23 @@ function Pista({ pontos, meta, marcos }) {
   );
 }
 
+// 2026-11-09e: cliente que escreveu de novo depois da última resposta aparece igual, com o aviso.
+function subEspera(l) {
+  const t = l.espera || `passado ${diasSem(l.passado_em)} atrás`;
+  return l.situacao === "voltou" ? `escreveu de novo, ${t}` : t;
+}
+// "hoje às 11:24", "ontem às 09:10", "sex 06/11 às 13:26"
+function quando(ts) {
+  if (!ts) return "";
+  const d = new Date(ts), hoje = new Date();
+  const dia = (x) => x.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const ontem = new Date(hoje.getTime() - 864e5);
+  const h = hora(ts);
+  if (dia(d) === dia(hoje)) return `hoje às ${h}`;
+  if (dia(d) === dia(ontem)) return `ontem às ${h}`;
+  return `${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })} às ${h}`;
+}
+
 // Lista de quem espera: junta "hoje" e "acumulado", quem espera há mais tempo primeiro.
 function esperando(v) {
   return [...v.responder_hoje, ...v.acumulado].sort((a, b) => (b.espera_min ?? -1) - (a.espera_min ?? -1));
@@ -183,9 +200,17 @@ function Tarefas({ v, inbox, jogo, onAcao, parado }) {
       <h3 className="rot-sec"><span className="rot-dot rot-danger" />Responder agora<span className="rot-num">{lista.length}</span></h3>
       {lista.length
         ? <Lista itens={lista} render={l => (
-            <LinhaCliente key={l.id} l={l} inbox={inbox} sub={l.espera || `passado ${diasSem(l.passado_em)} atrás`}
+            <LinhaCliente key={l.id} l={l} inbox={inbox} sub={subEspera(l)}
               subTom={tomEspera(l.espera_min)} feito={tocados.has(l.id)} onAcao={onAcao} />)} />
         : <div className="rot-vazio rot-vazio-ok"><i className="ti ti-circle-check" />Nenhum cliente esperando resposta.</div>}
+
+      {/* 2026-11-09e (Felipe: todo lead passado pro vendedor aparece na rotina): ja respondido, esperando o cliente. */}
+      {v.aguardando?.length > 0 && <>
+        <h3 className="rot-sec"><span className="rot-dot rot-info" />Aguardando cliente<span className="rot-num">{v.aguardando.length}</span></h3>
+        <Lista itens={v.aguardando} limite={5} render={l => (
+          <LinhaCliente key={l.id} l={l} inbox={inbox} onAcao={onAcao} feito={tocados.has(l.id)}
+            sub={`respondido ${quando(l.respondido_em)}, esperando o cliente`} />)} />
+      </>}
 
       {visitas.length > 0 && <>
         <h3 className="rot-sec"><span className="rot-dot rot-success" />Visitas<span className="rot-num">{visitas.length}</span></h3>
@@ -282,6 +307,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
             ? <><span className="badge badge-danger">{plural(lista.length, "sem resposta", "sem resposta")}</span>
                 {antigo?.espera && <span className={`rot-espera ${tomEspera(antigo.espera_min)}`}>mais antigo {antigo.espera.replace("esperando ", "")}</span>}</>
             : <span className="badge badge-success">em dia</span>}
+          {v.aguardando?.length > 0 && <span className="badge badge-muted">{plural(v.aguardando.length, "aguardando cliente", "aguardando cliente")}</span>}
           {v.retomar_total > 0 && <span className="badge badge-muted">{plural(v.retomar_total, "negociação parada", "negociações paradas")}</span>}
           {v.transferencias?.fez_mes > 0 && <span className="badge badge-muted" title={`Recebeu ${v.transferencias.recebeu_mes || 0} de colegas no mês`}>{plural(v.transferencias.fez_mes, "transferido no mês", "transferidos no mês")}</span>}
         </span>

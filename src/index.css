@@ -1535,7 +1535,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-grupo-tit{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--fg);margin-bottom:10px}
 .rot-num{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .rot-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.rot-danger{background:var(--danger)}.rot-warning{background:var(--warning)}.rot-success{background:var(--success)}.rot-muted{background:var(--muted)}
+.rot-danger{background:var(--danger)}.rot-warning{background:var(--warning)}.rot-success{background:var(--success)}.rot-muted{background:var(--muted)}.rot-info{background:var(--info)}
 .rot-vazio{font-size:12px;color:var(--muted);padding:2px 0 4px}
 /* Felipe 29/10: um lead por linha, bem separado (faixa própria com fundo e borda). */
 .rot-lista{display:flex;flex-direction:column;gap:8px}
