@@ -843,14 +843,20 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
           </div>
         )}
         <div className="form-group">
-          <label className="form-label">Estágio {readOnly?"":"— arraste o card no board pra mudar, ou selecione aqui"}</label>
+          {/* 2026-11-09 (Felipe): o seletor de coluna parecia caixa de texto e os vendedores nao achavam. Agora tem a cor
+              da coluna, bolinha, seta e o titulo diz o que fazer. */}
+          <label className="form-label ficha-coluna-tit"><i className="ti ti-columns"/>{readOnly?"Coluna do lead":"Coluna do lead: toque para mudar"}</label>
           {readOnly?(
             <div className="tone" style={{fontSize:14,fontWeight:600,color:colAtual?.cor||"var(--fg)"}}>{colAtual?.label}</div>
-          ):(<>
-            <select className="form-input" value={colAtual?.key||est} onChange={e=>handleEstagio(e.target.value)}>
-              {estagios.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
-            </select>
-          </>)}
+          ):(
+            <div className="ficha-coluna" style={{"--cor":colAtual?.cor||"var(--brand)"}}>
+              <span className="ficha-coluna-dot" aria-hidden="true"/>
+              <select aria-label="Mudar a coluna do lead" value={colAtual?.key||est} onChange={e=>handleEstagio(e.target.value)}>
+                {estagios.map(e=><option key={e.key} value={e.key}>{e.label}</option>)}
+              </select>
+              <i className="ti ti-chevron-down ficha-coluna-seta" aria-hidden="true"/>
+            </div>
+          )}
         </div>
         {role==="admin_master"&&
           <button className="btn btn-ghost" style={{width:"100%",marginBottom:8,color:"var(--danger, #e05252)"}} onClick={handleExcluir} disabled={excluindo}>
