@@ -28,6 +28,8 @@ const FOLLOWUP_LABEL={
   // chega um veículo dentro da faixa de preço que o lead de "Carros baratos" procurava
   // (ver backend lib/estoqueMatch.js::notificarMatchCarroBarato).
   match_carro_barato:"Carro barato chegou!",
+  // 2026-11-10: colunas com follow-up proprio que faltavam aqui (o title do card mostrava o codigo cru)
+  feirao:"Feirão", fecha_mes:"Fecha mês", nao_qualificado:"Não qualificado",
 };
 
 // 2026-08-10 (pedido explicito do usuario, apos auditoria sem_credito/Priscila): rótulo
@@ -284,6 +286,23 @@ function FotoLead({lead}){
   return <img className="kc-foto" src={lead.foto_url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={()=>setFalhou(true)}/>;
 }
 // Status do follow-up no rodapé: bolinha vermelha (atrasado), verde (em dia). Sem follow-up não mostra nada.
+// 2026-11-10 (Felipe: "no card quero que apareca quantas mensagens de follow-up foram mandadas e quem esta em follow-up").
+// Enviados = todo envio automatico da IA pra esse lead (coluna, Recuperacao, carro que chegou). Em follow-up = tem mensagem
+// agendada que ainda vai sair (verde, com a data da proxima) ou esta na Recuperacao de conversa. Sem nada, nao mostra.
+function InfoFollowup({lead}){
+  const n=Number(lead.fu_enviados)||0;
+  const emFu=!!lead.fu_proximo||!!lead.fu_em_recuperacao;
+  if(!n&&!emFu)return null;
+  const env=n===1?"1 follow-up enviado":`${n} follow-ups enviados`;
+  if(emFu){
+    const vencido=lead.fu_proximo&&new Date(lead.fu_proximo)<new Date();
+    const prox=lead.fu_proximo?(vencido?`na fila desde ${diaMesCurto(lead.fu_proximo)}`:`próximo ${diaMesCurto(lead.fu_proximo)}`):"recuperando conversa";
+    const tit=`Em follow-up${lead.fu_proximo?` (${FOLLOWUP_LABEL[lead.fu_proximo_tipo]||lead.fu_proximo_tipo}), próxima mensagem ${diaMesCurto(lead.fu_proximo)}`:" (Recuperação de conversa)"}. ${env}${lead.fu_ultimo_envio?`, último ${diaMesCurto(lead.fu_ultimo_envio)}`:""}.`;
+    return <div className="kc-linha" style={{color:"var(--success)"}} title={tit}><i className="ti ti-send"/> Em follow-up · {n?`${n} enviado${n===1?"":"s"} · `:""}{prox}</div>;
+  }
+  return <div className="kc-linha" style={{color:"var(--muted)"}} title={`${env}, último ${diaMesCurto(lead.fu_ultimo_envio)}. Sem follow-up agendado agora.`}><i className="ti ti-send"/> {env} · último {diaMesCurto(lead.fu_ultimo_envio)}</div>;
+}
+
 function StatusFollowup({lead}){
   if(!lead.followup_tipo)return null;
   const atrasado=followupAtrasado(lead);
@@ -1258,6 +1277,7 @@ export default function CRM(){
                           {followupSemContato(lead)&&<i className="ti ti-phone-off" style={{color:"var(--danger)"}} title="Sem telefone — follow-up manual"/>}
                         </div>
                       }
+                      <InfoFollowup lead={lead}/>
                       <div className="kc-foot">
                         <Resp r={lead.responsavel_atual}/>
                         {lead.vendedor_iniciais&&<div className="av" title={lead.vendedor_nome||undefined} style={{width:20,height:20,fontSize:8,background:`${corVend}22`,color:corVend}}>{lead.vendedor_iniciais}</div>}
