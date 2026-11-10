@@ -1045,6 +1045,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
    (Kanban e Follow-ups têm centenas). "auto 120px" guarda a altura real depois da
    primeira vez, então a rolagem não pula. Navegador antigo ignora e segue igual. */
 .kanban-card{content-visibility:auto;contain-intrinsic-size:auto 120px}
+/* Com mouse (computador) o card é sempre desenhado: a altura chutada de 120px fazia a coluna crescer
+   durante o arrasto da barra e ela travava/recuava (Felipe 10/11). No celular a leveza continua. */
+@media(pointer:fine){.kanban-card{content-visibility:visible;contain-intrinsic-size:none}}
 
 /* 2026-10-18 gráficos neon (Felipe): só nos gráficos do Dashboard e do Mensal, ver
    components/Graficos.jsx. Cada item recebe --c1/--c2 (degradê). O resto do painel
