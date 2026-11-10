@@ -831,8 +831,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .kanban-card.kc:not(.fu-card) .kc-linha .kc-dir{margin-left:auto;flex-shrink:0}
 .kanban-card.kc:not(.fu-card) .kc-foot{flex-wrap:nowrap;margin-top:6px}
 .kanban-card.kc:not(.fu-card) .kc-s-resp{width:60px}
-.kanban-card.kc:not(.fu-card) .kc-s-vend{width:76px}
-.kanban-card.kc:not(.fu-card) .kc-s-vend .kc-vend{max-width:76px}
+.kanban-card.kc:not(.fu-card) .kc-s-vend{flex:1 1 0;min-width:0}
+.kanban-card.kc:not(.fu-card) .kc-s-vend .kc-vend{max-width:100%}
+.kanban-card.kc:not(.fu-card) .kc-vend.sem{font-size:10px;font-weight:500;padding:2px 6px;letter-spacing:-.01em}.kanban-card.kc:not(.fu-card) .kc-vend.sem i{display:none}
 .kanban-card.kc:not(.fu-card) .kc-s-tempo{width:40px}
 .kanban-card.kc:not(.fu-card) .kc-s-ag{width:14px}
 /* ── Janelas (07/10/2026, Felipe): tudo visível sem rolagem no computador, X no topo ── */
@@ -1780,6 +1781,16 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .fu-card .fu-sit{min-height:44px;justify-content:center}
 .fu-card .kc-foot{min-height:30px}
 .fu-card .kc-tempo{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 2026-11-10 (Felipe): card de Follow-ups no mesmo padrão do CRM, casas e linhas fixas. */
+.fu-card .fu-meta{flex-wrap:nowrap;align-items:center;gap:5px;height:20px;min-height:0;margin-top:4px;overflow:hidden}
+.fu-card .kc-slot{display:inline-flex;align-items:center;flex-shrink:0;min-width:0;overflow:hidden;white-space:nowrap}
+.fu-card .kc-s-temp{width:50px}
+.fu-card .kc-s-class{flex:1 1 auto}
+.fu-card .fu-sit-l1{height:17px;overflow:hidden;white-space:nowrap}
+.fu-card .fu-sit-l2{height:15px;overflow:hidden}
+.fu-card .kc-foot{flex-wrap:nowrap}
+.fu-card .kc-s-vend{width:112px}
+.fu-card .kc-s-vend .kc-vend{max-width:112px}
 .fu-parar{margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--acao-line);background:var(--acao-soft);color:var(--acao);border-radius:6px;padding:3px 8px;font:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
 .fu-parar i{font-size:12px}
 @media(hover:hover){.fu-parar:hover{border-color:var(--acao)}}

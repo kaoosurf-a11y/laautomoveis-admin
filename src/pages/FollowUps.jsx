@@ -3,6 +3,7 @@ import { lembrado } from "../memoria.js";
 import { getFollowups, moverLead } from "../api.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
+import { VendChip } from "../components/VendChip.jsx";
 import { alertDialog } from "../components/Dialog.jsx";
 import { useVisivel } from "../lib/useVisivel.js";
 
@@ -217,10 +218,10 @@ function FuCard({f,role,readOnly,onMovido}){
         <div className="kc-top"><span>{f.cliente_nome}</span><time title={`Entrou em ${fmtData(f.criado_em)}`}>{diaMesCurto(f.criado_em)}</time></div>
         <div className="kc-car">{f.veiculo||"Sem carro definido"}</div>
       </div>
+      {/* 2026-11-10 (Felipe): mesmo padrão do card do CRM. Cada informação em casa fixa; sem o dado, espaço em branco. */}
       <div className="kc-meta fu-meta">
-        {f.temperatura==="quente"&&<span className="kc-tag hot">Quente</span>}
-        {f.temperatura==="morno"&&<span className="kc-tag">Morno</span>}
-        <ClassificacaoTag f={f}/>
+        <span className="kc-slot kc-s-temp">{f.temperatura==="quente"?<span className="kc-tag hot">Quente</span>:f.temperatura==="morno"?<span className="kc-tag">Morno</span>:null}</span>
+        <span className="kc-slot kc-s-class"><ClassificacaoTag f={f}/></span>
       </div>
       <div className="fu-sit">
         <div className="fu-sit-l1">
@@ -230,8 +231,7 @@ function FuCard({f,role,readOnly,onMovido}){
         <div className="fu-sit-l2" style={{color:sit.cor}}><i className={`ti ${sit.icone}`}/><span>{sit.texto}</span></div>
       </div>
       <div className="kc-foot">
-        {f.vendedor_iniciais&&<div className="av" title={f.vendedor_nome||undefined} style={{width:20,height:20,fontSize:8,background:"var(--brand-soft)",color:"var(--brand)"}}>{f.vendedor_iniciais}</div>}
-        <span className="kc-tempo">{f.vendedor_nome?.split(" ")[0]||"sem vendedor"}</span>
+        <span className="kc-slot kc-s-vend"><VendChip nome={f.vendedor_nome} ini={f.vendedor_iniciais}/></span>
         {parar&&<button className="fu-parar" onClick={e=>{e.stopPropagation();setParando(true);}} title="Parar as mensagens programadas e mover o lead de coluna"><i className="ti ti-player-stop"/> Parar envio</button>}
       </div>
     </div>
