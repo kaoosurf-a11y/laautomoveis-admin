@@ -300,15 +300,15 @@ function FotoLead({lead}){
 function InfoFollowup({lead}){
   const n=Number(lead.fu_enviados)||0;
   const emFu=!!lead.fu_proximo||!!lead.fu_em_recuperacao;
-  if(!n&&!emFu)return null;
+  if(!n&&!emFu)return <div className="kc-linha"/>;
   const env=n===1?"1 follow-up enviado":`${n} follow-ups enviados`;
   if(emFu){
     const vencido=lead.fu_proximo&&new Date(lead.fu_proximo)<new Date();
     const prox=lead.fu_proximo?(vencido?`na fila desde ${diaMesCurto(lead.fu_proximo)}`:`próximo ${diaMesCurto(lead.fu_proximo)}`):"recuperando conversa";
     const tit=`Em follow-up${lead.fu_proximo?` (${FOLLOWUP_LABEL[lead.fu_proximo_tipo]||lead.fu_proximo_tipo}), próxima mensagem ${diaMesCurto(lead.fu_proximo)}`:" (Recuperação de conversa)"}. ${env}${lead.fu_ultimo_envio?`, último ${diaMesCurto(lead.fu_ultimo_envio)}`:""}.`;
-    return <div className="kc-linha" style={{color:"var(--success)"}} title={tit}><i className="ti ti-send"/> Em follow-up · {n?`${n} enviado${n===1?"":"s"} · `:""}{prox}</div>;
+    return <div className="kc-linha" style={{color:"var(--success)"}} title={tit}><i className="ti ti-send"/><span className="kc-txt">Em follow-up · {n?`${n} enviado${n===1?"":"s"} · `:""}{prox}</span></div>;
   }
-  return <div className="kc-linha" style={{color:"var(--muted)"}} title={`${env}, último ${diaMesCurto(lead.fu_ultimo_envio)}. Sem follow-up agendado agora.`}><i className="ti ti-send"/> {env} · último {diaMesCurto(lead.fu_ultimo_envio)}</div>;
+  return <div className="kc-linha" style={{color:"var(--muted)"}} title={`${env}, último ${diaMesCurto(lead.fu_ultimo_envio)}. Sem follow-up agendado agora.`}><i className="ti ti-send"/><span className="kc-txt">{env} · último {diaMesCurto(lead.fu_ultimo_envio)}</span></div>;
 }
 
 function StatusFollowup({lead}){
@@ -1266,37 +1266,35 @@ export default function CRM(){
                         <div className="kc-top"><span>{lead.nome}</span><span className="kc-top-r"><RedeIcone lead={lead}/><time>{diaMesCurto(lead.criado_em)}</time></span></div>
                         <div className="kc-car">{lead.veiculo_interesse||"Sem carro definido"}</div>
                       </div>
+                      {/* 2026-11-10 (Felipe): card padronizado. Cada informacao tem linha e lugar fixos; sem o dado, o espaco fica em branco. */}
                       <div className="kc-meta">
-                        {preco&&<span className="kc-price" title={preco.desde?"Há mais de um veículo desse modelo no estoque: este é o menor preço":undefined}>{preco.desde?"desde ":""}{fmtR0(preco.valor)}</span>}
-                        {lead.codigo_vip!=null&&<span className="kc-tag vip">VIP #{lead.codigo_vip}</span>}
-                        {lead.temperatura==="quente"&&<span className="kc-tag hot">Quente</span>}
-                        {lead.temperatura==="morno"&&<span className="kc-tag">Morno</span>}
-                        {lead.troca&&<span className="kc-tag">Troca</span>}
-                        <Qualif n={lead.nota_qualificacao} c={lead.classificacao_qualificacao}/>
+                        <span className="kc-slot kc-s-preco">{preco&&<span className="kc-price" title={preco.desde?"Há mais de um veículo desse modelo no estoque: este é o menor preço":undefined}>{preco.desde?"desde ":""}{fmtR0(preco.valor)}</span>}</span>
+                        <span className="kc-slot kc-s-q"><Qualif n={lead.nota_qualificacao} c={lead.classificacao_qualificacao}/></span>
                       </div>
-                      {lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio&&
-                        <div
-                          className="kc-linha" style={{color:"var(--info)"}}
-                          title={`IA sugeriu mover pra "${SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio}" — move sozinha em 24 horas úteis se ninguém mexer nesse card antes disso`}
-                        >
-                          <i className="ti ti-bulb"/> Sugestão: {SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio} (há {tempoDesde(lead.sugestao_estagio_em)})
-                        </div>
-                      }
-                      {lead.followup_tipo&&
-                        <div className="kc-linha" style={{color:followupAtrasado(lead)?"var(--danger)":"var(--warning)"}}>
-                          <i className="ti ti-bell"/> {FOLLOWUP_LABEL[lead.followup_tipo]}
+                      <div className="kc-meta">
+                        <span className="kc-slot kc-s-temp">{lead.temperatura==="quente"?<span className="kc-tag hot">Quente</span>:lead.temperatura==="morno"?<span className="kc-tag">Morno</span>:null}</span>
+                        <span className="kc-slot kc-s-troca">{lead.troca&&<span className="kc-tag">Troca</span>}</span>
+                        <span className="kc-slot kc-s-vip">{lead.codigo_vip!=null&&<span className="kc-tag vip">VIP #{lead.codigo_vip}</span>}</span>
+                      </div>
+                      <div className="kc-linha" style={{color:"var(--info)"}}
+                        title={lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio?`IA sugeriu mover pra "${SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio}" — move sozinha em 24 horas úteis se ninguém mexer nesse card antes disso`:undefined}>
+                        {lead.sugestao_estagio&&lead.sugestao_estagio!==lead.estagio&&<><i className="ti ti-bulb"/><span className="kc-txt">Sugestão: {SUGESTAO_LABEL[lead.sugestao_estagio]||lead.sugestao_estagio} (há {tempoDesde(lead.sugestao_estagio_em)})</span></>}
+                      </div>
+                      <div className="kc-linha" style={{color:lead.followup_tipo&&followupAtrasado(lead)?"var(--danger)":"var(--warning)"}}>
+                        {lead.followup_tipo&&<>
+                          <i className="ti ti-bell"/><span className="kc-txt">{FOLLOWUP_LABEL[lead.followup_tipo]}</span>
                           {followupSemContato(lead)&&<i className="ti ti-phone-off" style={{color:"var(--danger)"}} title="Sem telefone — follow-up manual"/>}
-                        </div>
-                      }
+                          <span className="kc-dir"><StatusFollowup lead={lead}/></span>
+                        </>}
+                      </div>
                       <InfoFollowup lead={lead}/>
                       <div className="kc-foot">
-                        <Resp r={lead.responsavel_atual}/>
-                        <VendChip nome={lead.vendedor_nome} ini={lead.vendedor_iniciais}/>
-                        <span className="kc-tempo" title="Tempo desde a última mudança no lead"><i className="ti ti-clock"/> {tempoDesde(lead.atualizado_em)}</span>
-                        {lead.agendamento_ia_status&&(lead.agendamento_ia_status==="solicitado"||lead.agendamento_ia_status==="em_andamento")&&
-                          <i className="ti ti-calendar-time" style={{fontSize:13,color:"var(--info)"}} title="Lara tentando agendar"/>}
+                        <span className="kc-slot kc-s-resp"><Resp r={lead.responsavel_atual}/></span>
+                        <span className="kc-slot kc-s-vend"><VendChip nome={lead.vendedor_nome} ini={lead.vendedor_iniciais}/></span>
+                        <span className="kc-slot kc-s-tempo kc-tempo" title="Tempo desde a última mudança no lead"><i className="ti ti-clock"/> {tempoDesde(lead.atualizado_em)}</span>
+                        <span className="kc-slot kc-s-ag">{lead.agendamento_ia_status&&(lead.agendamento_ia_status==="solicitado"||lead.agendamento_ia_status==="em_andamento")&&
+                          <i className="ti ti-calendar-time" style={{fontSize:13,color:"var(--info)"}} title="Lara tentando agendar"/>}</span>
                         <span className="kc-dir">
-                          <StatusFollowup lead={lead}/>
                           <LeadPhoneChatwoot lead={lead} compact onClick={e=>e.stopPropagation()}/>
                         </span>
                       </div>

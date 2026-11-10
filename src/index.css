@@ -817,6 +817,24 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .kc-st{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .kc-st::after{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .kc-st.ok{color:var(--success)}.kc-st.late{color:var(--danger)}
+/* 2026-11-10 (Felipe): card do Kanban padronizado. Linhas e lugares fixos; sem o dado fica o espaco em branco. */
+.kanban-card.kc:not(.fu-card) .kc-meta{display:flex;flex-wrap:nowrap;align-items:center;gap:5px;height:20px;margin-top:4px;overflow:hidden}
+.kanban-card.kc:not(.fu-card) .kc-meta:empty{display:flex}
+.kanban-card.kc:not(.fu-card) .kc-slot{display:inline-flex;align-items:center;flex-shrink:0;min-width:0;overflow:hidden;white-space:nowrap}
+.kanban-card.kc:not(.fu-card) .kc-s-preco{flex:1 1 auto}
+.kanban-card.kc:not(.fu-card) .kc-s-q{width:40px;justify-content:flex-end}
+.kanban-card.kc:not(.fu-card) .kc-s-temp{width:50px}
+.kanban-card.kc:not(.fu-card) .kc-s-troca{width:42px}
+.kanban-card.kc:not(.fu-card) .kc-s-vip{flex:1 1 auto}
+.kanban-card.kc:not(.fu-card) .kc-linha{height:15px;margin-top:4px;overflow:hidden;white-space:nowrap}
+.kanban-card.kc:not(.fu-card) .kc-linha .kc-txt{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.kanban-card.kc:not(.fu-card) .kc-linha .kc-dir{margin-left:auto;flex-shrink:0}
+.kanban-card.kc:not(.fu-card) .kc-foot{flex-wrap:nowrap;margin-top:6px}
+.kanban-card.kc:not(.fu-card) .kc-s-resp{width:60px}
+.kanban-card.kc:not(.fu-card) .kc-s-vend{width:76px}
+.kanban-card.kc:not(.fu-card) .kc-s-vend .kc-vend{max-width:76px}
+.kanban-card.kc:not(.fu-card) .kc-s-tempo{width:40px}
+.kanban-card.kc:not(.fu-card) .kc-s-ag{width:14px}
 /* ── Janelas (07/10/2026, Felipe): tudo visível sem rolagem no computador, X no topo ── */
 .modal-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;transition:background .15s,color .15s}
 .modal-x:hover{background:var(--fill);color:var(--fg)}
