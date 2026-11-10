@@ -89,11 +89,21 @@ function quando(ts) {
   return `${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })} às ${h}`;
 }
 
-// Lista de quem espera: junta "hoje" e "acumulado", quem espera há mais tempo primeiro.
+// Lista de quem espera: junta "hoje" e "acumulado".
 // 2026-11-10 (Felipe): quem pediu ligação é prioridade, vem antes de todo mundo, com o telefone vermelho.
+// 2026-11-10 noite (Felipe: "lead novo deve ficar sempre em primeiro, seguido dos mais antigos nessa ordem, do lead que
+// respondeu e tem pra responder ate o mais velho sem resposta, esquecido"): depois de quem pediu ligação, os que chegaram
+// hoje (mais novo primeiro) e depois o resto do menor tempo de espera pro maior; o esquecido fica no fim.
 function esperando(v) {
-  return [...v.responder_hoje, ...v.acumulado].sort((a, b) =>
-    (b.pediu_ligacao ? 1 : 0) - (a.pediu_ligacao ? 1 : 0) || (b.espera_min ?? -1) - (a.espera_min ?? -1));
+  const hoje = new Set(v.responder_hoje.map(l => l.id));
+  const grupo = (l) => (l.pediu_ligacao ? 0 : hoje.has(l.id) ? 1 : 2);
+  const t = (l) => l.espera_min ?? Number.MAX_SAFE_INTEGER;
+  return [...v.responder_hoje, ...v.acumulado].sort((a, b) => grupo(a) - grupo(b) || t(a) - t(b)
+    || String(b.passado_em || "").localeCompare(String(a.passado_em || "")));
+}
+// Quem espera há mais tempo (pra frase do topo e pro gerente), já que a lista agora começa pelo mais novo.
+function maisAntigo(lista) {
+  return lista.reduce((m, l) => ((l.espera_min ?? -1) > (m?.espera_min ?? -1) ? l : m), null);
 }
 
 function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular }) {
@@ -335,7 +345,7 @@ function useJogo(v, joga, avisar) {
 function MeuDia({ v, inbox, parado, pontos, avisar, busca }) {
   const [jogo, onAcao, onCelular] = useJogo(v, !estaVendoComo(), avisar);
   const lista = esperando(v);
-  const antigo = lista[0];
+  const antigo = maisAntigo(lista);
   return (
     <section className="rot-meu">
       <ResultadoBusca busca={busca} inboxDe={() => inbox} onAcao={onAcao} />
@@ -347,7 +357,7 @@ function MeuDia({ v, inbox, parado, pontos, avisar, busca }) {
           </div>
           <div className="rot-resumo-sub">
             {lista.length
-              ? (antigo?.espera ? `O mais antigo (${nomeLead(antigo)}) está ${antigo.espera}.` : "Responda primeiro quem está esperando há mais tempo.")
+              ? (antigo?.espera ? `O mais antigo (${nomeLead(antigo)}) está ${antigo.espera}.` : "Comece pelos que chegaram hoje.")
               : "Bom trabalho. Veja as visitas e as negociações paradas abaixo."}
           </div>
         </div>
@@ -370,7 +380,7 @@ function FezItem({ n, um, varios, title }) {
 function LinhaVendedor({ v, inbox, parado, avisar }) {
   const [jogo, onAcao] = useJogo(v, false, avisar);
   const lista = esperando(v);
-  const antigo = lista[0];
+  const antigo = maisAntigo(lista);
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
   return (
     // 2026-11-10 (Felipe): cartao do vendedor sempre aberto, sem seta.
@@ -407,7 +417,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
 function Loja({ loja, parado, avisar }) {
   // Quem deve mais aparece primeiro; empate, quem espera há mais tempo.
   const vs = [...loja.vendedores].sort((a, b) => esperando(b).length - esperando(a).length
-    || (esperando(b)[0]?.espera_min ?? -1) - (esperando(a)[0]?.espera_min ?? -1));
+    || (maisAntigo(esperando(b))?.espera_min ?? -1) - (maisAntigo(esperando(a))?.espera_min ?? -1));
   const todos = vs.flatMap(esperando);
   const antigo = todos.reduce((m, l) => ((l.espera_min ?? -1) > (m?.espera_min ?? -1) ? l : m), null);
   return (
