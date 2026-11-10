@@ -1843,5 +1843,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-busca-campo input::-webkit-search-cancel-button{display:none}
 .rot-busca-limpa{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;background:none;color:inherit;opacity:.7;cursor:pointer}
 .rot-busca-limpa:hover{opacity:1;background:var(--border)}
-.rot-busca .rot-sec{margin-top:12px}
-.rot-busca-vazio{margin:10px 2px 2px;opacity:.75;font-size:14px}
+.rot-busca>.rot-sec:first-child{margin-top:0}
+.rot-busca-topo{flex:1 1 320px;min-width:0}
+@media(max-width:1023px){.page-header>.rot-busca-topo{order:3;flex-basis:100%}}
+.rot-busca-vazio{margin:2px;opacity:.75;font-size:14px}
