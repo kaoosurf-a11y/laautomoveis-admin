@@ -1770,3 +1770,19 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .fu-parar{padding:6px 10px;font-size:12px;min-height:32px}
   .fu-card .kc-foot{min-height:40px}
 }
+
+/* Rotina mais no topo (10/11/2026, Felipe: "deixa as informações mais no topo pra aproveitar a página").
+   Data ao lado do título, loja e os 3 números numa linha só (eram 3 cartões altos), cartão do vendedor mais baixo. */
+.rotina .page-header{margin-bottom:12px}
+.rot-titulo{display:flex;align-items:baseline;gap:4px 14px;flex-wrap:wrap;min-width:0}
+.rotina .rot-titulo .rot-sub{margin:0}
+.rot-loja-topo{display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;margin:4px 0 10px}
+.rot-loja-topo .rot-loja-tit{margin:0}
+.rot-loja-nums{display:flex;gap:6px;flex-wrap:wrap}
+.rot-loja-nums>span{display:inline-flex;align-items:baseline;gap:6px;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:12px;color:var(--muted);white-space:nowrap}
+.rot-loja-nums b{font-size:15px;color:var(--fg);font-variant-numeric:tabular-nums}
+.rot-loja-nums b.rot-tarde{color:var(--danger)}
+.rot-loja{margin-bottom:16px}
+.rot-vend{margin-bottom:8px}
+.rot-vend-head{padding:8px 14px;row-gap:6px}
+@media(max-width:600px){.rot-loja-nums>span{padding:3px 10px}.rot-loja-nums b{font-size:14px}}

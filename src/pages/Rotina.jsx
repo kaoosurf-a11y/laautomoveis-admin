@@ -360,14 +360,13 @@ function Loja({ loja, parado, avisar }) {
   const antigo = todos.reduce((m, l) => ((l.espera_min ?? -1) > (m?.espera_min ?? -1) ? l : m), null);
   return (
     <section className="rot-loja">
-      <h2 className="rot-loja-tit"><i className="ti ti-building-store" /> {LOJA_CURTA[loja.id] || loja.nome}</h2>
-      <div className="metrics-grid rot-numeros">
-        <div className="metric-card"><div className="metric-label">Esperando</div>
-          <div className={`metric-value ${todos.length ? "rot-tarde" : ""}`}>{todos.length}</div></div>
-        <div className="metric-card"><div className="metric-label">Mais antigo</div>
-          <div className="metric-value rot-valor-texto">{antigo?.espera ? antigo.espera.replace("esperando ", "") : "ninguém"}</div></div>
-        <div className="metric-card"><div className="metric-label">Chegaram hoje</div>
-          <div className="metric-value">{loja.chegaram.length}</div></div>
+      <div className="rot-loja-topo">
+        <h2 className="rot-loja-tit"><i className="ti ti-building-store" /> {LOJA_CURTA[loja.id] || loja.nome}</h2>
+        <div className="rot-loja-nums">
+          <span>Esperando <b className={todos.length ? "rot-tarde" : ""}>{todos.length}</b></span>
+          <span>Mais antigo <b>{antigo?.espera ? antigo.espera.replace("esperando ", "") : "ninguém"}</b></span>
+          <span>Chegaram hoje <b>{loja.chegaram.length}</b></span>
+        </div>
       </div>
       {vs.map(v => <LinhaVendedor key={v.id} v={v} inbox={loja.inbox_id} parado={parado} avisar={avisar} />)}
       {!vs.length && <div className="empty-state"><p>Nenhum vendedor ativo nesta loja.</p></div>}
@@ -398,7 +397,10 @@ export default function Rotina() {
   return (
     <div className="rotina">
       <div className="page-header">
-        <h1 className="page-title"><i className="ti ti-list-check" /> Rotina do dia</h1>
+        <div className="rot-titulo">
+          <h1 className="page-title"><i className="ti ti-list-check" /> Rotina do dia</h1>
+          {dados && <p className="rot-sub">{dataBR(dados.dia)}. O tempo de espera conta só com a loja aberta.</p>}
+        </div>
         <div className={`rot-filtros ${isOwner() ? "" : "rot-filtros-so"}`}>
           {isOwner() && (
             <div className="seg">
@@ -412,7 +414,6 @@ export default function Rotina() {
         </div>
       </div>
 
-      {dados && <p className="rot-sub">{dataBR(dados.dia)}. O tempo de espera conta só com a loja aberta.</p>}
       {erro && <div className="empty-state"><i className="ti ti-alert-triangle" /><p>{erro}</p></div>}
       {!dados && !erro && <div className="empty-state"><span className="spinner" /><p>Carregando...</p></div>}
       {dados && souVendedor && (meu
