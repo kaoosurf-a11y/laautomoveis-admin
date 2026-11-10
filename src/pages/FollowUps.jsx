@@ -356,31 +356,21 @@ export default function FollowUps(){
   const tirar=id=>setData(d=>({...d,porTipo:Object.fromEntries(Object.entries(d.porTipo||{}).map(([k,v])=>[k,v.filter(f=>f.id!==id)]))}));
 
   const hoje=new Date().toDateString();
-  const ehHoje=f=>f.horario&&new Date(f.horario).toDateString()===hoje;
-  // followups.enviado é uma coluna morta (achado 2026-08-01, auditoria Cursor confirmada
-  // no banco: 0 linhas com enviado=true, nenhum processo automático escreve nela) — usar
-  // ela aqui sempre dava vencido=true pra QUALQUER card com horario no passado, mesmo os
-  // que já foram enviados de verdade (o envio real só fica registrado em
-  // followup_mensagens.status/la_followup_envios_log). ehVencido fica só de fallback pros
-  // tipos sem sequência de mensagens populada — ver vencidosDoCard/mensagemVencida abaixo.
-  const ehVencido=f=>f.horario&&new Date(f.horario)<new Date()&&!f.enviado&&!ehHoje(f);
-  // Auditoria 2026-07-30/31: o badge de "Vencidos" contava 1 por card (followups.horario,
-  // um timestamp único por lead) mas um card pode ter várias mensagens agendadas em
-  // sequência (followup_mensagens) — cada uma vencida conta separado pra quem processa
-  // o envio de verdade (Kanban Sender), então o badge mostrava menos do que o real
-  // (achado: contagem por card vs contagem por mensagem individual divergiam). Conta por
-  // mensagem quando o card tem `mensagens` carregado; cai pro card-level (ehVencido) só
-  // pros tipos que não têm sequência de mensagens populada (ex: match_estoque).
+  // 2026-11-10 (Felipe: "na aba Hoje não tem nenhum follow-up pra hoje?" e "Vencido está certo?"):
+  // os dois filtros olhavam followups.horario, que é só o prazo do card e não diz se sai mensagem.
+  // Davam 135 cards "vencidos" sem mensagem nenhuma (quase todos Não achou o carro, que espera o
+  // carro chegar e não tem sequência). Agora contam só mensagem de verdade (followup_mensagens):
+  // Hoje = card com mensagem programada pra hoje (já enviada ou ainda na fila);
+  // Vencidos = card com mensagem que já passou da hora e não saiu, com o fluxo ativo.
+  // Card sem mensagem nunca entra em nenhum dos dois. Os números contam cards, igual às colunas.
+  const msgs=f=>f.mensagens||[];
+  const ehHoje=f=>msgs(f).some(m=>(m.status==="agendada"||m.status==="enviada")&&m.agendado_para&&new Date(m.agendado_para).toDateString()===hoje);
   const mensagemVencida=m=>m.status==="agendada"&&m.agendado_para&&new Date(m.agendado_para)<new Date();
-  const vencidosDoCard=f=>(f.mensagens&&f.mensagens.length)?f.mensagens.filter(mensagemVencida).length:(ehVencido(f)?1:0);
-  // 2026-08-01: a LISTA (aba "Vencidos") ainda filtrava só com ehVencido puro — mesmo bug
-  // do badge, só que na lista de cards em vez do número. Reusa vencidosDoCard aqui também,
-  // pra card com mensagens reais só aparecer como vencido quando tem mensagem
-  // genuinamente vencida (não card_horario-no-passado-mas-já-enviado).
-  const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&vencidosDoCard(f)>0);
+  const ehVencido=f=>f.status_fluxo==="ativo"&&msgs(f).some(mensagemVencida);
+  const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&ehVencido(f));
   const totalEmFollowup=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.length,0);
   const totalHoje=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehHoje).length,0);
-  const totalVencidos=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.reduce((s2,f)=>s2+vencidosDoCard(f),0),0);
+  const totalVencidos=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehVencido).length,0);
 
   if(erro)return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if(loading)return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando...</p></div>;
