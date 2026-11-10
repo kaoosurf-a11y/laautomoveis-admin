@@ -23,7 +23,7 @@ const COLUNAS = {
   fecha_mes: "Fecha mês", parou_responder: "Parou de responder", vai_pensar: "Vai pensar",
   nao_achou_carro: "Não achou o carro", sem_credito: "Sem crédito", feirao: "Feirão",
   match_estoque: "Chegou carro do interesse", pos_venda_satisfacao: "Pós-venda",
-  recuperacao_conversa_quente: "Conversa quente", nao_qualificado: "Não qualificado",
+  recuperacao_conversa_quente: "Conversa parada", nao_qualificado: "Não qualificado",
 };
 const MOTIVOS = {
   fora_do_horario_comercial: "Fora do horário de envio",
@@ -179,7 +179,7 @@ export default function Envios() {
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
         <Metrica rotulo="Follow-ups hoje" valor={`${dados.hoje.colunas_enviadas}/${dados.hoje.colunas_limite}`} sub="colunas, por celular de agente" cor="var(--brand)" />
         <Metrica rotulo="Vagas liberadas" valor={dados.hoje.colunas_liberadas_agora} sub="distribuídas ao longo do dia" />
-        <Metrica rotulo="Conversa quente hoje" valor={dados.hoje.recuperacao_enviadas} sub="recuperação, limite próprio" />
+        <Metrica rotulo="Conversa parada hoje" valor={dados.hoje.recuperacao_enviadas} sub="recuperação, limite próprio" />
         <Metrica rotulo="Na fila" valor={totalFila} sub={soMeus ? "dos seus leads" : "mensagens agendadas"} />
       </div>
 

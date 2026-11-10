@@ -454,6 +454,10 @@ const TIPO_FOLLOWUP_IA = {
   fecha_mes: "Fecha mês",
   pos_venda_satisfacao: "Pós-venda",
   lead_site_proativo: "Lead do site",
+  sem_credito: "Sem crédito",
+  nao_achou_carro: "Não achou o carro",
+  feirao: "Feirão",
+  nao_qualificado: "Não qualificado",
 };
 
 function TabMetricas({ metricas, loading, erro }) {
