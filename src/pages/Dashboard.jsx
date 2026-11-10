@@ -375,6 +375,9 @@ function TabJornada({ data }) {
   );
 }
 
+// Faixas de dias no pátio: verde (novo) até vermelho (+90).
+const FAIXA_COR = [NEON[5], NEON[4], ["#fff27a", "#eab308"], NEON[3], NEON_TOM.perda];
+
 function TabEstoque({ data }) {
   const { estoque } = data;
   const metricsCores = { ok:"var(--fg)", alerta:"var(--alert)" };
@@ -398,34 +401,43 @@ function TabEstoque({ data }) {
         </div>
       </div>
 
-      <div className="dash-colunas">
-        <div className="card">
-          <div className="card-title"><i className="ti ti-chart-bar"/> Estoque por marca</div>
-          <BarrasNeon vazio="Nenhum veículo no pátio." itens={estoque.por_marca.map(m=>({label:m.marca, valor:m.total}))}/>
-        </div>
-        <div className="card" style={{border:"1px solid var(--danger-line)"}}>
-          <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Parados — atenção</div>
-          {estoque.parados_lista.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Nenhum veículo parado há mais de 30 dias.</p>}
-          {estoque.parados_lista.map((v,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
-              <span style={{flex:1,fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
-              <span style={{fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,background:"var(--danger-soft)",color:"var(--alert)"}}>{v.dias}d</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 2026-07-15 (auditoria): renomeado de "Sugestão da IA" — é um alerta gerado por
-          regra fixa (veículo mais parado há +30d), nenhum modelo de IA gera esse texto,
-          chamar de "IA" seria enganoso. */}
+      {/* 2026-11-10 (Felipe: "aproveita melhor a tela"): o alerta sobe pra logo abaixo do
+          pátio e embaixo vêm três colunas da mesma altura: todas as marcas (agrupadas sem
+          duplicar), quantos carros em cada faixa de dias no pátio e a lista completa de
+          parados com rolagem. Celular: uma coluna só. */}
       {estoque.alerta_estoque_parado && (
-        <div style={{padding:"12px 14px",background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:10,display:"flex",gap:10,alignItems:"flex-start"}}>
-          <i className="ti ti-alert-triangle" style={{color:"var(--brand)",fontSize:18,marginTop:1}}/>
+        <div style={{padding:"10px 14px",marginBottom:12,background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:10,display:"flex",gap:10,alignItems:"center"}}>
+          <i className="ti ti-alert-triangle" style={{color:"var(--brand)",fontSize:18}}/>
           <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.5}}>
             <strong style={{color:"var(--fg)"}}>Alerta de estoque parado:</strong> {estoque.alerta_estoque_parado}
           </div>
         </div>
       )}
+
+      <div className="dash-estoque">
+        <div className="card">
+          <div className="card-title"><i className="ti ti-chart-bar"/> Estoque por marca</div>
+          <BarrasNeon vazio="Nenhum veículo no pátio." itens={estoque.por_marca.map(m=>({label:m.marca, valor:m.total}))}/>
+        </div>
+        <div className="card">
+          <div className="card-title"><i className="ti ti-clock"/> Dias no pátio</div>
+          {estoque.por_faixa_dias
+            ? <ColunasNeon altura={260} itens={estoque.por_faixa_dias.map((f,i)=>({label:f.label, valor:f.total, cor:FAIXA_COR[i]}))}/>
+            : <p className="vazio">Sem dados.</p>}
+        </div>
+        <div className="card" style={{border:"1px solid var(--danger-line)"}}>
+          <div className="card-title" style={{color:"var(--alert)"}}><i className="ti ti-alert-circle"/> Parados há +30 dias ({estoque.parados_30d})</div>
+          {estoque.parados_lista.length===0&&<p style={{color:"var(--muted)",fontSize:13}}>Nenhum veículo parado há mais de 30 dias.</p>}
+          <div className="dash-estoque-lista">
+            {estoque.parados_lista.map((v,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
+                <span style={{flex:1,fontSize:13,color:"var(--fg)"}}>{v.nome}</span>
+                <span style={{fontSize:11,padding:"2px 7px",borderRadius:10,fontWeight:700,background:"var(--danger-soft)",color:"var(--alert)"}}>{v.dias}d</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </>
   );
 }

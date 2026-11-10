@@ -1181,7 +1181,14 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .dash-anuncios{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:center}
 .dash-anuncio-num{font-size:12px;color:var(--muted);margin-bottom:2px}
 .dash-anuncio-num strong{display:block;font-size:22px;font-weight:700;color:var(--fg);letter-spacing:-.02em}
-@media(max-width:900px){.dash-colunas,.dash-anuncios{grid-template-columns:1fr}}
+/* Estoque (Felipe 10/11 "aproveita melhor a tela"): 3 colunas da mesma altura, lista de parados rola por dentro. */
+.dash-estoque{display:grid;grid-template-columns:1.1fr 1fr 1.1fr;gap:12px;align-items:stretch}
+.dash-estoque>.card{margin:0;min-width:0}
+.dash-estoque>.card:last-child{display:flex;flex-direction:column}
+.dash-estoque-lista{flex:1 1 0;min-height:220px;overflow-y:auto;padding-right:4px}
+@media(max-width:1100px){.dash-estoque-lista{flex:none;max-height:360px}}
+@media(max-width:1100px){.dash-estoque{grid-template-columns:1fr 1fr}.dash-estoque>.card:last-child{grid-column:1/-1}}
+@media(max-width:900px){.dash-colunas,.dash-anuncios,.dash-estoque{grid-template-columns:1fr}}
 
 /* ── Agenda no modelo de cadeiras (Felipe, 19/10/2026) ──
    Mês numa tela só: cada dia com a quantidade grande e os vendedores do dia; toque no
