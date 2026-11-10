@@ -48,6 +48,12 @@ body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:non
 ::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:padding-box}
 /* Celular e tablet (dedo): a vertical continua fininha pra não roubar espaço */
 @media(pointer:coarse){::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track:vertical{background:transparent}::-webkit-scrollbar-thumb:vertical{border:0}}
+/* Dentro das colunas do Kanban e dos Follow-ups (Felipe 10/11): sem barra embaixo da coluna, só a
+   lateral, fina (6px) e sem fundo. A barra de 14px roubava largura e criava rolagem para o lado em cada coluna. */
+.kanban-cards,.fu-kanban-cards{overflow-x:hidden}
+.kanban-cards::-webkit-scrollbar,.fu-kanban-cards::-webkit-scrollbar{width:6px;height:0}
+.kanban-cards::-webkit-scrollbar-track,.fu-kanban-cards::-webkit-scrollbar-track{background:transparent}
+.kanban-cards::-webkit-scrollbar-thumb,.fu-kanban-cards::-webkit-scrollbar-thumb{border:0;border-radius:99px}
 /* Cores de categoria (estágio, origem, vendedor) vêm em hex claro direto das telas,
    pensadas pro fundo escuro. No tema claro elas são escurecidas aqui, num lugar só,
    pra o texto continuar legível sem mexer nas telas. */
