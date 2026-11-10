@@ -1012,6 +1012,10 @@ export default function CRM(){
     // próprio drag de reordenar) ou não foi botão esquerdo do mouse.
     if(e.button!==0)return;
     if(e.target.closest(".kanban-card")||e.target.closest(".kanban-col-header"))return;
+    // Clique na barra de rolagem (fica fora do clientWidth/clientHeight do elemento): deixa o
+    // navegador rolar sozinho. Antes o arrastar do quadro brigava com a barra e ela tremia (Felipe 10/11).
+    const el=e.target;
+    if((el.clientWidth&&e.offsetX>=el.clientWidth)||(el.clientHeight&&e.offsetY>=el.clientHeight))return;
     const board=boardRef.current;
     if(!board)return;
     arrastandoBoard.current={ativo:true,startX:e.pageX,startScroll:board.scrollLeft};

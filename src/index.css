@@ -298,6 +298,8 @@ tr:hover td{background:var(--hover)}
    chrome (--topbar-h/--bottom-h) em vez de cravar um número novo. */
 @media(max-width:1023px){.kanban-board{height:calc(100vh - 230px - var(--topbar-h) - var(--bottom-h) - env(safe-area-inset-bottom))}}
 .kanban-board.grabbing{cursor:grabbing;user-select:none;scroll-snap-type:none}
+/* Com mouse o quadro não encaixa na coluna: o encaixe fazia a barra pular ao soltar (Felipe 10/11). No dedo o encaixe continua. */
+@media(pointer:fine){.kanban-board{scroll-snap-type:none}}
 .kanban-col{flex-shrink:0;width:230px;scroll-snap-align:start;display:flex;flex-direction:column;min-height:0}
 /* Cada coluna tem a cor do seu estágio (--cor, vinda da tela): contorno da coluna,
    cabeçalho tingido e ponto ao lado do título. Os cards ficam neutros, sem brilho. */
