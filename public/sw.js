@@ -9,7 +9,7 @@ self.addEventListener("push", e => {
   try { a = e.data ? e.data.json() : {}; } catch { a = { corpo: e.data && e.data.text() }; }
   e.waitUntil(self.registration.showNotification(a.titulo || "LA Automóveis", {
     body: a.corpo || "",
-    icon: "/icon-192.png?v=2",
+    icon: "/icon-192.png?v=3",
     badge: "/badge-96.png?v=2",
     tag: a.tag || undefined,
     renotify: !!a.tag,

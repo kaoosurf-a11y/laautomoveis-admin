@@ -87,7 +87,7 @@ export default function PrimeiraVez() {
     app: (
       <>
         <div className="pv-topo">
-          <img src="/icon-192.png?v=2" alt="" width="48" height="48"/>
+          <img src="/icon-192.png?v=3" alt="" width="48" height="48"/>
           <div><h2 className="modal-title">Baixe o app da LA</h2>
             <div className="pv-sub">Abre direto da tela inicial e recebe os avisos com o app fechado.</div></div>
         </div>
