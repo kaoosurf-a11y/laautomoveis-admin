@@ -1847,3 +1847,10 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-busca-topo{flex:1 1 320px;min-width:0}
 @media(max-width:1023px){.page-header>.rot-busca-topo{order:3;flex-basis:100%}}
 .rot-busca-vazio{margin:2px;opacity:.75;font-size:14px}
+/* 2026-11-10 (Felipe: "os botoes devem ficar sempre no mesmo lugar; quando nao tiver Transferir deixa o espaco vazio").
+   Bloco de botoes com largura fixa (3 x 118 + 38 + 3 x 6): Mensagem, Ligar e Transferir sempre a partir da esquerda,
+   a setinha da ficha sempre na ponta direita. Sem Transferir, o espaco dele fica vazio; sem conversa, .rot-vago segura o lugar da Mensagem. */
+.rot-lead .rot-acoes{justify-content:flex-start}
+.rot-lead .rot-acoes>.btn-icon{margin-left:auto}
+.rot-lead .rot-acoes>.rot-vago{visibility:hidden;border:0;background:none}
+@media(min-width:601px){.rot-lead .rot-acoes{width:410px;flex:0 0 410px}}

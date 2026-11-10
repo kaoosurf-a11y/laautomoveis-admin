@@ -138,7 +138,7 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
         {sub && <div className={`rot-espera ${subTom || ""}`}>{sub}</div>}
       </div>
       <div className="rot-acoes">
-        {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : null}
+        {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : <span className="rot-vago" aria-hidden="true" />}
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
         <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }} />
         <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
