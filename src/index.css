@@ -1817,3 +1817,20 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 }
 @media(min-width:601px){.rot-vend-head .pista-placar{min-width:206px}}
 @media(max-width:600px){.rot-fez-item{padding:2px 8px}.rot-fez-item b{font-size:13px}}
+
+/* 2026-11-10 Rotina do vendedor simplificada: pontos em pilulas dentro da corrida, dia no painel numa linha. */
+.rot-feito-simples{padding:10px 0 0}
+.rot-pts{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.rot-pt{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;background:var(--fill);border-radius:var(--radius);padding:7px 10px;font-size:12px;color:var(--muted);line-height:1.2}
+.rot-pt{flex-wrap:nowrap;min-width:0}
+.rot-pt-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rot-pt small{white-space:nowrap}
+.rot-pt b{font-size:16px;color:var(--fg);font-variant-numeric:tabular-nums}
+.rot-pt small{margin-left:auto;font-size:11px;color:var(--muted)}
+.rot-pt-on small{color:var(--success);font-weight:700}
+.rot-dia-linha{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:12px;color:var(--muted)}
+.rot-dia-linha span{display:inline-flex;align-items:center;gap:5px}
+.rot-dia-linha i{font-size:15px}
+.rot-dia-linha b{color:var(--fg);font-variant-numeric:tabular-nums}
+@media(max-width:900px){.rot-pts{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:600px){.rot-pts{grid-template-columns:repeat(2,1fr)}}

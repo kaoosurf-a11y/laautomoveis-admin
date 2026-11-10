@@ -185,29 +185,26 @@ function tempoPainel(min) {
 // (1 por cliente por dia). Embaixo, o dia dele no painel (sem pontos).
 function FeitoHoje({ v, jogo, pontos }) {
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
+  // 2026-11-10 (Felipe: "simplificado"): mesmas metricas, em pilulas pequenas dentro da corrida; o dia no painel numa linha.
   const itens = [
-    ["respondeu", "Clientes respondidos"], ["mensagem", "Mensagens pela rotina"], ["ligar", "Ligações pela rotina"],
-    ["moveu", "Cartões que você moveu"], ["visita", "Visitas feitas"], ["venda", "Vendas"],
-    ["celular", "Atendidos pelo seu WhatsApp"],
+    ["respondeu", "respondidos"], ["mensagem", "mensagens"], ["ligar", "ligações"],
+    ["moveu", "cartões"], ["visita", "visitas"], ["venda", "vendas"], ["celular", "seu WhatsApp"],
   ];
+  const tr = v.transferencias || {};
   return (
-    <div className="rot-feito">
-      <div className="rot-feito-grade">
+    <div className="rot-feito rot-feito-simples">
+      <div className="rot-pts">
         {itens.map(([k, n]) => (
-          <div key={k} className="rot-feito-item">
-            <b>{conta(k)}</b><span>{n}</span>
-            <small className={conta(k) ? "rot-ganhou" : ""}>{conta(k) ? `+${conta(k) * pontos[k]} pts` : `vale ${pontos[k]} pts`}</small>
-          </div>
+          <span key={k} className={`rot-pt${conta(k) ? " rot-pt-on" : ""}`} title={`vale ${pontos[k]} pts cada`}>
+            <b>{conta(k)}</b><span className="rot-pt-n">{n}</span><small>{conta(k) ? `+${conta(k) * pontos[k]}` : pontos[k]} pts</small>
+          </span>
         ))}
       </div>
-      <div className="rot-seu-dia">
-        <div><i className="ti ti-device-mobile" /><span>Tempo no painel hoje</span><b>{tempoPainel(v.painel_min)}</b></div>
-        <div><i className="ti ti-robot" /><span>Cartões seus que o sistema moveu</span><b>{v.sistema_moveu || 0}</b></div>
-        {/* 2026-11-09 (Felipe): quantas vezes ele transferiu pro próximo vendedor (botão Transferir). */}
-        <div><i className="ti ti-arrow-forward-up" /><span>Leads que você transferiu<small>{v.transferencias?.fez_mes || 0} no mês, pode 3 por dia</small></span><b>{v.transferencias?.fez_dia || 0}</b></div>
-        <div className="rot-seu-dia-acoes"><i className="ti ti-circle-check" />
-          <span>Ações no painel hoje{v.acoes ? <small>{detalheAcoes(v.acoes_area)}</small> : <small>abrir e não fazer nada não conta</small>}</span>
-          <b>{v.acoes || 0}</b></div>
+      <div className="rot-dia-linha">
+        <span><i className="ti ti-device-mobile" />Painel hoje <b>{tempoPainel(v.painel_min)}</b></span>
+        <span title={v.acoes ? detalheAcoes(v.acoes_area) : "abrir e não fazer nada não conta"}><i className="ti ti-circle-check" />Ações <b>{v.acoes || 0}</b></span>
+        <span><i className="ti ti-robot" />Sistema moveu <b>{v.sistema_moveu || 0}</b></span>
+        <span title={`${tr.fez_mes || 0} no mês, pode 3 por dia`}><i className="ti ti-arrow-forward-up" />Transferiu <b>{tr.fez_dia || 0}</b></span>
       </div>
     </div>
   );
@@ -220,12 +217,13 @@ function Tarefas({ v, inbox, jogo, onAcao, onCelular, parado }) {
   const visitas = [...v.visitas, ...v.confirmar];
   return (
     <div className="rot-corpo">
-      <h3 className="rot-sec"><span className="rot-dot rot-danger" />Responder agora<span className="rot-num">{lista.length}</span></h3>
-      {lista.length
-        ? <Lista itens={lista} render={l => (
-            <LinhaCliente key={l.id} l={l} inbox={inbox} sub={subEspera(l)}
-              subTom={tomEspera(l.espera_min)} feito={tocados.has(l.id)} onAcao={onAcao} celular onCelular={onCelular} />)} />
-        : <div className="rot-vazio rot-vazio-ok"><i className="ti ti-circle-check" />Nenhum cliente esperando resposta.</div>}
+      {/* 2026-11-10 (Felipe): vazio some (o topo ja diz "Nenhum cliente esperando"). */}
+      {lista.length > 0 && <>
+        <h3 className="rot-sec"><span className="rot-dot rot-danger" />Responder agora<span className="rot-num">{lista.length}</span></h3>
+        <Lista itens={lista} render={l => (
+          <LinhaCliente key={l.id} l={l} inbox={inbox} sub={subEspera(l)}
+            subTom={tomEspera(l.espera_min)} feito={tocados.has(l.id)} onAcao={onAcao} celular onCelular={onCelular} />)} />
+      </>}
 
       {/* 2026-11-09e (Felipe: todo lead passado pro vendedor aparece na rotina): ja respondido, esperando o cliente. */}
       {v.aguardando?.length > 0 && <>
@@ -302,12 +300,9 @@ function MeuDia({ v, inbox, parado, pontos, avisar }) {
       <div className="card rot-corrida">
         <h3 className="rot-sec"><i className="ti ti-car rot-sec-ic" />Sua corrida hoje</h3>
         <Pista pontos={jogo.pontos} meta={v.meta} marcos={marcosDe(v.meta)} />
-      </div>
-      <div className="card rot-bloco"><Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} onCelular={onCelular} parado={parado} /></div>
-      <div className="card rot-bloco">
-        <h3 className="rot-sec"><span className="rot-dot rot-success" />Seus pontos hoje</h3>
         <FeitoHoje v={v} jogo={jogo} pontos={pontos} />
       </div>
+      <div className="card rot-bloco"><Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} onCelular={onCelular} parado={parado} /></div>
     </section>
   );
 }
