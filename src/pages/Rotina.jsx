@@ -128,8 +128,11 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
     <div className={`rot-lead ${feito ? "rot-cumprida" : ""} ${pedeLigacao ? "rot-ligacao" : ""}`}>
       <div className="rot-lead-info">
         <div className="rot-lead-nome">
-          {pedeLigacao && <i className="ti ti-phone rot-fone" role="img" aria-label="Pediu ligação" title="Pediu ligação" />}
-          {nomeLead(l)}
+          {/* 2026-11-10 (Felipe): nome numa caixa de largura fixa pra etiqueta (quente, pediu ligação) ficar sempre no mesmo lugar. */}
+          <span className="rot-nome-txt" title={nomeLead(l)}>
+            {pedeLigacao && <i className="ti ti-phone rot-fone" role="img" aria-label="Pediu ligação" title="Pediu ligação" />}
+            {nomeLead(l)}
+          </span>
           {pedeLigacao && <span className="badge badge-danger">pediu ligação</span>}
           {l.temperatura === "quente" && <span className="badge badge-danger">quente</span>}
           {feito && <i className="ti ti-circle-check rot-ok" aria-label="Você já tocou neste cliente hoje" />}

@@ -1854,3 +1854,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-lead .rot-acoes>.btn-icon{margin-left:auto}
 .rot-lead .rot-acoes>.rot-vago{visibility:hidden;border:0;background:none}
 @media(min-width:601px){.rot-lead .rot-acoes{width:410px;flex:0 0 410px}}
+/* 2026-11-10 (Felipe: "a temperatura tambem deve ficar padrao mesmo que o nome mude de tamanho"): nome em caixa de largura
+   fixa (nome maior corta com "..."), etiquetas sempre na mesma coluna. */
+.rot-lead-nome{flex-wrap:nowrap}
+.rot-nome-txt{flex:0 0 240px;width:240px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rot-nome-txt .rot-fone{margin-right:4px}
+@media(max-width:600px){.rot-nome-txt{flex:0 0 52%;width:52%}}
