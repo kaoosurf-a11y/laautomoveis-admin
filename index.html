@@ -2,7 +2,11 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <!-- 2026-11-09 (Felipe): zoom com dois dedos liberado (antes maximum-scale=1 travava no Android).
+         No iPhone o maximum-scale continua: o iOS ignora pra pinça (zoom segue livre) e ele evita
+         o zoom automático ao tocar em campo com letra menor que 16px (busca do CRM tem 13px). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>if(/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)){document.querySelector('meta[name="viewport"]').setAttribute("content","width=device-width, initial-scale=1.0, maximum-scale=1.0")}</script>
     <meta name="theme-color" content="#0c0c0a" />
     <!-- 2026-10-28 (Felipe): painel instalável como app no celular (tela inicial, tela cheia). -->
     <!-- 2026-10-28 noite (Felipe): logo real da LA no ícone do app, favicon e prévia do link. -->
