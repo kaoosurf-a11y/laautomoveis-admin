@@ -368,7 +368,10 @@ export default function FollowUps(){
   // Vencidos = card com mensagem que já passou da hora e não saiu, com o fluxo ativo.
   // Card sem mensagem nunca entra em nenhum dos dois. Os números contam cards, igual às colunas.
   const msgs=f=>f.mensagens||[];
-  const ehHoje=f=>msgs(f).some(m=>(m.status==="agendada"||m.status==="enviada")&&m.agendado_para&&new Date(m.agendado_para).toDateString()===hoje);
+  // 2026-11-10 (Felipe: "Hoje só tem isso?"): conta também a mensagem que SAIU hoje mesmo marcada
+  // pra outro dia (Jeferson: marcada 09/11, enviada 10/11 08:44 não aparecia em Hoje).
+  const ehDeHoje=d=>d&&new Date(d).toDateString()===hoje;
+  const ehHoje=f=>msgs(f).some(m=>(m.status==="agendada"&&ehDeHoje(m.agendado_para))||(m.status==="enviada"&&(ehDeHoje(m.enviado_em)||ehDeHoje(m.agendado_para))));
   const mensagemVencida=m=>m.status==="agendada"&&m.agendado_para&&new Date(m.agendado_para)<new Date();
   const ehVencido=f=>f.status_fluxo==="ativo"&&msgs(f).some(mensagemVencida);
   const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&ehVencido(f));
