@@ -1800,3 +1800,20 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-vend{margin-bottom:8px}
 .rot-vend-head{padding:8px 14px;row-gap:6px}
 @media(max-width:600px){.rot-loja-nums>span{padding:3px 10px}.rot-loja-nums b{font-size:14px}}
+/* Rotina 10/11 "ajuste melhor a tela": carro para antes da bandeira, "Hoje" em colunas alinhadas, espera em pilula */
+.pista-rastro{width:calc(14px + (100% - 58px) * var(--p) / 100)}
+.pista-carro,.pista-marco{left:calc(14px + (100% - 58px) * var(--p) / 100)}
+.rot-vend-deve .rot-espera{display:inline-flex;align-items:center;font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid var(--danger-line);white-space:nowrap}
+.rot-vend-deve .rot-espera:not(.rot-tarde):not(.rot-atencao){border-color:var(--line)}
+.rot-vend-fez{gap:6px}
+.rot-fez-rot{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.rot-fez-item{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap;padding:2px 10px;border-radius:99px;background:var(--fill);font-size:12px;color:var(--muted)}
+.rot-fez-item b{font-size:14px;color:var(--fg);font-variant-numeric:tabular-nums}
+.rot-fez-item:not(.rot-fez-zero){background:var(--brand-soft);color:var(--fg)}
+.rot-fez-zero b{color:var(--muted);font-weight:600}
+@media(min-width:1280px){
+  .rot-vend-fez{display:grid;grid-template-columns:auto 136px 116px 108px 96px 128px;gap:6px}
+  .rot-fez-item{justify-content:flex-start}
+}
+@media(min-width:601px){.rot-vend-head .pista-placar{min-width:206px}}
+@media(max-width:600px){.rot-fez-item{padding:2px 8px}.rot-fez-item b{font-size:13px}}

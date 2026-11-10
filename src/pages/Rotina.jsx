@@ -315,6 +315,10 @@ function MeuDia({ v, inbox, parado, pontos, avisar }) {
 }
 
 // Linha do vendedor na visão do gerente/dono: o que deve e o que fez; toque abre a lista dele.
+function FezItem({ n, um, varios, title }) {
+  return <span className={`rot-fez-item${n ? "" : " rot-fez-zero"}`} title={title}><b>{n}</b>{n === 1 ? um : varios}</span>;
+}
+
 function LinhaVendedor({ v, inbox, parado, avisar }) {
   const [jogo, onAcao] = useJogo(v, false, avisar);
   const lista = esperando(v);
@@ -338,12 +342,12 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
           {v.transferencias?.fez_mes > 0 && <span className="badge badge-muted" title={`Recebeu ${v.transferencias.recebeu_mes || 0} de colegas no mês`}>{plural(v.transferencias.fez_mes, "transferido no mês", "transferidos no mês")}</span>}
         </span>
         <span className="rot-vend-fez">
-          <span className="rot-fez-rot">Hoje:</span>
-          <span title={v.acoes ? detalheAcoes(v.acoes_area) : "Nenhuma ação no painel hoje"}>{plural(v.acoes || 0, "ação no painel", "ações no painel")}</span>
-          <span>{plural(conta("respondeu"), "respondido", "respondidos")}</span>
-          <span>{plural(jogo.cliques.mensagem, "mensagem", "mensagens")}</span>
-          <span>{plural(jogo.cliques.ligar, "ligação", "ligações")}</span>
-          <span>{plural(v.transferencias?.fez_dia || 0, "transferência", "transferências")}</span>
+          <span className="rot-fez-rot">Hoje</span>
+          <FezItem n={v.acoes || 0} um="ação no painel" varios="ações no painel" title={v.acoes ? detalheAcoes(v.acoes_area) : "Nenhuma ação no painel hoje"} />
+          <FezItem n={conta("respondeu")} um="respondido" varios="respondidos" />
+          <FezItem n={jogo.cliques.mensagem} um="mensagem" varios="mensagens" />
+          <FezItem n={jogo.cliques.ligar} um="ligação" varios="ligações" />
+          <FezItem n={v.transferencias?.fez_dia || 0} um="transferência" varios="transferências" />
         </span>
         </span>
       </summary>
