@@ -436,6 +436,16 @@ function TabEstoque({ data }) {
 // Consome GET /api/metrics/dashboard (Fase 4) — só owner/manager (o backend já bloqueia
 // agent com 403). Carregado à parte do resto do Dashboard porque é uma rota separada
 // e mais pesada (8 sub-queries) — só busca quando essa aba é aberta.
+const TIPO_FOLLOWUP_IA = {
+  recuperacao_conversa_quente: "Conversa parada",
+  parou_responder: "Parou de responder",
+  vai_pensar: "Vai pensar",
+  match_estoque: "Carro que procurava",
+  fecha_mes: "Fecha mês",
+  pos_venda_satisfacao: "Pós-venda",
+  lead_site_proativo: "Lead do site",
+};
+
 function TabMetricas({ metricas, loading, erro }) {
   if (erro) return <div className="empty-state"><i className="ti ti-alert-triangle"/><p>{erro}</p></div>;
   if (!metricas) return <div className="empty-state"><i className="ti ti-loader" style={{animation:"spin 1s linear infinite"}}/><p>Carregando métricas...</p></div>;
@@ -498,6 +508,31 @@ function TabMetricas({ metricas, loading, erro }) {
           {metricas.qualidade && <AnelNeon cor={NEON_TOM.perda} pct={metricas.qualidade.silencioPosHandoff.pct} label="Silêncio pós-passagem" sub={`${metricas.qualidade.silencioPosHandoff.semResposta} de ${metricas.qualidade.silencioPosHandoff.total} sem 1ª resposta do vendedor`}/>}
         </div>
       </div>
+
+      {/* 2026-11-10 (Felipe: "quantos follow-ups foram feitos pelas agentes de IA, e quantos
+          leads responderam"). Respondeu = mandou mensagem em até 3 dias depois do follow-up. */}
+      {metricas.followupsIa && (
+        <div className="card" style={{marginBottom:12}}>
+          <div className="card-title"><i className="ti ti-robot"/> Follow-ups da IA</div>
+          <div className="metrics-grid" style={{marginBottom:12}}>
+            <div className="metric-card">
+              <div className="metric-label"><i className="ti ti-send"/> Follow-ups enviados</div>
+              <div className="metric-value">{metricas.followupsIa.enviados}</div>
+              <div className="metric-delta" style={{color:"var(--muted)"}}>para {metricas.followupsIa.leads} leads</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label"><i className="ti ti-message-circle"/> Leads que responderam</div>
+              <div className="metric-value">{metricas.followupsIa.leadsResponderam}</div>
+              <div className="metric-delta" style={{color:"var(--muted)"}}>{metricas.followupsIa.pct}% dos leads, em até 3 dias</div>
+            </div>
+          </div>
+          <BarrasNeon numerar={false} vazio="Nenhum follow-up da IA no período." itens={metricas.followupsIa.porTipo.map(t=>({
+            label: TIPO_FOLLOWUP_IA[t.estagio] || t.estagio.replace(/_/g," "),
+            valor: t.enviados,
+            texto: `${t.enviados} · ${t.leadsResponderam}/${t.leads} resp.`,
+          }))}/>
+        </div>
+      )}
 
       {/* 2026-08-04: qualidade de atendimento (pedido do usuário) — tempo de resposta da
           IA e silêncio pós-handoff aparecem pra admin_master+gerente igual o resto dessa
