@@ -243,15 +243,13 @@ function Tarefas({ v, inbox, jogo, onAcao, onCelular, parado }) {
       </>}
 
       {v.retomar_total > 0 && (
-        <details className="rot-parados">
-          <summary className="rot-sec rot-sec-toque">
-            <span className="rot-dot rot-warning" />Negociações paradas há {parado}+ dias<span className="rot-num">{v.retomar_total}</span>
-            <i className="ti ti-chevron-down rot-seta" />
-          </summary>
+        // 2026-11-10 (Felipe): sempre aberta, sem seta pra esconder, em todos os vendedores.
+        <div className="rot-parados">
+          <h3 className="rot-sec"><span className="rot-dot rot-warning" />Negociações paradas há {parado}+ dias<span className="rot-num">{v.retomar_total}</span></h3>
           <Lista itens={v.retomar} render={l => (
             <LinhaCliente key={l.id} l={l} inbox={inbox} onAcao={onAcao} feito={tocados.has(l.id)}
               sub={`sem conversa há ${diasSem(l.ultimo_em)}`} />)} />
-        </details>
+        </div>
       )}
     </div>
   );
