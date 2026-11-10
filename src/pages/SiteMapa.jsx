@@ -92,31 +92,29 @@ export default function SiteMapa() {
     <div>
       <div className="page-header">
         <h1 className="page-title"><i className="ti ti-flame" /> Mapa do site</h1>
-      </div>
-
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-        <div className="seg">
-          {Object.entries(SITES).map(([id, s]) => (
-            <button key={id} className={`seg-btn ${site === id ? "active" : ""}`} onClick={() => setSite(id)}>{s.nome}</button>
-          ))}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", flex: "1 1 auto", minWidth: 0 }}>
+          <div className="seg">
+            {Object.entries(SITES).map(([id, s]) => (
+              <button key={id} className={`seg-btn ${site === id ? "active" : ""}`} onClick={() => setSite(id)}>{s.nome}</button>
+            ))}
+          </div>
+          <div className="seg">
+            <button className={`seg-btn ${aparelho === "cel" ? "active" : ""}`} onClick={() => setAparelho("cel")}>Celular</button>
+            <button className={`seg-btn ${aparelho === "pc" ? "active" : ""}`} onClick={() => setAparelho("pc")}>Computador</button>
+          </div>
+          <div className="seg">
+            {[7, 30, 90].map(d => (
+              <button key={d} className={`seg-btn ${dias === d ? "active" : ""}`} onClick={() => setDias(d)}>{d} dias</button>
+            ))}
+          </div>
+          <div className="seg" style={{ overflowX: "auto", maxWidth: "100%" }}>
+            {PAGINAS.map(([id, nome]) => (
+              <button key={id} className={`seg-btn ${pagina === id ? "active" : ""}`} onClick={() => setPagina(id)} style={{ whiteSpace: "nowrap" }}>
+                {nome}{visitasPorPagina[id] ? <span style={{ opacity: 0.6 }}> {num(visitasPorPagina[id])}</span> : null}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="seg">
-          <button className={`seg-btn ${aparelho === "cel" ? "active" : ""}`} onClick={() => setAparelho("cel")}>Celular</button>
-          <button className={`seg-btn ${aparelho === "pc" ? "active" : ""}`} onClick={() => setAparelho("pc")}>Computador</button>
-        </div>
-        <div className="seg">
-          {[7, 30, 90].map(d => (
-            <button key={d} className={`seg-btn ${dias === d ? "active" : ""}`} onClick={() => setDias(d)}>{d} dias</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="seg" style={{ marginBottom: 16, overflowX: "auto", maxWidth: "100%" }}>
-        {PAGINAS.map(([id, nome]) => (
-          <button key={id} className={`seg-btn ${pagina === id ? "active" : ""}`} onClick={() => setPagina(id)} style={{ whiteSpace: "nowrap" }}>
-            {nome}{visitasPorPagina[id] ? <span style={{ opacity: 0.6 }}> {num(visitasPorPagina[id])}</span> : null}
-          </button>
-        ))}
       </div>
 
       {erro && <div className="card" style={{ color: "var(--danger)", fontSize: 13 }}>Não consegui carregar o mapa agora.</div>}
