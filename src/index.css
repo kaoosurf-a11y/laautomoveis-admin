@@ -1729,3 +1729,15 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   line-height:1;border-radius:10px;gap:5px;justify-content:center}
 .modal .lead-acoes>:not(.modal-overlay) i{font-size:15px}
 .modal .rot-celular{box-sizing:border-box;min-height:40px;border-radius:10px;font-size:13px}
+
+/* Acabamento 09/11/2026 (Felipe: pente fino sem mudar cor nem botão). Só celular (até 600px), só a Rotina.
+   1) Pista do carrinho com a largura toda e o placar (%, pontos e estrelas) logo abaixo: antes a pista ficava
+      com ~150px e as estrelas encostavam no carro. 2) "Mais antigo" numa linha só: a regra de 14px de baixo
+      perdia pra ".rot-loja .metric-value{20px}" e o valor quebrava em duas linhas ("15h / 0min").
+   3) Data abaixo do título com respiro (estava colada nos filtros). */
+@media(max-width:600px){
+  .pista-wrap{flex-wrap:wrap;row-gap:6px}
+  .pista-wrap>.pista{flex:1 1 100%}
+  .rot-loja .metric-value.rot-valor-texto{font-size:16px;white-space:nowrap}
+}
+@media(max-width:1023px){.rot-sub{margin-top:-2px}}
