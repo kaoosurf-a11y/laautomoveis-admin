@@ -159,6 +159,9 @@ export default function Disparador() {
   const arrastando = useRef({ ativo: false, startX: 0, startScroll: 0 });
   function onBoardMouseDown(e) {
     if (e.button !== 0 || e.target.closest(".fu-kanban-card")) return;
+    // Clique na barra de rolagem: deixa o navegador rolar (o arrastar brigava com a barra, Felipe 10/11)
+    const el = e.target;
+    if ((el.clientWidth && e.offsetX >= el.clientWidth) || (el.clientHeight && e.offsetY >= el.clientHeight)) return;
     const board = boardRef.current;
     if (!board) return;
     arrastando.current = { ativo: true, startX: e.pageX, startScroll: board.scrollLeft };
