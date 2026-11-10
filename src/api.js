@@ -67,6 +67,7 @@ export async function atualizarLeadCRM(id,d) { return req(`/api/crm/leads/${id}`
 export async function excluirLeadCRM(id) { return req(`/api/crm/leads/${id}`,{method:"DELETE"}); }
 export async function getResultadoMensal() { return req("/api/dashboard/mensal"); }
 // Rotina do dia (Felipe 29/10): o backend recorta por papel (vendedor, gerente, admin).
+export async function buscarLeadsRotina(q, loja) { const p = new URLSearchParams({ q }); if (loja) p.set("loja", loja); return req(`/api/rotina/busca?${p}`); }
 export async function getRotina(data, loja) { const q = new URLSearchParams({ data }); if (loja) q.set("loja", loja); return req(`/api/rotina?${q}`); }
 // Toque em Mensagem/Ligar na rotina = missão de contato (backend só pontua o vendedor dono do lead, 1 por lead por dia).
 // 2026-11-09 (Felipe): "Ja atendi pelo meu WhatsApp" com a coluna escolhida.

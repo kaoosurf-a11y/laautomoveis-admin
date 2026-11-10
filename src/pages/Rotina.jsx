@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { getRotina, registrarAcaoRotina } from "../api.js";
+import { getRotina, registrarAcaoRotina, buscarLeadsRotina } from "../api.js";
 import { isOwner, isManager, estaVendoComo } from "../auth.js";
 import { ChatwootLink } from "../components/ChatwootLink.jsx";
 import BotaoLigar from "../components/BotaoLigar.jsx";
@@ -253,6 +253,46 @@ function Tarefas({ v, inbox, jogo, onAcao, onCelular, parado }) {
   );
 }
 
+// 2026-11-10 (Felipe: "campo de busca que acha os leads por nome, numero, veiculos e puxa pra cima"):
+// procura nos leads do vendedor (gerente: da loja; dono: das duas) e mostra o resultado no topo, com os mesmos botoes.
+const COLUNA = { novo_lead: "Para atender", lista_vip: "Lista Vip", negociando: "Em negociação", sem_credito: "Sem crédito",
+  vai_pensar: "Vai pensar", nao_achou_carro: "Não achou o carro", carros_baratos: "Carros baratos",
+  parou_responder: "Parou de responder", feirao: "Feirão", fecha_mes: "Fecha mês", agendados: "Agendados",
+  fechado_ganho: "Venda concluída", fechado_perdido: "Venda perdida", bau: "Baú", fornecedor: "Fornecedor",
+  nao_qualificado: "Não qualificado" };
+function BuscaLeads({ inboxDe, onAcao, loja, comVendedor }) {
+  const [q, setQ] = useState("");
+  const [res, setRes] = useState(null);
+  const [buscando, setBuscando] = useState(false);
+  useEffect(() => {
+    const t = q.trim();
+    if (t.length < 2) { setRes(null); return; }
+    let vivo = true;
+    setBuscando(true);
+    const id = setTimeout(() => {
+      buscarLeadsRotina(t, loja).then(r => { if (vivo) setRes(r.leads || []); })
+        .catch(() => { if (vivo) setRes([]); }).finally(() => { if (vivo) setBuscando(false); });
+    }, 300);
+    return () => { vivo = false; clearTimeout(id); };
+  }, [q, loja]);
+  const sub = (l) => [COLUNA[l.estagio] || l.estagio, comVendedor && (l.vendedor_nome || "sem vendedor"),
+    l.ultimo_em && `último contato ${quando(l.ultimo_em)}`].filter(Boolean).join(" · ");
+  return (
+    <div className="card rot-busca">
+      <label className="rot-busca-campo">
+        <svg className="rot-busca-ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M20 20l-4.8-4.8" /></svg>
+        <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar cliente por nome, número ou carro"
+          aria-label="Buscar cliente por nome, número ou carro" autoComplete="off" />
+        {buscando ? <span className="spinner" /> : q && <button type="button" className="rot-busca-limpa" onClick={() => setQ("")} aria-label="Limpar busca"><i className="ti ti-x" /></button>}
+      </label>
+      {res && (res.length
+        ? <><h3 className="rot-sec"><span className="rot-dot rot-info" />Encontrados<span className="rot-num">{res.length}{res.length === 20 ? "+" : ""}</span></h3>
+            <div className="rot-lista">{res.map(l => <LinhaCliente key={l.id} l={l} inbox={inboxDe(l)} onAcao={onAcao} sub={sub(l)} />)}</div></>
+        : !buscando && <p className="rot-busca-vazio">Nenhum cliente encontrado para "{q.trim()}".</p>)}
+    </div>
+  );
+}
+
 // Placar do vendedor: o toque já conta na hora; o backend confirma os pontos.
 function useJogo(v, joga, avisar) {
   const inicial = () => ({ pontos: v.pontos, missoes: v.missoes, cliques: { mensagem: 0, ligar: 0, ...(v.cliques || {}) } });
@@ -284,6 +324,7 @@ function MeuDia({ v, inbox, parado, pontos, avisar }) {
   const antigo = lista[0];
   return (
     <section className="rot-meu">
+      <BuscaLeads inboxDe={() => inbox} onAcao={onAcao} />
       <div className={`card rot-resumo ${lista.length ? "rot-resumo-pend" : "rot-resumo-ok"}`}>
         <i className={`ti ${lista.length ? "ti-alert-triangle" : "ti-circle-check"}`} />
         <div>
@@ -416,6 +457,8 @@ export default function Rotina() {
       {dados && souVendedor && (meu
         ? <MeuDia v={meu[0]} inbox={meu[1].inbox_id} parado={dados.parado_dias} pontos={dados.pontos} avisar={avisar} />
         : <div className="empty-state"><p>Sua conta não está como vendedor ativo.</p></div>)}
+      {dados && !souVendedor && <BuscaLeads comVendedor loja={isOwner() && loja !== "todas" ? loja : null}
+        inboxDe={l => dados.lojas.find(x => x.id === l.loja_id)?.inbox_id} />}
       {dados && !souVendedor && dados.lojas.map(l => <Loja key={l.id} loja={l} parado={dados.parado_dias} avisar={avisar} />)}
       {aviso && <div className="rot-aviso" role="status"><i className="ti ti-star" />{aviso}</div>}
     </div>

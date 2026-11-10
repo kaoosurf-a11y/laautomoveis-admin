@@ -1834,3 +1834,14 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-dia-linha b{color:var(--fg);font-variant-numeric:tabular-nums}
 @media(max-width:900px){.rot-pts{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:600px){.rot-pts{grid-template-columns:repeat(2,1fr)}}
+/* 2026-11-10 (Felipe): busca de clientes no topo da Rotina (nome, numero ou carro). */
+.rot-busca{padding:10px 12px;margin-bottom:12px}
+.rot-busca-campo{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);cursor:text}
+.rot-busca-campo:focus-within{border-color:var(--brand-line);box-shadow:0 0 0 3px var(--brand-soft)}
+.rot-busca-ic{flex:0 0 18px;color:var(--brand)}
+.rot-busca-campo input{flex:1;min-width:0;background:none;border:0;outline:0;color:inherit;font:inherit;font-size:16px}
+.rot-busca-campo input::-webkit-search-cancel-button{display:none}
+.rot-busca-limpa{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;background:none;color:inherit;opacity:.7;cursor:pointer}
+.rot-busca-limpa:hover{opacity:1;background:var(--border)}
+.rot-busca .rot-sec{margin-top:12px}
+.rot-busca-vazio{margin:10px 2px 2px;opacity:.75;font-size:14px}
