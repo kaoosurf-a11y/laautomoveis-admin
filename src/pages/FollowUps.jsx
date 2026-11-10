@@ -176,16 +176,19 @@ function situacaoFluxo(f){
   if(!r.total)return {r,texto:"Sem mensagem automática",cor:"var(--muted)",icone:"ti-message-off"};
   if(f.status_fluxo==="cancelado")return {r,texto:"Mensagens canceladas",cor:"var(--muted)",icone:"ti-circle-x"};
   if(f.status_fluxo==="pausado")return {r,texto:"Mensagens pausadas",cor:"var(--warning)",icone:"ti-player-pause"};
+  // 2026-11-10 (Felipe: mostrar "Segurado" em vez de "atrasada"): o Sender segura de propósito
+  // (nome que não dá pra usar ou 6 mensagens em 30 dias); o backend manda o motivo em f.segurado.
+  if(r.prox&&r.vencida&&f.segurado)return {r,texto:f.segurado==="teto"?"Segurado: já recebeu 6 mensagens no mês":"Segurado: nome do contato não serve pra mensagem",cor:"var(--muted)",icone:"ti-lock"};
   if(r.prox)return {r,texto:`Próxima ${fmtData(r.prox.agendado_para)}${r.vencida?" (atrasada)":""}`,cor:r.vencida?"var(--danger)":"var(--info)",icone:"ti-send"};
   return {r,texto:"Sequência terminada",cor:"var(--success)",icone:"ti-circle-check"};
 }
-function BolinhasFluxo({mensagens}){
+function BolinhasFluxo({mensagens,segurado}){
   const agora=new Date();
   return(
     <span className="fu-dots">
       {mensagens.map(m=>{
         const atrasada=m.status==="agendada"&&new Date(m.agendado_para)<agora;
-        const c=m.status==="enviada"?"ok":atrasada||m.status==="falhou"?"late":m.status==="cancelada"?"off":m.status==="pausada"?"pause":"next";
+        const c=m.status==="enviada"?"ok":atrasada&&segurado?"pause":atrasada||m.status==="falhou"?"late":m.status==="cancelada"?"off":m.status==="pausada"?"pause":"next";
         return <i key={m.id} className={`fu-dot ${c}`} title={`${MSG_STATUS_INFO[m.status]?.[1]||m.status} · ${fmtData(m.agendado_para)}`}/>;
       })}
     </span>
@@ -222,7 +225,7 @@ function FuCard({f,role,readOnly,onMovido}){
       <div className="fu-sit">
         <div className="fu-sit-l1">
           <span className="fu-sit-n">{sit.r.total>0?<>Recebeu <b>{sit.r.enviadas}</b> de {sit.r.total}</>:"Nenhuma mensagem"}</span>
-          {sit.r.total>0&&<BolinhasFluxo mensagens={f.mensagens}/>}
+          {sit.r.total>0&&<BolinhasFluxo mensagens={f.mensagens} segurado={f.segurado}/>}
         </div>
         <div className="fu-sit-l2" style={{color:sit.cor}}><i className={`ti ${sit.icone}`}/><span>{sit.texto}</span></div>
       </div>
@@ -373,7 +376,7 @@ export default function FollowUps(){
   const ehDeHoje=d=>d&&new Date(d).toDateString()===hoje;
   const ehHoje=f=>msgs(f).some(m=>(m.status==="agendada"&&ehDeHoje(m.agendado_para))||(m.status==="enviada"&&(ehDeHoje(m.enviado_em)||ehDeHoje(m.agendado_para))));
   const mensagemVencida=m=>m.status==="agendada"&&m.agendado_para&&new Date(m.agendado_para)<new Date();
-  const ehVencido=f=>f.status_fluxo==="ativo"&&msgs(f).some(mensagemVencida);
+  const ehVencido=f=>f.status_fluxo==="ativo"&&!f.segurado&&msgs(f).some(mensagemVencida);
   const passaFiltro=f=>filtroData==="todos"||(filtroData==="hoje"&&ehHoje(f))||(filtroData==="vencidos"&&ehVencido(f));
   const totalEmFollowup=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.length,0);
   const totalHoje=Object.values(data.porTipo||{}).reduce((s,arr)=>s+arr.filter(ehHoje).length,0);
