@@ -321,8 +321,9 @@ function TabJornada({ data }) {
       {/* 2026-10-18 (Felipe: "jornada tem espaço vazio"; "o que der, em gráfico"): duas
           colunas que não esticam, o mais importante em cima. Esquerda: entrada de leads e
           o que a IA fez. Direita: ciclo, perdas e a agenda de follow-ups de hoje. */}
-      <div className="dash-colunas">
-        <div className="dash-pilha">
+      {/* 2026-11-10 (Felipe: "cards um abaixo do outro pra ficar padrão"): uma coluna só,
+          todos os cards na largura inteira, na mesma ordem de antes. */}
+      <div className="dash-pilha" style={{marginBottom:12}}>
           {data.leads_7dias && (
             <div className="card">
               <div className="card-title"><i className="ti ti-chart-bar"/> Leads últimos 7 dias</div>
@@ -339,9 +340,7 @@ function TabJornada({ data }) {
               { label:"Follow-ups enviados", valor:agente_ia.followups, cor:NEON[4] },
             ]}/>
           </div>
-        </div>
 
-        <div className="dash-pilha">
           <div className="card">
             <div className="card-title"><i className="ti ti-route"/> Ciclo médio de venda</div>
             <div className="jornada-ciclo-num">
@@ -371,7 +370,6 @@ function TabJornada({ data }) {
               </div>
             ))}
           </div>
-        </div>
       </div>
     </>
   );
