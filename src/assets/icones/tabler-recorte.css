@@ -1,4 +1,4 @@
-/* Gerado por scripts/icones.py (Tabler Icons 3.0.0, 111 icones). Nao editar a mao. */
+/* Gerado por scripts/icones.py (Tabler Icons 3.0.0, 112 icones). Nao editar a mao. */
 @font-face{font-family:"tabler-icons";font-style:normal;font-weight:400;font-display:block;src:url("./tabler-recorte.woff") format("woff")}
 .ti{font-family:"tabler-icons" !important;speak:none;font-style:normal;font-weight:normal;font-variant:normal;text-transform:none;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .ti-ad:before{content:"\ea02"}
@@ -88,6 +88,7 @@
 .ti-photo-star:before{content:"\f366"}
 .ti-player-pause:before{content:"\ed45"}
 .ti-player-play:before{content:"\ed46"}
+.ti-player-stop:before{content:"\ed4a"}
 .ti-plus:before{content:"\eb0b"}
 .ti-refresh:before{content:"\eb13"}
 .ti-repeat:before{content:"\eb72"}

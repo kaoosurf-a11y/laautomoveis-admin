@@ -1744,3 +1744,33 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   .rot-loja .metric-value.rot-valor-texto{font-size:16px;white-space:nowrap}
 }
 @media(max-width:1023px){.rot-sub{margin-top:-2px}}
+
+/* ── Follow-ups só visual (10/11/2026, Felipe): cards da mesma altura em todas as colunas,
+   um botão só (Parar envio) e no celular uma coluna por tela, alinhada pela borda. ── */
+.fu-card .fu-meta{display:flex;min-height:19px}
+.fu-card .fu-meta:empty{display:flex}
+.fu-card .fu-sit{min-height:44px;justify-content:center}
+.fu-card .kc-foot{min-height:30px}
+.fu-card .kc-tempo{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fu-parar{margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--acao-line);background:var(--acao-soft);color:var(--acao);border-radius:6px;padding:3px 8px;font:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.fu-parar i{font-size:12px}
+@media(hover:hover){.fu-parar:hover{border-color:var(--acao)}}
+.fu-parar-grande{color:var(--acao)}
+.fu-paraonde{max-width:460px}
+.fu-po-txt{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.45}
+.fu-po-lista{display:flex;flex-direction:column;gap:6px}
+.fu-po-op{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:10px 12px;font:inherit;color:var(--fg);cursor:pointer;min-height:48px}
+.fu-po-op:disabled{opacity:.6;cursor:default}
+@media(hover:hover){.fu-po-op:not(:disabled):hover{border-color:var(--cor)}}
+.fu-po-op.bau{border-color:var(--acao-line);background:var(--acao-soft)}
+.fu-po-dot{width:10px;height:10px;border-radius:50%;background:var(--cor);flex-shrink:0}
+.fu-po-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.fu-po-l b{font-size:14px;font-weight:600}
+.fu-po-l small{font-size:12px;color:var(--muted)}
+.fu-po-op>i{color:var(--muted);font-size:16px}
+@media(max-width:1023px){
+  .fu-board{scroll-padding-left:0;gap:10px}
+  .fu-board .kanban-col:not(.kanban-col-vazia){width:calc(100vw - 72px);max-width:340px}
+  .fu-parar{padding:6px 10px;font-size:12px;min-height:32px}
+  .fu-card .kc-foot{min-height:40px}
+}

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { lembrado } from "../memoria.js";
-import { getFollowups, marcarFollowupRespondeu, atualizarFluxoFollowup, atualizarMensagemFollowup, atualizarLeadCRM, excluirLeadCRM } from "../api.js";
+import { getFollowups, moverLead } from "../api.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
-import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
+import { alertDialog } from "../components/Dialog.jsx";
 import { useVisivel } from "../lib/useVisivel.js";
 
 // Ordem das colunas — só preferência visual (mesmo padrão do CRM Kanban em CRM.jsx),
@@ -42,67 +42,22 @@ function resumoFluxo(f) {
   return { total: ms.length, enviadas, prox, vencida };
 }
 
-function FluxoMensagens({ followup, readOnly, onAtualizado }) {
-  const [editandoId, setEditandoId] = useState(null);
-  const [textoEdit, setTextoEdit] = useState("");
-  const [salvando, setSalvando] = useState(false);
-
-  async function salvarTexto(msgId) {
-    setSalvando(true);
-    try { await atualizarMensagemFollowup(msgId, { conteudo: textoEdit }); onAtualizado(); }
-    catch { await alertDialog("Erro ao salvar. Tente de novo."); }
-    setSalvando(false); setEditandoId(null);
-  }
-  async function mudarStatusMsg(msgId, status) {
-    try { await atualizarMensagemFollowup(msgId, { status }); onAtualizado(); }
-    catch { await alertDialog("Erro ao atualizar mensagem."); }
-  }
-  async function mudarFluxo(status_fluxo) {
-    try { await atualizarFluxoFollowup(followup.id, status_fluxo); onAtualizado(); }
-    catch { await alertDialog("Erro ao atualizar fluxo."); }
-  }
-
+// 2026-11-10 (Felipe: "os vendedores não usam os botões nem abrem essa aba, deve ficar só visual"):
+// a lista de mensagens é só leitura. Mudar o que o lead recebe é mover o lead de coluna (ParaOnde).
+function FluxoMensagens({ followup }) {
   const r = resumoFluxo(followup);
-
   return (
     <div className="fu-fluxo">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 4 }}>
-        <span className="fu-fluxo-fechar">Mensagens · recebeu {r.enviadas} de {r.total}</span>
-        {!readOnly && (
-          <div style={{ display: "flex", gap: 4 }}>
-            {followup.status_fluxo === "ativo"
-              ? <button className="fu-resp" onClick={() => mudarFluxo("pausado")}><i className="ti ti-player-pause" /> Pausar tudo</button>
-              : followup.status_fluxo === "pausado"
-              ? <button className="fu-resp" onClick={() => mudarFluxo("ativo")}><i className="ti ti-player-play" /> Retomar</button>
-              : <span className="badge" style={{ fontSize: 10, background: "var(--danger)22", color: "var(--danger)" }}>Cancelado</span>}
-            {followup.status_fluxo !== "cancelado" && <button className="fu-ico" style={{ color: "var(--danger)" }} title="Cancelar o fluxo todo" onClick={async () => { if (await confirmDialog("Cancelar todo o fluxo de mensagens desse follow-up?",{title:"Cancelar fluxo?",confirmLabel:"Cancelar fluxo"})) mudarFluxo("cancelado"); }}><i className="ti ti-x" /></button>}
-          </div>
-        )}
-      </div>
+      <div className="fu-fluxo-fechar" style={{ marginBottom: 4 }}>Mensagens · recebeu {r.enviadas} de {r.total}</div>
       {followup.mensagens.map(m => {
         const [cor, label] = MSG_STATUS_INFO[m.status] || ["var(--muted)", m.status];
-        const editavel = !readOnly && m.status !== "enviada";
         return (
           <div key={m.id} className="fu-msg">
             <div className="fu-msg-top">
               <span className="badge" style={{ fontSize: 10, background: `${cor}22`, color: cor }}>{label}</span>
               <span className="fu-msg-data">{fmtData(m.agendado_para)}</span>
-              {editavel && m.status === "agendada" && <button className="fu-ico" onClick={() => mudarStatusMsg(m.id, "pausada")} title="Pausar essa mensagem"><i className="ti ti-player-pause" /></button>}
-              {editavel && m.status === "pausada" && <button className="fu-ico" onClick={() => mudarStatusMsg(m.id, "agendada")} title="Retomar essa mensagem"><i className="ti ti-player-play" /></button>}
-              {editavel && <button className="fu-ico" style={{ color: "var(--danger)" }} onClick={() => mudarStatusMsg(m.id, "cancelada")} title="Cancelar essa mensagem"><i className="ti ti-x" /></button>}
             </div>
-            {editandoId === m.id ? (
-              <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
-                <textarea className="form-input" style={{ marginBottom: 0, fontSize: 12, minHeight: 70 }} value={textoEdit} onChange={e => setTextoEdit(e.target.value)} />
-                <button className="btn btn-primary" style={{ padding: "4px 8px" }} onClick={() => salvarTexto(m.id)} disabled={salvando}>{salvando ? <span className="spinner" /> : <i className="ti ti-check" />}</button>
-              </div>
-            ) : (
-              <div className="fu-msg-txt" style={{ cursor: editavel ? "pointer" : "default" }}
-                onClick={() => { if (editavel) { setEditandoId(m.id); setTextoEdit(m.conteudo); } }}
-                title={editavel ? "Clique pra editar" : ""}>
-                {m.conteudo} {editavel && <i className="ti ti-pencil" style={{ fontSize: 11, color: "var(--muted)" }} />}
-              </div>
-            )}
+            <div className="fu-msg-txt">{m.conteudo}</div>
           </div>
         );
       })}
@@ -110,11 +65,58 @@ function FluxoMensagens({ followup, readOnly, onAtualizado }) {
   );
 }
 
+// Parar envio = mover o lead de coluna (mesmo PATCH do Kanban). O backend fecha o follow-up da
+// coluna antiga (o Sender só manda quando cl.estagio = f.tipo) e a coluna nova cria a sequência dela.
+// Não qualificado fica fora: mover na mão pra lá não cria mensagem (o follow-up dela nasce pelas rotinas).
+const DESTINOS=[
+  {key:"bau",label:"Baú (descarte)",desc:"Para tudo. Ninguém manda mais mensagem automática.",cor:"#8d6e63"},
+  {key:"vai_pensar",label:"Vai pensar",desc:"Lembrete de quem ficou de pensar."},
+  {key:"sem_credito",label:"Sem crédito",desc:"Mensagens de quem não aprovou o financiamento."},
+  {key:"nao_achou_carro",label:"Não achou o carro",desc:"Avisa quando chegar carro parecido."},
+  {key:"parou_responder",label:"Parou de responder",desc:"Retomada de conversa."},
+  {key:"feirao",label:"Feirão",desc:"Convite do feirão."},
+  {key:"fecha_mes",label:"Fecha mês",desc:"Oferta de fechamento do mês."},
+];
+function ParaOnde({f,onClose,onMovido}){
+  const[movendo,setMovendo]=useState(null);
+  async function mover(d){
+    setMovendo(d.key);
+    try{
+      const r=await moverLead(f.lead_id,d.key,"Parou o follow-up pela tela de Follow-ups");
+      if(r&&r.skipped){await alertDialog("Não deu pra mover esse lead agora. Tente pelo CRM.");setMovendo(null);return;}
+      onMovido(f.id);onClose();
+    }catch{await alertDialog("Não deu pra mover (talvez esse lead não seja seu). Tente de novo.");setMovendo(null);}
+  }
+  return(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal fu-paraonde" onClick={e=>e.stopPropagation()}>
+        <div className="modal-handle"/>
+        <div className="fu-j-head">
+          <div style={{flex:1,minWidth:0}}>
+            <h2 className="modal-title" style={{margin:0}}>Parar envio</h2>
+            <div className="fu-j-car">{f.cliente_nome} · hoje em {TIPO_LABEL[f.tipo]||f.tipo}</div>
+          </div>
+          <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={onClose}><i className="ti ti-x"/></button>
+        </div>
+        <p className="fu-po-txt">A mensagem programada não faz sentido? Escolha para onde o lead vai. A sequência atual para na hora.</p>
+        <div className="fu-po-lista">
+          {DESTINOS.filter(d=>d.key!==f.tipo).map(d=>(
+            <button key={d.key} className={`fu-po-op${d.key==="bau"?" bau":""}`} disabled={!!movendo} onClick={()=>mover(d)} style={{"--cor":d.cor||TIPO_COR[d.key]}}>
+              <span className="fu-po-dot"/>
+              <span className="fu-po-l"><b>{d.label}</b><small>{d.desc}</small></span>
+              {movendo===d.key?<span className="spinner"/>:<i className="ti ti-chevron-right"/>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const TIPO_LABEL={
   sem_credito:"Sem crédito",vai_pensar:"Vai pensar",
   nao_achou_carro:"Não achou o carro",parou_responder:"Parou de responder",
-  feirao:"Feirão",fecha_mes:"Fecha mês",
-  pos_venda_satisfacao:"Pós-venda",
+  feirao:"Feirão",fecha_mes:"Fecha mês",nao_qualificado:"Não qualificado",
 };
 // Mesma cor do estágio no Kanban do CRM (CRM.jsx ESTAGIOS_ADMIN) — a coluna aqui é o
 // mesmo estágio, só com o follow-up em detalhe, então a cor é o elo visual entre as
@@ -128,10 +130,11 @@ const TIPO_LABEL={
 const TIPO_COR={
   sem_credito:"#e67e22",vai_pensar:"#8E44AD",
   nao_achou_carro:"#17A2B8",parou_responder:"#82C91E",
-  feirao:"#FFD43B",fecha_mes:"#E74C3C",
-  pos_venda_satisfacao:"#d1637a",
+  feirao:"#FFD43B",fecha_mes:"#E74C3C",nao_qualificado:"#6B7280",
 };
-const TIPO_ORDEM=["sem_credito","vai_pensar","nao_achou_carro","parou_responder","feirao","fecha_mes","pos_venda_satisfacao"];
+// 2026-11-10: Pós-venda saiu (não existe mais follow-up de pós-venda, Felipe 22/10) e entrou
+// Não qualificado (reengajamento de 2 mensagens, funil contínuo de 10/11), na ordem do funil.
+const TIPO_ORDEM=["parou_responder","nao_achou_carro","vai_pensar","sem_credito","nao_qualificado","fecha_mes","feirao"];
 
 function fmtData(iso){
   if(!iso) return "—";
@@ -189,15 +192,20 @@ function BolinhasFluxo({mensagens}){
   );
 }
 
-function FuCard({f,role,readOnly,onAtualizado,onRespondeu}){
+// Só dá pra parar quando ainda tem mensagem pra sair (sequência ativa com próxima agendada).
+const podeParar=(f,readOnly)=>!readOnly&&f.status_fluxo==="ativo"&&!!resumoFluxo(f).prox;
+
+// 2026-11-10 (Felipe): card só visual, mesma altura em todas as colunas (linha de selos e caixa
+// da situação sempre com 2 linhas) e um único botão, "Parar envio", quando ainda vai sair mensagem.
+function FuCard({f,role,readOnly,onMovido}){
   const[aberto,setAberto]=useState(false);
+  const[parando,setParando]=useState(false);
   const canal=CANAL[f.origem];
-  const lead={...f,id:f.lead_id,nome:f.cliente_nome};
   const sit=situacaoFluxo(f);
-  const parar=e=>e.stopPropagation();
+  const parar=podeParar(f,readOnly);
   return(
     <>
-    <div className="kanban-card kc fu-card" onClick={()=>setAberto(true)} title="Abrir o lead e as mensagens">
+    <div className="kanban-card kc fu-card" onClick={()=>setAberto(true)} title="Ver as mensagens do lead">
       <div className="kc-av">
         <FotoLead nome={f.cliente_nome} foto={f.foto_url}/>
         {canal&&<span className="kc-ch" style={{background:canal[0]}} title={`Origem: ${canal[2]}`}><i className={`ti ${canal[1]}`}/></span>}
@@ -206,51 +214,32 @@ function FuCard({f,role,readOnly,onAtualizado,onRespondeu}){
         <div className="kc-top"><span>{f.cliente_nome}</span><time title={`Entrou em ${fmtData(f.criado_em)}`}>{diaMesCurto(f.criado_em)}</time></div>
         <div className="kc-car">{f.veiculo||"Sem carro definido"}</div>
       </div>
-      <div className="kc-meta">
+      <div className="kc-meta fu-meta">
         {f.temperatura==="quente"&&<span className="kc-tag hot">Quente</span>}
         {f.temperatura==="morno"&&<span className="kc-tag">Morno</span>}
         <ClassificacaoTag f={f}/>
-        {f.respondeu&&<span className="badge badge-success"><i className="ti ti-check" style={{fontSize:11}}/> Respondeu</span>}
       </div>
       <div className="fu-sit">
-        {sit.r.total>0
-          ?<div className="fu-sit-l1"><span className="fu-sit-n">Recebeu <b>{sit.r.enviadas}</b> de {sit.r.total}</span><BolinhasFluxo mensagens={f.mensagens}/></div>
-          :null}
+        <div className="fu-sit-l1">
+          <span className="fu-sit-n">{sit.r.total>0?<>Recebeu <b>{sit.r.enviadas}</b> de {sit.r.total}</>:"Nenhuma mensagem"}</span>
+          {sit.r.total>0&&<BolinhasFluxo mensagens={f.mensagens}/>}
+        </div>
         <div className="fu-sit-l2" style={{color:sit.cor}}><i className={`ti ${sit.icone}`}/><span>{sit.texto}</span></div>
       </div>
       <div className="kc-foot">
         {f.vendedor_iniciais&&<div className="av" title={f.vendedor_nome||undefined} style={{width:20,height:20,fontSize:8,background:"var(--brand-soft)",color:"var(--brand)"}}>{f.vendedor_iniciais}</div>}
         <span className="kc-tempo">{f.vendedor_nome?.split(" ")[0]||"sem vendedor"}</span>
-        <span className="kc-dir" onClick={parar}>
-          {!f.respondeu&&!readOnly&&<button className="fu-resp" onClick={()=>onRespondeu(f.id)} title="O cliente respondeu: para o fluxo de mensagens">Marcar respondido</button>}
-          <LeadPhoneChatwoot lead={lead} compact/>
-        </span>
+        {parar&&<button className="fu-parar" onClick={e=>{e.stopPropagation();setParando(true);}} title="Parar as mensagens programadas e mover o lead de coluna"><i className="ti ti-player-stop"/> Parar envio</button>}
       </div>
     </div>
-    {aberto&&<FuJanela f={f} role={role} readOnly={readOnly} onAtualizado={onAtualizado} onRespondeu={onRespondeu} onClose={()=>setAberto(false)}/>}
+    {aberto&&<FuJanela f={f} readOnly={readOnly} onParar={()=>{setAberto(false);setParando(true);}} onClose={()=>setAberto(false)}/>}
+    {parando&&<ParaOnde f={f} onMovido={onMovido} onClose={()=>setParando(false)}/>}
     </>
   );
 }
 
-// Janela do lead (clique no card): resumo, editar nome/veículo, remover (só owner) e a
-// sequência inteira de mensagens com pausar/cancelar/editar.
-function FuJanela({f,role,readOnly,onAtualizado,onRespondeu,onClose}){
-  const[editando,setEditando]=useState(false);
-  const[nome,setNome]=useState(f.cliente_nome||"");
-  const[veiculo,setVeiculo]=useState(f.veiculo||"");
-  const[salvando,setSalvando]=useState(false);
-  async function salvar(){
-    if(!nome.trim())return;
-    setSalvando(true);
-    try{await atualizarLeadCRM(f.lead_id,{nome:nome.trim(),veiculo_interesse:veiculo.trim()});onAtualizado();setEditando(false);}
-    catch{await alertDialog("Erro ao salvar. Tente de novo (talvez esse lead não seja seu).");}
-    setSalvando(false);
-  }
-  async function remover(){
-    if(!await confirmDialog(`Remover ${f.cliente_nome} do CRM? Use só pra lead de teste ou cadastro errado.`,{title:"Remover lead?",confirmLabel:"Remover"}))return;
-    try{await excluirLeadCRM(f.lead_id);onClose();onAtualizado();}
-    catch{await alertDialog("Erro ao remover.");}
-  }
+// Janela do lead (clique no card): resumo e a sequência inteira de mensagens, só leitura.
+function FuJanela({f,readOnly,onParar,onClose}){
   const canal=CANAL[f.origem];
   const lead={...f,id:f.lead_id,nome:f.cliente_nome};
   const sit=situacaoFluxo(f);
@@ -263,21 +252,10 @@ function FuJanela({f,role,readOnly,onAtualizado,onRespondeu,onClose}){
             <FotoLead nome={f.cliente_nome} foto={f.foto_url}/>
             {canal&&<span className="kc-ch" style={{background:canal[0]}} title={`Origem: ${canal[2]}`}><i className={`ti ${canal[1]}`}/></span>}
           </div>
-          {editando?(
-            <div style={{flex:1,minWidth:0}}>
-              <input className="form-input" style={{marginBottom:6}} value={nome} onChange={e=>setNome(e.target.value)} placeholder="Nome"/>
-              <input className="form-input" style={{marginBottom:6}} value={veiculo} onChange={e=>setVeiculo(e.target.value)} placeholder="Veículo de interesse"/>
-              <div style={{display:"flex",gap:6}}>
-                <button className="btn btn-primary" onClick={salvar} disabled={salvando}>{salvando?<span className="spinner"/>:<><i className="ti ti-check"/> Salvar</>}</button>
-                <button className="btn btn-ghost" onClick={()=>{setEditando(false);setNome(f.cliente_nome||"");setVeiculo(f.veiculo||"");}}>Cancelar</button>
-              </div>
-            </div>
-          ):(
-            <div style={{flex:1,minWidth:0}}>
-              <h2 className="modal-title fu-j-nome">{f.cliente_nome}</h2>
-              <div className="fu-j-car">{f.veiculo||"Sem carro definido"}</div>
-            </div>
-          )}
+          <div style={{flex:1,minWidth:0}}>
+            <h2 className="modal-title fu-j-nome">{f.cliente_nome}</h2>
+            <div className="fu-j-car">{f.veiculo||"Sem carro definido"}</div>
+          </div>
           <button className="modal-x" aria-label="Fechar" title="Fechar (Esc)" onClick={onClose}><i className="ti ti-x"/></button>
         </div>
         <div className="fu-j-info">
@@ -290,13 +268,11 @@ function FuJanela({f,role,readOnly,onAtualizado,onRespondeu,onClose}){
         <div className="fu-j-sit" style={{color:sit.cor}}>
           <i className={`ti ${sit.icone}`}/><span>{sit.r.total>0?`Recebeu ${sit.r.enviadas} de ${sit.r.total} mensagens. `:""}{sit.texto}</span>
         </div>
-        {f.mensagens&&f.mensagens.length>0&&<FluxoMensagens followup={f} readOnly={readOnly} onAtualizado={onAtualizado}/>}
+        {f.mensagens&&f.mensagens.length>0&&<FluxoMensagens followup={f}/>}
         <div className="fu-j-acoes">
-          {!readOnly&&!editando&&<button className="btn btn-ghost" onClick={()=>setEditando(true)}><i className="ti ti-pencil"/> Editar</button>}
-          {role==="admin_master"&&<button className="btn btn-ghost" style={{color:"var(--danger)"}} onClick={remover}><i className="ti ti-trash"/> Remover</button>}
-          <span style={{flex:1}}/>
-          {!f.respondeu&&!readOnly&&<button className="btn btn-ghost" onClick={()=>{onRespondeu(f.id);onClose();}}>Marcar respondido</button>}
           <LeadPhoneChatwoot lead={lead}> Chatwoot</LeadPhoneChatwoot>
+          <span style={{flex:1}}/>
+          {podeParar(f,readOnly)&&<button className="btn btn-ghost fu-parar-grande" onClick={onParar}><i className="ti ti-player-stop"/> Parar envio</button>}
         </div>
       </div>
     </div>
@@ -375,12 +351,9 @@ export default function FollowUps(){
     boardRef.current?.classList.remove("grabbing");
   }
 
-  const upd=(id,changes)=>setData(d=>({
-    ...d,
-    porTipo:Object.fromEntries(Object.entries(d.porTipo||{}).map(([k,v])=>[k,v.map(f=>f.id===id?{...f,...changes}:f)])),
-  }));
 
-  async function marcarRespondeu(id){try{await marcarFollowupRespondeu(id);}catch{}upd(id,{respondeu:true});}
+  // Lead movido pelo "Parar envio": sai da tela na hora (o follow-up dele foi fechado no backend).
+  const tirar=id=>setData(d=>({...d,porTipo:Object.fromEntries(Object.entries(d.porTipo||{}).map(([k,v])=>[k,v.filter(f=>f.id!==id)]))}));
 
   const hoje=new Date().toDateString();
   const ehHoje=f=>f.horario&&new Date(f.horario).toDateString()===hoje;
@@ -458,7 +431,7 @@ export default function FollowUps(){
                 </div>
                 <div className="kanban-cards">
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
-                  {leads.map(f=><FuCard key={f.id} f={f} role={role} readOnly={readOnly} onAtualizado={load} onRespondeu={marcarRespondeu}/>)}
+                  {leads.map(f=><FuCard key={f.id} f={f} role={role} readOnly={readOnly} onMovido={tirar}/>)}
                 </div>
               </div>
               );
