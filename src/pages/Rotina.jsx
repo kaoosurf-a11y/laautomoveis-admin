@@ -90,8 +90,10 @@ function quando(ts) {
 }
 
 // Lista de quem espera: junta "hoje" e "acumulado", quem espera há mais tempo primeiro.
+// 2026-11-10 (Felipe): quem pediu ligação é prioridade, vem antes de todo mundo, com o telefone vermelho.
 function esperando(v) {
-  return [...v.responder_hoje, ...v.acumulado].sort((a, b) => (b.espera_min ?? -1) - (a.espera_min ?? -1));
+  return [...v.responder_hoje, ...v.acumulado].sort((a, b) =>
+    (b.pediu_ligacao ? 1 : 0) - (a.pediu_ligacao ? 1 : 0) || (b.espera_min ?? -1) - (a.espera_min ?? -1));
 }
 
 function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular }) {
@@ -120,10 +122,12 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
     );
   }
   return (
-    <div className={`rot-lead ${feito ? "rot-cumprida" : ""}`}>
+    <div className={`rot-lead ${feito ? "rot-cumprida" : ""} ${l.pediu_ligacao ? "rot-ligacao" : ""}`}>
       <div className="rot-lead-info">
         <div className="rot-lead-nome">
+          {l.pediu_ligacao && <i className="ti ti-phone rot-fone" role="img" aria-label="Pediu ligação" title="Pediu ligação" />}
           {nomeLead(l)}
+          {l.pediu_ligacao && <span className="badge badge-danger">pediu ligação</span>}
           {l.temperatura === "quente" && <span className="badge badge-danger">quente</span>}
           {feito && <i className="ti ti-circle-check rot-ok" aria-label="Você já tocou neste cliente hoje" />}
         </div>

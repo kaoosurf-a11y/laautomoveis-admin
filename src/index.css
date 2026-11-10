@@ -1541,6 +1541,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-lista{display:flex;flex-direction:column;gap:8px}
 .rot-lead{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius)}
 .rot-lead-info{flex:1;min-width:0}
+/* 2026-11-10 (Felipe): lead que pediu ligacao = prioridade, telefone vermelho e borda vermelha */
+.rot-lead.rot-ligacao{border-color:var(--danger-line);border-left:3px solid var(--danger)}
+.rot-fone{color:var(--danger);font-size:17px;flex-shrink:0}
 /* 2026-11-09 (Felipe): "Ja atendi pelo meu WhatsApp" numa linha propria, embaixo dos botoes, so em Responder agora. */
 .rot-lead:has(.rot-celular){flex-wrap:wrap}
 .rot-celular{flex-basis:100%;justify-content:center;gap:6px;min-height:34px;color:var(--success,#2ecc71);border-style:dashed}
