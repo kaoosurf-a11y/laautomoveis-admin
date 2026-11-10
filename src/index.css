@@ -802,6 +802,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .kc-linha i{font-size:12px;flex-shrink:0}
 .kc-foot{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);min-width:0}
 .kc-foot .badge{padding:2px 7px;font-size:10px}
+.kc-vend{--vc:var(--brand);display:inline-flex;align-items:center;gap:3px;padding:2px 8px 2px 6px;border-radius:999px;font-size:11.5px;font-weight:700;line-height:1.3;color:var(--vc);background:color-mix(in srgb,var(--vc) 14%,transparent);border:1px solid color-mix(in srgb,var(--vc) 45%,transparent);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.kc-vend i{font-size:12px;flex-shrink:0}
+.kc-vend.sem{--vc:var(--muted);font-weight:600;border-style:dashed}
 .kc-tempo{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .kc-tempo i{font-size:12px}
 .kc-dir{margin-left:auto;display:flex;align-items:center;gap:6px;min-width:0}

@@ -181,6 +181,14 @@ function ordenarColunas(base,savedKeys){
   return[...ordenadas,...faltantes];
 }
 const AV={"DA":"#C8A84B","AL":"#7ba7e0","WO":"#4caf7d","FE":"#e05252","DI":"#8E44AD","WI":"#27AE60"};
+// Vendedor do lead bem visível no card (Felipe 10/11): nome em pílula colorida em vez da bolinha de iniciais.
+const VEND_CORES=["#C8A84B","#7ba7e0","#4caf7d","#e07b7b","#a07be0","#3fb6b2","#e0995b"];
+const corVendedor=(ini,nome)=>AV[ini]||VEND_CORES[[...String(nome||ini||"")].reduce((t,c)=>t+c.charCodeAt(0),0)%VEND_CORES.length];
+function VendChip({nome,ini}){
+  if(!nome&&!ini)return <span className="kc-vend sem" title="Nenhum vendedor com este lead"><i className="ti ti-user-off"/>Sem vendedor</span>;
+  const primeiro=String(nome||ini).trim().split(/\s+/)[0];
+  return <span className="kc-vend" style={{"--vc":corVendedor(ini,nome)}} title={`Vendedor: ${nome||ini}`}><i className="ti ti-user"/>{primeiro}</span>;
+}
 
 function Score({s}){const c=s>=70?"var(--danger)":s>=40?"var(--warning)":"#7ba7e0";return <span className="score-pill" style={{background:`${c}22`,color:c}}>{s}</span>;}
 // Nota de qualificação da IA (la_leads.score_qualificacao, 0 a 100): pesquisando < 40, qualificado 40 a 74, pronto 75+.
@@ -1241,7 +1249,6 @@ export default function CRM(){
                   {leads.length===0&&<div style={{textAlign:"center",color:"var(--muted)",fontSize:12,padding:"12px 0"}}>—</div>}
                   {leads.map((lead,li)=>{
                     const preco=precos[li];
-                    const corVend=AV[lead.vendedor_iniciais]||"#C8A84B";
                     return(
                     <div
                       key={lead.id}
@@ -1284,7 +1291,7 @@ export default function CRM(){
                       <InfoFollowup lead={lead}/>
                       <div className="kc-foot">
                         <Resp r={lead.responsavel_atual}/>
-                        {lead.vendedor_iniciais&&<div className="av" title={lead.vendedor_nome||undefined} style={{width:20,height:20,fontSize:8,background:`${corVend}22`,color:corVend}}>{lead.vendedor_iniciais}</div>}
+                        <VendChip nome={lead.vendedor_nome} ini={lead.vendedor_iniciais}/>
                         <span className="kc-tempo" title="Tempo desde a última mudança no lead"><i className="ti ti-clock"/> {tempoDesde(lead.atualizado_em)}</span>
                         {lead.agendamento_ia_status&&(lead.agendamento_ia_status==="solicitado"||lead.agendamento_ia_status==="em_andamento")&&
                           <i className="ti ti-calendar-time" style={{fontSize:13,color:"var(--info)"}} title="Lara tentando agendar"/>}
