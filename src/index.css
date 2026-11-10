@@ -38,12 +38,16 @@
 }
 html{font-family:var(--font);background:var(--bg);color:var(--fg);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
 body{min-height:100dvh;min-height:-webkit-fill-available;overscroll-behavior:none;background:var(--bg)}
-::-webkit-scrollbar{width:3px;height:14px}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
-/* Barra horizontal grossa em todas as telas (Felipe 07/11): fácil de pegar com o mouse */
-::-webkit-scrollbar-track:horizontal{background:var(--surface2);border-radius:8px}
-::-webkit-scrollbar-thumb:horizontal{background:var(--scroll);border-radius:8px;border:3px solid var(--surface2)}
-::-webkit-scrollbar-thumb:horizontal:hover{background:var(--muted)}
+/* Barra de rolagem em todas as telas, horizontal e vertical (Felipe 07/11 e 10/11):
+   a parte que se pega é grossa (12px) e o fundo virou só um trilho fino de 4px no meio */
+::-webkit-scrollbar{width:14px;height:14px;background:transparent}
+::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-track:horizontal{background:linear-gradient(to bottom,transparent 5px,var(--surface2) 5px,var(--surface2) 9px,transparent 9px)}
+::-webkit-scrollbar-track:vertical{background:linear-gradient(to right,transparent 5px,var(--surface2) 5px,var(--surface2) 9px,transparent 9px)}
+::-webkit-scrollbar-thumb{background:var(--scroll);background-clip:padding-box;border:1px solid transparent;border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:padding-box}
+/* Celular e tablet (dedo): a vertical continua fininha pra não roubar espaço */
+@media(pointer:coarse){::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track:vertical{background:transparent}::-webkit-scrollbar-thumb:vertical{border:0}}
 /* Cores de categoria (estágio, origem, vendedor) vêm em hex claro direto das telas,
    pensadas pro fundo escuro. No tema claro elas são escurecidas aqui, num lugar só,
    pra o texto continuar legível sem mexer nas telas. */
@@ -294,10 +298,6 @@ tr:hover td{background:var(--hover)}
    chrome (--topbar-h/--bottom-h) em vez de cravar um número novo. */
 @media(max-width:1023px){.kanban-board{height:calc(100vh - 230px - var(--topbar-h) - var(--bottom-h) - env(safe-area-inset-bottom))}}
 .kanban-board.grabbing{cursor:grabbing;user-select:none;scroll-snap-type:none}
-.kanban-board::-webkit-scrollbar{height:14px}
-.kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
-.kanban-board::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px;border:3px solid var(--surface2)}
-.kanban-board::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .kanban-col{flex-shrink:0;width:230px;scroll-snap-align:start;display:flex;flex-direction:column;min-height:0}
 /* Cada coluna tem a cor do seu estágio (--cor, vinda da tela): contorno da coluna,
    cabeçalho tingido e ponto ao lado do título. Os cards ficam neutros, sem brilho. */
@@ -312,10 +312,6 @@ tr:hover td{background:var(--hover)}
    presa à viewport, ver acima) em vez de um max-height fixo em pixels — min-height:0
    é necessário pra um filho flex conseguir encolher/rolar dentro do pai. */
 .kanban-cards{background:var(--surface2);border:2px solid var(--cor,var(--border));border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:4px 8px 8px;min-height:0;flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
-.kanban-cards::-webkit-scrollbar{width:8px}
-.kanban-cards::-webkit-scrollbar-track{background:transparent}
-.kanban-cards::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px}
-.kanban-cards::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:border-color .15s,transform .12s var(--ease)}
 @media(hover:hover){.kanban-card:hover{border-color:var(--brand-line)}}
 .kanban-card:active{border-color:var(--brand-line);transform:scale(.985)}
@@ -343,17 +339,10 @@ tr:hover td{background:var(--hover)}
    (abaixo) deixa claro que é uma área vazia, não a tela quebrada. */
 .fu-kanban-board{display:flex;align-items:flex-start;gap:14px;overflow-x:scroll;padding-bottom:16px;-webkit-overflow-scrolling:touch;cursor:grab}
 .fu-kanban-board.grabbing{cursor:grabbing;user-select:none}
-.fu-kanban-board::-webkit-scrollbar{height:14px}
-.fu-kanban-board::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
-.fu-kanban-board::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px;border:3px solid var(--surface2)}
-.fu-kanban-board::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .fu-kanban-col{flex-shrink:0;width:320px;display:flex;flex-direction:column;min-height:0}
 .fu-kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 10px;cursor:grab}
 .fu-kanban-col-title{font-size:14px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:7px}
-.fu-kanban-cards{background:var(--surface2);border:2px solid var(--cor,var(--border));border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:64px;max-height:calc(100vh - 300px);overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
-.fu-kanban-cards::-webkit-scrollbar{width:8px}
-.fu-kanban-cards::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
-.fu-kanban-cards::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:8px}
+.fu-kanban-cards{background:var(--surface2);border:2px solid var(--cor,var(--border));border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:64px;max-height:calc(100vh - 300px);overflow-y:auto;padding:8px}
 .fu-kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
 
 /* ── Follow-ups ── */
@@ -611,7 +600,7 @@ img{max-width:100%;height:auto}
 .main-content>*{animation:telaIn .22s ease}
 @keyframes telaIn{from{opacity:0}to{opacity:1}}
 /* Rolagem fina dentro das colunas e da lateral (some a barra grossa com setas no Windows) */
-.kanban-cards,.fu-kanban-cards,.sidebar-nav,.modal{scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
+@supports not selector(::-webkit-scrollbar){.kanban-cards,.fu-kanban-cards,.sidebar-nav,.modal{scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}}
 /* Chrome/Edge ignoram o ::-webkit-scrollbar (barra grossa) quando scrollbar-width/color estão no elemento;
    por isso o padrão só vale no navegador sem ::-webkit-scrollbar (Firefox), com a barra no máximo (auto) */
 @supports not selector(::-webkit-scrollbar){.kanban-board,.fu-kanban-board,.table-wrap{scrollbar-width:auto;scrollbar-color:var(--scroll) transparent}}
