@@ -1523,7 +1523,7 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-loja-tit i{color:var(--brand)}
 .rot-loja .metrics-grid{margin-bottom:12px}
 .rot-vend{margin-bottom:10px;padding:0}
-.rot-vend-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;min-height:44px;flex-wrap:wrap}
+.rot-vend-head{display:flex;align-items:center;gap:10px;padding:12px 14px;list-style:none;min-height:44px;flex-wrap:wrap}
 .rot-vend-head::-webkit-details-marker{display:none}
 .rot-vend-nome{font-weight:700;font-size:14px;color:var(--fg)}
 .rot-av{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--fill);color:var(--fg);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}

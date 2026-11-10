@@ -323,12 +323,12 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
   const antigo = lista[0];
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
   return (
-    <details className="card rot-vend">
-      <summary className="rot-vend-head">
+    // 2026-11-10 (Felipe): cartao do vendedor sempre aberto, sem seta.
+    <div className="card rot-vend rot-vend-fixo">
+      <div className="rot-vend-head">
         {v.foto_url ? <img className="rot-av" src={v.foto_url} alt="" /> : <span className="rot-av">{(v.nome || "?")[0]}</span>}
         <span className="rot-vend-nome">{v.nome}</span>
         <Pista pontos={jogo.pontos} meta={v.meta} marcos={marcosDe(v.meta)} />
-        <i className="ti ti-chevron-down rot-seta" />
         <span className="rot-vend-linha2">
         <span className="rot-vend-deve">
           {lista.length
@@ -348,9 +348,9 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
           <FezItem n={v.transferencias?.fez_dia || 0} um="transferência" varios="transferências" />
         </span>
         </span>
-      </summary>
+      </div>
       <Tarefas v={v} inbox={inbox} jogo={jogo} onAcao={onAcao} parado={parado} />
-    </details>
+    </div>
   );
 }
 
