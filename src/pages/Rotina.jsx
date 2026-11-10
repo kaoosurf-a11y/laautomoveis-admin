@@ -101,6 +101,9 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
   const [passadoPara, setPassadoPara] = useState(null);
   // 2026-11-09 (Felipe): "Ja atendi pelo meu WhatsApp" (so em Responder agora); a linha mostra pra qual coluna foi.
   const [atendido, setAtendido] = useState(null);
+  // 2026-11-10 (Felipe): a marca de "pediu ligação" some assim que o vendedor toca em Ligar.
+  const [ligou, setLigou] = useState(false);
+  const pedeLigacao = l.pediu_ligacao && !ligou;
   if (atendido) {
     return (
       <div className="rot-lead rot-cumprida">
@@ -122,12 +125,12 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
     );
   }
   return (
-    <div className={`rot-lead ${feito ? "rot-cumprida" : ""} ${l.pediu_ligacao ? "rot-ligacao" : ""}`}>
+    <div className={`rot-lead ${feito ? "rot-cumprida" : ""} ${pedeLigacao ? "rot-ligacao" : ""}`}>
       <div className="rot-lead-info">
         <div className="rot-lead-nome">
-          {l.pediu_ligacao && <i className="ti ti-phone rot-fone" role="img" aria-label="Pediu ligação" title="Pediu ligação" />}
+          {pedeLigacao && <i className="ti ti-phone rot-fone" role="img" aria-label="Pediu ligação" title="Pediu ligação" />}
           {nomeLead(l)}
-          {l.pediu_ligacao && <span className="badge badge-danger">pediu ligação</span>}
+          {pedeLigacao && <span className="badge badge-danger">pediu ligação</span>}
           {l.temperatura === "quente" && <span className="badge badge-danger">quente</span>}
           {feito && <i className="ti ti-circle-check rot-ok" aria-label="Você já tocou neste cliente hoje" />}
         </div>
@@ -137,7 +140,7 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
       <div className="rot-acoes">
         {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : null}
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
-        <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => onAcao?.(l, "ligar")} />
+        <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }} />
         <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
         <Link className="btn btn-ghost btn-sm btn-icon rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir o card no CRM" title="Abrir o card no CRM"><i className="ti ti-external-link" /></Link>
       </div>
