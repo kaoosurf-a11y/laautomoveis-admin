@@ -502,6 +502,8 @@ export default function Veiculos() {
                     <td>
                       <div style={{fontWeight:600,color:"var(--fg)",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                         {v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}
+                        {/* 2026-11-11 (Felipe): codigo do carro pro atalho /codigo no Chatwoot e pro botao Fotos. */}
+                        <span className="badge badge-brand" style={{fontSize:11}} title={`No Chatwoot, nota privada /${v.id} manda as fotos deste carro`}>Cód. {v.id}</span>
                         {v.id===capaId && (
                           <span className="badge badge-brand" style={{fontSize:10}} title="Último carro cadastrado: é a foto da capa do site">
                             <i className="ti ti-photo-star" style={{fontSize:11}}/> Capa do site
@@ -582,7 +584,7 @@ export default function Veiculos() {
             <div style={{padding:"14px 14px 16px"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:8}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:17,fontWeight:700,color:"var(--fg)",lineHeight:1.2}}>{v.marca} {v.modelo}{v.versao ? " " + v.versao : ""}</div>
+                  <div style={{fontSize:17,fontWeight:700,color:"var(--fg)",lineHeight:1.2}}>{v.marca} {v.modelo}{v.versao ? " " + v.versao : ""} <span className="badge badge-brand" style={{fontSize:11,verticalAlign:"middle"}} title={`No Chatwoot, nota privada /${v.id} manda as fotos deste carro`}>Cód. {v.id}</span></div>
                   <div style={{fontSize:13,color:"var(--muted)",marginTop:4}}>{v.ano} · {v.motorizacao ? v.motorizacao + " · " : ""}{v.cambio} · {v.combustivel}</div>
                   {v.cor && <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>Cor: {v.cor}</div>}
                 </div>

@@ -7,6 +7,7 @@ import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import { VendChip } from "../components/VendChip.jsx";
 import BotaoLigar from "../components/BotaoLigar.jsx";
+import BotaoFotosCarro from "../components/BotaoFotosCarro.jsx";
 import BotaoRepassar from "../components/BotaoRepassar.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
 import { useVisivel } from "../lib/useVisivel.js";
@@ -687,6 +688,9 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             que fica registrado. */}
         {getRole()==="vendedor"&&!telAtual&&
           <div style={{marginBottom:14}}><BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/></div>}
+        {/* 2026-11-11 (Felipe): botao bem visivel pra mandar as fotos de um carro do estoque pro cliente (sem galeria). */}
+        {telAtual&&!["fechado_ganho","pos_venda","fornecedor"].includes(lead.estagio)&&
+          <BotaoFotosCarro leadId={lead.id} veiculoInteresse={lead.veiculo_interesse} className="btn btn-primary" style={{width:"100%",marginBottom:10}}>Mandar fotos do carro</BotaoFotosCarro>}
         {(readOnly||getRole()==="vendedor")?(
           telAtual&&<>
             <div className="lead-acoes">

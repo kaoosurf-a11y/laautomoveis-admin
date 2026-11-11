@@ -6,6 +6,8 @@ import { ChatwootLink } from "../components/ChatwootLink.jsx";
 import BotaoLigar from "../components/BotaoLigar.jsx";
 import BotaoRepassar from "../components/BotaoRepassar.jsx";
 import BotaoAtendiCelular from "../components/BotaoAtendiCelular.jsx";
+import BotaoFotosCarro from "../components/BotaoFotosCarro.jsx";
+import { temTelefone } from "../components/BotaoLigar.jsx";
 
 // Rotina do dia. 2026-11-07 (Felipe): "a pagina de rotina deve ser simples, clara e objetiva, o que os vendedores
 // precisam fazer e o que deixaram de fazer, deve ser intuitiva e simples". Refeita em cima da de 29/10:
@@ -154,6 +156,8 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
         {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : <span className="rot-vago" aria-hidden="true" />}
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
         <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }} />
+        {/* 2026-11-11 (Felipe): "Fotos" manda as fotos de um carro do estoque pro cliente, sem galeria. Conta como Mensagem. */}
+        {temTelefone(l.telefone) && <BotaoFotosCarro leadId={l.id} veiculoInteresse={l.veiculo} className="btn btn-ghost btn-sm rot-btn rot-fotos" onEnviado={() => onAcao?.(l, "mensagem")} />}
         <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
         <Link className="btn btn-ghost btn-sm btn-icon rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir o card no CRM" title="Abrir o card no CRM"><i className="ti ti-external-link" /></Link>
       </div>

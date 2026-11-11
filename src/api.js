@@ -310,3 +310,6 @@ export async function removerMinhaFoto() {
   if (!res.ok) throw new Error("Não foi possível tirar a foto.");
   return res.json();
 }
+// 2026-11-11 (Felipe): botao "Fotos" (manda as fotos de um carro do estoque pro cliente). Backend: lib/fotosCarro.js.
+export async function fotosCarroDoLead(id) { return req(`/api/crm/leads/${id}/fotos-carro`); }
+export async function mandarFotosCarro(id, veiculo_id, forcar = false) { return req(`/api/crm/leads/${id}/fotos-carro`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ veiculo_id, forcar, origem: "painel" }) }); }
