@@ -89,11 +89,11 @@ export default function BotaoFotosCarro({ leadId, veiculoInteresse, className = 
       </button>
       {aberto && (
         <div className="modal-overlay" data-dialog onClick={() => !enviando && setAberto(false)}>
-          <div className="modal" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
+          <div className={`modal${escolhido ? "" : " fc-modal"}`} style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
             <div className="modal-handle" />
             {!escolhido ? (<>
               <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--fg)", margin: "4px 0 4px" }}>Mandar fotos do carro</h2>
-              <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+              <p className="fc-dica" style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
                 Toque no carro. Todas as fotos dele vão pro cliente pelo WhatsApp da loja.
               </p>
               <input type="search" className="form-input" value={busca} onChange={e => setBusca(e.target.value)}
@@ -101,17 +101,16 @@ export default function BotaoFotosCarro({ leadId, veiculoInteresse, className = 
               {erro && <p style={{ color: "var(--danger, #e5484d)", fontSize: 13 }}>{erro}</p>}
               {!carros && !erro && <div style={{ textAlign: "center", padding: 20 }}><span className="spinner" /></div>}
               {carros && !lista.length && <p style={{ fontSize: 13, color: "var(--muted)", padding: "10px 0" }}>Nenhum carro com fotos achado.</p>}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "58vh", overflowY: "auto" }}>
+              <div className="fc-lista">
                 {lista.map(v => {
                   const e = envios[v.id];
                   return (
-                    <button key={v.id} type="button" className="btn btn-ghost" onClick={() => setEscolhido(v)}
-                      style={{ justifyContent: "flex-start", gap: 10, textAlign: "left", padding: 6, minHeight: 64, whiteSpace: "normal",
+                    <button key={v.id} type="button" className="btn btn-ghost fc-item" onClick={() => setEscolhido(v)}
+                      style={{
                         ...(v._interesse ? { borderColor: "var(--brand-line)", background: "var(--brand-soft)" } : {}) }}>
-                      <img src={mini(v.fotos.find(Boolean), 160)} alt="" loading="lazy" decoding="async"
-                        style={{ width: 72, height: 52, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+                      <img className="fc-thumb" src={mini(v.fotos.find(Boolean), 160)} alt="" loading="lazy" decoding="async" />
                       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                        <span style={{ fontWeight: 700, color: "var(--fg)", fontSize: 14 }}>{nome(v)} {v.ano}</span>
+                        <span className="fc-nome">{[v.modelo, v.ano, v.versao].map(x => String(x || "").trim()).filter(Boolean).join(" ")}</span>
                         <span style={{ fontSize: 12, color: "var(--muted)" }}>
                           {[v.cor, preco(v.preco), `${v.fotos.filter(Boolean).length} fotos`].filter(Boolean).join(" · ")}
                         </span>
@@ -123,7 +122,7 @@ export default function BotaoFotosCarro({ leadId, veiculoInteresse, className = 
                   );
                 })}
               </div>
-              <button type="button" className="btn btn-ghost" style={{ width: "100%", marginTop: 10 }} onClick={() => setAberto(false)}>Fechar</button>
+              <button type="button" className="btn btn-ghost fc-fechar" onClick={() => setAberto(false)}>Fechar</button>
             </>) : (<>
               <div style={{ textAlign: "center", padding: "6px 0 12px" }}>
                 <img src={mini(escolhido.fotos.find(Boolean), 480)} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />
