@@ -31,6 +31,18 @@ function fecharDeVerdade(ov) {
   // se a janela continuar aberta por algum motivo, o próximo clique volta a ser conferido
   setTimeout(() => { if (ov.isConnected) delete ov.dataset.liberado; }, 0);
 }
+// 2026-11-12 (Felipe: ESC/voltar não fechavam a janela de Fotos): as janelas de escolha
+// (Fotos, Repassar, Atendi pelo celular) também usam data-dialog, e o "primeiro botão
+// ghost" delas é uma opção (um carro, um vendedor): ESC escolhia em vez de fechar.
+// Agora só o aviso/confirmação de Dialog.jsx (data-aviso) usa o botão; as outras fecham
+// como no clique fora (que cada uma já trata, inclusive não fechar enquanto envia).
+function fecharDialogo(ov) {
+  if (ov.hasAttribute("data-aviso")) {
+    (ov.querySelector(".btn-ghost") || ov.querySelector(".btn"))?.click();
+    return;
+  }
+  ov.click();
+}
 let perguntando = false;
 async function pedirFechar(ov) {
   if (!ov || perguntando) return;
@@ -55,7 +67,7 @@ let empilhadas = 0;       // entradas que este código pôs no histórico e aind
 let ignorarVolta = 0;     // history.back() feitos por nós (camada fechada pelo X/ESC/clique)
 function fecharCamada(ov) {
   if (ov.classList.contains("sidebar-overlay")) { ov.click(); return; }
-  if (ehDialogo(ov)) { (ov.querySelector(".btn-ghost") || ov.querySelector(".btn"))?.click(); return; }
+  if (ehDialogo(ov)) { fecharDialogo(ov); return; }
   pedirFechar(ov);
 }
 function sincronizarHistorico() {
@@ -101,9 +113,8 @@ export function instalarModalGuard() {
     const ov = janelaDeCima();
     if (!ov) { document.querySelector(".sidebar-overlay.show")?.click(); return; }
     if (ehDialogo(ov)) {
-      // confirmação: ESC = cancelar; aviso simples: ESC = OK
-      const cancelar = ov.querySelector(".btn-ghost") || ov.querySelector(".btn");
-      cancelar?.click();
+      // confirmação: ESC = cancelar; aviso simples: ESC = OK; janela de escolha: fecha
+      fecharDialogo(ov);
       return;
     }
     const a = document.activeElement;
