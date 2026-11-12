@@ -173,9 +173,14 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
   const comValor = Number(resumo.vendas_com_valor || 0);
   const semValor = resumo.vendas > 0 && comValor === 0;
   const metrics = [
-    { icon:"ti-target",        label:"Total leads",  value:resumo.total_leads, foco:"leads",
+    // 2026-11-12 (Felipe): "Leads novos" conta só quem entrou no período; lead antigo que volta a falar fica em "Voltaram".
+    { icon:"ti-target",        label:"Leads novos",  value:resumo.total_leads, foco:"leads",
       delta:`${comSinal(resumo.total_leads_delta)} vs período anterior`, tom:tomDelta(resumo.total_leads_delta),
       compara: resumo.total_leads_delta != null ? [resumo.total_leads, resumo.total_leads - resumo.total_leads_delta] : null },
+    { icon:"ti-arrow-back-up", label:"Voltaram",     value:resumo.voltaram ?? "—",
+      delta: resumo.voltaram != null ? `${resumo.voltaram_via_followup} por follow-up · ${resumo.voltaram_sem_followup} sem` : "",
+      tom:"", compara: resumo.voltaram_delta != null ? [resumo.voltaram, resumo.voltaram - resumo.voltaram_delta] : null,
+      title:"Lead antigo (mais de 7 dias de cadastro) que voltou a mandar mensagem depois de 7 dias ou mais sem falar. Por follow-up = a IA tinha mandado follow-up até 3 dias antes. Não entra em Leads novos." },
     { icon:"ti-check",         label:"Vendas",       value:resumo.vendas, foco:"vendas",
       delta: ehMes && metaMes != null ? `meta do mês: ${metaMes} · saída do estoque` : "saídas do estoque no período",
       tom: ehMes && metaMes > 0 && resumo.vendas >= metaMes ? "up" : "", pct:pctMeta },
@@ -224,7 +229,7 @@ function TabOportunidades({ data, periodo, onMidiaSaved, onAbrirCrm }) {
 
   return (
     <>
-      <div className="metrics-grid">
+      <div className="metrics-grid m7">
         {metrics.map((m,i)=>(
           <div key={i} className={`metric-card${m.foco?" clicavel":""}${m.foco&&m.foco===foco?" ativo":""}`} title={m.title || (m.foco ? `Mostrar ${FOCO_NOME[m.foco].toLowerCase()} no gráfico Por vendedor` : undefined)}
             {...(m.foco ? { role:"button", tabIndex:0, "aria-pressed":m.foco===foco, onClick:()=>setFoco(m.foco), onKeyDown:e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); setFoco(m.foco); } } } : {})}>

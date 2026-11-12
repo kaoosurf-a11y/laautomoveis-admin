@@ -1270,6 +1270,8 @@ export default function CRM(){
                       <div className="kc-meta">
                         <span className="kc-slot kc-s-temp">{lead.temperatura==="quente"?<span className="kc-tag hot">Quente</span>:lead.temperatura==="morno"?<span className="kc-tag">Morno</span>:null}</span>
                         <span className="kc-slot kc-s-troca">{lead.troca&&<span className="kc-tag">Troca</span>}</span>
+                        {/* 2026-11-12 (Felipe): lead antigo que voltou a falar nos últimos 30 dias (depois de 7 dias calado), separado de lead novo. */}
+                        <span className="kc-slot kc-s-volta">{lead.voltou_em&&<span className="kc-tag volta" title={`Lead antigo que voltou a falar em ${diaMesCurto(lead.voltou_em)}, ${lead.voltou_via_followup?"depois de um follow-up da IA":"sem follow-up da IA antes"}`}>Voltou</span>}</span>
                         <span className="kc-slot kc-s-vip">{lead.codigo_vip!=null&&<span className="kc-tag vip">VIP #{lead.codigo_vip}</span>}</span>
                       </div>
                       <div className="kc-linha" style={{color:"var(--info)"}}
