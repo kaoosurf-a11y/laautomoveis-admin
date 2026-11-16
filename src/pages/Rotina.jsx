@@ -204,15 +204,16 @@ function FeitoHoje({ v, jogo, pontos }) {
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
   // 2026-11-10 (Felipe: "simplificado"): mesmas metricas, em pilulas pequenas dentro da corrida; o dia no painel numa linha.
   const itens = [
-    ["respondeu", "respondidos"], ["mensagem", "mensagens"], ["ligar", "ligações"],
+    // 2026-11-16 (Felipe): "voltou" = respondeu cliente que escreveu de novo (5 pts, 1 por cliente por dia).
+    ["respondeu", "respondidos"], ["retorno", "voltaram", "respondeu cliente que escreveu de novo"], ["mensagem", "mensagens"], ["ligar", "ligações"],
     ["moveu", "cartões"], ["visita", "visitas"], ["venda", "vendas"], ["celular", "seu WhatsApp"],
   ];
   const tr = v.transferencias || {};
   return (
     <div className="rot-feito rot-feito-simples">
       <div className="rot-pts">
-        {itens.map(([k, n]) => (
-          <span key={k} className={`rot-pt${conta(k) ? " rot-pt-on" : ""}`} title={`vale ${pontos[k]} pts cada`}>
+        {itens.map(([k, n, dica]) => (
+          <span key={k} className={`rot-pt${conta(k) ? " rot-pt-on" : ""}`} title={`${dica ? dica + ", " : ""}vale ${pontos[k]} pts cada`}>
             <b>{conta(k)}</b><span className="rot-pt-n">{n}</span><small>{conta(k) ? `+${conta(k) * pontos[k]}` : pontos[k]} pts</small>
           </span>
         ))}
@@ -406,7 +407,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
         <span className="rot-vend-fez">
           <span className="rot-fez-rot">Hoje</span>
           <FezItem n={v.acoes || 0} um="ação no painel" varios="ações no painel" title={v.acoes ? detalheAcoes(v.acoes_area) : "Nenhuma ação no painel hoje"} />
-          <FezItem n={conta("respondeu")} um="respondido" varios="respondidos" />
+          <FezItem n={conta("respondeu") + conta("retorno")} um="respondido" varios="respondidos" title="Primeira resposta e resposta a cliente que escreveu de novo" />
           <FezItem n={jogo.cliques.mensagem} um="mensagem" varios="mensagens" />
           <FezItem n={jogo.cliques.ligar} um="ligação" varios="ligações" />
           <FezItem n={v.transferencias?.fez_dia || 0} um="transferência" varios="transferências" />
