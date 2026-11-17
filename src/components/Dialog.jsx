@@ -21,8 +21,8 @@ let _open = null;
 function DialogModal({ cfg, onDone }) {
   const { type, title, message, danger, confirmLabel, cancelLabel } = cfg;
   const isConfirm = type === "confirm";
-  const icon = isConfirm ? (danger ? "ti-alert-triangle" : "ti-help-circle") : "ti-alert-circle";
-  const iconColor = !isConfirm || danger ? "var(--danger)" : "var(--brand)";
+  const icon = cfg.icon ? `ti-${cfg.icon}` : isConfirm ? (danger ? "ti-alert-triangle" : "ti-help-circle") : "ti-alert-circle";
+  const iconColor = cfg.icon || (isConfirm && !danger) ? "var(--brand)" : "var(--danger)";
   return (
     <div className="modal-overlay" data-dialog data-aviso onClick={() => isConfirm && onDone(false)}>
       <div className="modal" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
@@ -30,7 +30,7 @@ function DialogModal({ cfg, onDone }) {
         <div style={{ textAlign: "center", padding: "10px 0 20px" }}>
           <i className={`ti ${icon}`} style={{ fontSize: 52, color: iconColor, marginBottom: 12, display: "block" }} />
           {title && <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--fg)", marginBottom: 8 }}>{title}</h2>}
-          <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.5, whiteSpace: "pre-line" }}>{message}</p>
+          <p style={cfg.grande ? { fontSize: 24, fontWeight: 700, color: "var(--fg)", letterSpacing: 0.5, userSelect: "all" } : { fontSize: 14, color: "var(--muted)", lineHeight: 1.5, whiteSpace: "pre-line" }}>{message}</p>
         </div>
         {isConfirm ? (
           <div style={{ display: "flex", gap: 10 }}>
