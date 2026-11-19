@@ -113,6 +113,8 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
   const [passadoPara, setPassadoPara] = useState(null);
   // 2026-11-09 (Felipe): "Ja atendi pelo meu WhatsApp" (so em Responder agora); a linha mostra pra qual coluna foi.
   const [atendido, setAtendido] = useState(null);
+  // 2026-11-19d: "atendeu" depois do Ligar tambem tira o cliente da lista (a linha diz que foi por ligacao).
+  const [porLigacao, setPorLigacao] = useState(false);
   // 2026-11-10 (Felipe): a marca de "pediu ligação" some assim que o vendedor toca em Ligar.
   const [ligou, setLigou] = useState(false);
   const pedeLigacao = l.pediu_ligacao && !ligou;
@@ -121,7 +123,7 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
       <div className="rot-lead rot-cumprida">
         <div className="rot-lead-info">
           <div className="rot-lead-nome">{nomeLead(l)}<i className="ti ti-circle-check rot-ok" aria-hidden="true" /></div>
-          <div className="rot-lead-sub">Atendido pelo seu WhatsApp, foi pra {atendido}</div>
+          <div className="rot-lead-sub">{porLigacao ? "Atendeu a ligação" : "Atendido pelo seu WhatsApp"}, foi pra {atendido}</div>
         </div>
       </div>
     );
@@ -155,7 +157,8 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
       <div className="rot-acoes">
         {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : <span className="rot-vago" aria-hidden="true" />}
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
-        <BotaoLigar leadId={l.id} telefone={l.telefone} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }} />
+        <BotaoLigar leadId={l.id} telefone={l.telefone} nome={l.nome} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }}
+          onResultado={r => { if (r.tipo === "lig_atendeu") { setPorLigacao(true); setAtendido(r.label); } onCelular?.(l, r.pontos, r.tipo); }} />
         {/* 2026-11-11 (Felipe): "Fotos" manda as fotos de um carro do estoque pro cliente, sem galeria. Conta como Mensagem. */}
         {temTelefone(l.telefone) && <BotaoFotosCarro leadId={l.id} veiculoInteresse={l.veiculo} className="btn btn-ghost btn-sm rot-btn rot-fotos" onEnviado={() => onAcao?.(l, "mensagem")} />}
         <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
@@ -210,13 +213,15 @@ function FeitoHoje({ v, jogo, pontos }) {
   const itens = [
     // 2026-11-16 (Felipe): "voltou" = respondeu cliente que escreveu de novo (5 pts, 1 por cliente por dia).
     ["respondeu", "respondidos"], ["retorno", "voltaram", "respondeu cliente que escreveu de novo"], ["mensagem", "mensagens"], ["ligar", "ligações"],
+    // 2026-11-19d (Felipe): ligacao com resultado. "ligações" (toque sem resultado, regra antiga) so aparece se tiver.
+    ["lig_atendeu", "atenderam", "ligou e o cliente atendeu"], ["lig_nao_atendeu", "não atenderam", "ligou e o cliente não atendeu"],
     ["moveu", "cartões"], ["visita", "visitas"], ["venda", "vendas"], ["celular", "seu WhatsApp"],
   ];
   const tr = v.transferencias || {};
   return (
     <div className="rot-feito rot-feito-simples">
       <div className="rot-pts">
-        {itens.map(([k, n, dica]) => (
+        {itens.filter(([k]) => k !== "ligar" || conta(k)).map(([k, n, dica]) => (
           <span key={k} className={`rot-pt${conta(k) ? " rot-pt-on" : ""}`} title={`${dica ? dica + ", " : ""}${vale(k)}`}>
             <b>{conta(k)}</b><span className="rot-pt-n">{n}</span><small>{conta(k) ? `+${soma(k)}` : k === "respondeu" ? "até 15" : pontos[k]} pts</small>
           </span>
@@ -346,7 +351,8 @@ function useJogo(v, joga, avisar) {
     avisar(pontos >= v.meta && antes < v.meta ? `Meta do dia batida! ${pontos} pontos.` : `+${pts} pontos`);
   }
   // 2026-11-09: "Ja atendi pelo meu WhatsApp" (o registro ja foi feito pelo botao; aqui so soma na corrida).
-  const onCelular = joga ? (l, pts) => somar(l, "celular", pts) : null;
+  // 2026-11-19d: o resultado da ligacao (lig_atendeu / lig_nao_atendeu) soma do mesmo jeito.
+  const onCelular = joga ? (l, pts, tipo = "celular") => somar(l, tipo, pts) : null;
   return [jogo, onAcao, onCelular];
 }
 

@@ -696,7 +696,8 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
             <div className="lead-acoes">
               {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. */}
               <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
-              {getRole()==="vendedor"&&<BotaoLigar leadId={lead.id} telefone={telAtual} origem="crm"/>}
+              {getRole()==="vendedor"&&<BotaoLigar leadId={lead.id} telefone={telAtual} nome={lead.nome} origem="crm"
+                onResultado={async r=>{if(r.tipo==="lig_atendeu"){await alertDialog(`Pronto. ${r.pontos?`+${r.pontos} pontos. `:""}O lead foi pra ${r.label}.`,{title:"Atendeu"});onAtualizado?.();onClose?.();}}}/>}
               {/* 2026-11-09 (Felipe): "Transferir" pro proximo vendedor da loja (limites no backend), na mesma linha do Ligar. */}
               <BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/>
             </div>

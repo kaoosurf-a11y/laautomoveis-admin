@@ -139,6 +139,8 @@ export async function getLeadChatwoot(id) { return req(`/api/crm/leads/${id}/cha
 // 2026-11-09 (Felipe): "Não posso atender", passa o lead pro próximo vendedor da loja (limites no backend).
 export async function podemTransferir(ids) { return req(`/api/crm/repasse/podem?ids=${ids.join(",")}`); }
 export async function repassarLead(id, motivo) { return req(`/api/crm/leads/${id}/repassar`, { method: "POST", body: JSON.stringify({ motivo }) }); }
+// 2026-11-19d (Felipe: "ligacao com resultado"): depois de ligar, atendeu (com a coluna) ou nao atendeu.
+export async function resultadoLigacao(lead_id, ligacao_id, resultado, estagio) { return req("/api/rotina/ligacao", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lead_id, ligacao_id, resultado, estagio }) }); }
 export async function ligarLead(id, origem) { return req(`/api/crm/leads/${id}/ligar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ origem }) }); }
 
 const MOCK_VEICULOS=[

@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { ligarLead } from "../api.js";
+import { ligarLead, resultadoLigacao } from "../api.js";
+import { getRole, estaVendoComo } from "../auth.js";
 import { alertDialog, confirmDialog } from "./Dialog.jsx";
+import { COLUNAS_CELULAR } from "./BotaoAtendiCelular.jsx";
 
 // 2026-11-06 (Felipe): o vendedor ve so os 4 ultimos numeros do cliente. Pra ligar, o numero vem do backend
 // na hora do toque (POST /api/crm/leads/:id/ligar), que registra quem ligou e quando, e abre o discador.
@@ -31,9 +33,64 @@ async function mostrarNumeroPC(e164) {
   try { await navigator.clipboard.writeText(num.replace(/\D/g, "")); } catch { /* sem permissao: o numero ja esta na tela */ }
 }
 
-export default function BotaoLigar({ leadId, telefone, origem, className = "btn btn-ghost btn-sm", onLigou, children }) {
+// 2026-11-19d (Felipe: "ligacao com resultado"): depois de ligar, o vendedor dono do lead diz como foi. Atendeu =
+// escolhe a coluna (mesma lista do "Ja atendi pelo meu WhatsApp"), o cartao anda e o cliente sai de Responder agora
+// (5 pontos); nao atendeu = so registra (2 pontos). O toque em Ligar sozinho nao pontua mais.
+const nomeCurto = (n) => { const p = String(n || "").trim().split(/\s+/)[0] || ""; return /[A-Za-zÀ-ú]/.test(p) ? p : "o cliente"; };
+
+function PerguntaResultado({ nome, onEscolher, onFechar, enviando }) {
+  const [atendeu, setAtendeu] = useState(false);
+  return (
+    <div className="modal-overlay" data-dialog onClick={() => !enviando && onFechar()}>
+      <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-handle" />
+        <div style={{ textAlign: "center", padding: "6px 0 14px" }}>
+          <i className="ti ti-phone" style={{ fontSize: 40, color: "var(--accent, #f5c518)", marginBottom: 8, display: "block" }} />
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: "var(--fg)", marginBottom: 6 }}>
+            {atendeu ? `Como ficou com ${nomeCurto(nome)}?` : `Como foi a ligação com ${nomeCurto(nome)}?`}
+          </h2>
+          <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+            {atendeu ? "Escolha a coluna. O cliente continua seu e sai de \"Responder agora\"." : "Um toque e fica registrado."}
+          </p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "55vh", overflowY: "auto" }}>
+          {!atendeu ? <>
+            <button type="button" className="btn btn-primary" disabled={enviando} onClick={() => setAtendeu(true)}><i className="ti ti-phone" />Atendeu</button>
+            <button type="button" className="btn btn-ghost" disabled={enviando} onClick={() => onEscolher("nao_atendeu")}>
+              {enviando ? <span className="spinner" /> : <i className="ti ti-phone-off" />}Não atendeu</button>
+          </> : COLUNAS_CELULAR.map(([k, label, icone]) => (
+            <button key={k} type="button" className="btn btn-ghost" style={{ justifyContent: "flex-start", gap: 10, textAlign: "left" }}
+              disabled={enviando} onClick={() => onEscolher("atendeu", k, label)}>
+              {enviando ? <span className="spinner" /> : <i className={`ti ${icone}`} />}{label}
+            </button>
+          ))}
+          <button type="button" className="btn btn-ghost" style={{ color: "var(--muted)" }} disabled={enviando}
+            onClick={() => atendeu ? setAtendeu(false) : onFechar()}>{atendeu ? "Voltar" : "Agora não"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function BotaoLigar({ leadId, telefone, origem, nome, className = "btn btn-ghost btn-sm", onLigou, onResultado, children }) {
   const [abrindo, setAbrindo] = useState(false);
+  const [pergunta, setPergunta] = useState(null);   // id da ligacao esperando o resultado
+  const [enviando, setEnviando] = useState(false);
   if (!leadId || !temTelefone(telefone)) return null;
+  const pergunta_ok = getRole() === "vendedor" && !estaVendoComo();
+  async function escolher(resultado, estagio, label) {
+    if (enviando) return;
+    setEnviando(true);
+    try {
+      const r = await resultadoLigacao(leadId, pergunta, resultado, estagio);
+      setPergunta(null);
+      onResultado?.({ ...r, label });
+    } catch (err) {
+      setPergunta(null);
+      await alertDialog(err?.message && !/^\d+$/.test(err.message) ? err.message : "Não foi possível registrar agora. Tente de novo.");
+    }
+    setEnviando(false);
+  }
   async function ligar(e) {
     e?.preventDefault?.(); e?.stopPropagation?.();
     if (abrindo) return;
@@ -44,6 +101,8 @@ export default function BotaoLigar({ leadId, telefone, origem, className = "btn 
       if (r?.discar) {
         if (ehPC()) await mostrarNumeroPC(r.discar);
         else window.location.href = `tel:${r.discar}`;
+        // a pergunta fica aberta por baixo do discador e aparece quando o vendedor volta pro painel
+        if (pergunta_ok && r.ligacao_id) setTimeout(() => setPergunta(r.ligacao_id), ehPC() ? 0 : 1200);
       }
     } catch (err) {
       await alertDialog(String(err?.message || "").includes("403") ? "Esse lead não é seu." : "Não foi possível ligar agora. Tente de novo.");
@@ -51,8 +110,11 @@ export default function BotaoLigar({ leadId, telefone, origem, className = "btn 
     setAbrindo(false);
   }
   return (
-    <button type="button" className={className} onClick={ligar} disabled={abrindo} title="Ligar pro cliente (fica registrado)">
-      {abrindo ? <span className="spinner" /> : <i className="ti ti-phone" />}{children ?? "Ligar"}
-    </button>
+    <>
+      <button type="button" className={className} onClick={ligar} disabled={abrindo} title="Ligar pro cliente (fica registrado)">
+        {abrindo ? <span className="spinner" /> : <i className="ti ti-phone" />}{children ?? "Ligar"}
+      </button>
+      {pergunta && <PerguntaResultado nome={nome} enviando={enviando} onEscolher={escolher} onFechar={() => setPergunta(null)} />}
+    </>
   );
 }
