@@ -202,6 +202,10 @@ function tempoPainel(min) {
 // (1 por cliente por dia). Embaixo, o dia dele no painel (sem pontos).
 function FeitoHoje({ v, jogo, pontos }) {
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
+  // 2026-11-19b (Felipe: bonus da rapidez): a primeira resposta vale 15, 10 ou 5 conforme a rapidez, entao soma os
+  // pontos de cada missao (o backend manda em m.pontos) em vez de multiplicar pelo valor fixo.
+  const soma = (k) => jogo.missoes.filter(m => m.missao === k).reduce((t, m) => t + (m.pontos ?? pontos[k]), 0);
+  const vale = (k) => k === "respondeu" ? "vale 15 pts se responder em até 15 min, 10 até 2h e 5 depois (só loja aberta)" : `vale ${pontos[k]} pts cada`;
   // 2026-11-10 (Felipe: "simplificado"): mesmas metricas, em pilulas pequenas dentro da corrida; o dia no painel numa linha.
   const itens = [
     // 2026-11-16 (Felipe): "voltou" = respondeu cliente que escreveu de novo (5 pts, 1 por cliente por dia).
@@ -213,8 +217,8 @@ function FeitoHoje({ v, jogo, pontos }) {
     <div className="rot-feito rot-feito-simples">
       <div className="rot-pts">
         {itens.map(([k, n, dica]) => (
-          <span key={k} className={`rot-pt${conta(k) ? " rot-pt-on" : ""}`} title={`${dica ? dica + ", " : ""}vale ${pontos[k]} pts cada`}>
-            <b>{conta(k)}</b><span className="rot-pt-n">{n}</span><small>{conta(k) ? `+${conta(k) * pontos[k]}` : pontos[k]} pts</small>
+          <span key={k} className={`rot-pt${conta(k) ? " rot-pt-on" : ""}`} title={`${dica ? dica + ", " : ""}${vale(k)}`}>
+            <b>{conta(k)}</b><span className="rot-pt-n">{n}</span><small>{conta(k) ? `+${soma(k)}` : k === "respondeu" ? "até 15" : pontos[k]} pts</small>
           </span>
         ))}
       </div>
