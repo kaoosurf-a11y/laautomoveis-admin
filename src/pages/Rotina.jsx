@@ -96,9 +96,11 @@ function quando(ts) {
 // 2026-11-10 noite (Felipe: "lead novo deve ficar sempre em primeiro, seguido dos mais antigos nessa ordem, do lead que
 // respondeu e tem pra responder ate o mais velho sem resposta, esquecido"): depois de quem pediu ligação, os que chegaram
 // hoje (mais novo primeiro) e depois o resto do menor tempo de espera pro maior; o esquecido fica no fim.
+// 2026-11-19e (Felipe: destaque de quem voltou): cliente que ja tinha sido atendido e escreveu de novo vem logo depois
+// de quem pediu ligacao, antes dos novos de hoje (eram 36 de 57 esperando, com 11h de espera media contra 7h dos novos).
 function esperando(v) {
   const hoje = new Set(v.responder_hoje.map(l => l.id));
-  const grupo = (l) => (l.pediu_ligacao ? 0 : hoje.has(l.id) ? 1 : 2);
+  const grupo = (l) => (l.pediu_ligacao ? 0 : l.situacao === "voltou" ? 1 : hoje.has(l.id) ? 2 : 3);
   const t = (l) => l.espera_min ?? Number.MAX_SAFE_INTEGER;
   return [...v.responder_hoje, ...v.acumulado].sort((a, b) => grupo(a) - grupo(b) || t(a) - t(b)
     || String(b.passado_em || "").localeCompare(String(a.passado_em || "")));
@@ -148,6 +150,8 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
             {nomeLead(l)}
           </span>
           {pedeLigacao && <span className="badge badge-danger">pediu ligação</span>}
+          {/* 2026-11-19e (Felipe): etiqueta de quem voltou (ja atendido, escreveu de novo e esta sem resposta). */}
+          {l.situacao === "voltou" && <span className="badge badge-warning" title="Você já atendeu, ele escreveu de novo e está sem resposta">voltou</span>}
           {l.temperatura === "quente" && <span className="badge badge-danger">quente</span>}
           {feito && <i className="ti ti-circle-check rot-ok" aria-label="Você já tocou neste cliente hoje" />}
         </div>
