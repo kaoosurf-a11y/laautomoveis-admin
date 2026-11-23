@@ -7,7 +7,7 @@ import BotaoLigar from "../components/BotaoLigar.jsx";
 import BotaoRepassar from "../components/BotaoRepassar.jsx";
 import BotaoAtendiCelular from "../components/BotaoAtendiCelular.jsx";
 import BotaoFotosCarro from "../components/BotaoFotosCarro.jsx";
-import { temTelefone } from "../components/BotaoLigar.jsx";
+import { temTelefone, BotaoVerNumero } from "../components/BotaoLigar.jsx";
 
 // Rotina do dia. 2026-11-07 (Felipe): "a pagina de rotina deve ser simples, clara e objetiva, o que os vendedores
 // precisam fazer e o que deixaram de fazer, deve ser intuitiva e simples". Refeita em cima da de 29/10:
@@ -156,6 +156,8 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
           {feito && <i className="ti ti-circle-check rot-ok" aria-label="Você já tocou neste cliente hoje" />}
         </div>
         <div className="rot-lead-sub">{l.veiculo || "ainda não escolheu o carro"}</div>
+        {/* 2026-11-23 (Felipe): ver o numero inteiro pra chamar pelo proprio telefone (nao conta como ligacao). */}
+        <BotaoVerNumero leadId={l.id} telefone={l.telefone} nome={l.nome} className="rot-ver-numero" />
         {sub && <div className={`rot-espera ${subTom || ""}`}>{sub}</div>}
       </div>
       <div className="rot-acoes">

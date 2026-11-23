@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ligarLead, resultadoLigacao } from "../api.js";
+import { ligarLead, resultadoLigacao, verNumeroLead } from "../api.js";
 import { getRole, estaVendoComo } from "../auth.js";
 import { alertDialog, confirmDialog } from "./Dialog.jsx";
 import { COLUNAS_CELULAR } from "./BotaoAtendiCelular.jsx";
@@ -26,9 +26,9 @@ function formatarTel(e164) {
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return d;
 }
-async function mostrarNumeroPC(e164) {
+async function mostrarNumeroPC(e164, titulo = "Número do cliente") {
   const num = formatarTel(e164);
-  const copiar = await confirmDialog(num, { title: "Número do cliente", icon: "phone", grande: true, danger: false, confirmLabel: "Copiar número", cancelLabel: "Fechar" });
+  const copiar = await confirmDialog(num, { title: titulo, icon: "phone", grande: true, danger: false, confirmLabel: "Copiar número", cancelLabel: "Fechar" });
   if (!copiar) return;
   try { await navigator.clipboard.writeText(num.replace(/\D/g, "")); } catch { /* sem permissao: o numero ja esta na tela */ }
 }
@@ -116,5 +116,33 @@ export default function BotaoLigar({ leadId, telefone, origem, nome, className =
       </button>
       {pergunta && <PerguntaResultado nome={nome} enviando={enviando} onEscolher={escolher} onFechar={() => setPergunta(null)} />}
     </>
+  );
+}
+
+// 2026-11-23 (Felipe): "Ver numero" no card e na Rotina. O vendedor ve so ****1234; com o botao ve o numero inteiro
+// (com Copiar) pra chamar lead antigo pelo proprio telefone. Nao registra ligacao nem pontua. So aparece quando o
+// numero esta mascarado pra quem esta vendo (gerente e dono ja veem o numero completo).
+export function numeroMascarado(tel) { return /^\*{4}\d{4}$/.test(String(tel || "")); }
+
+export function BotaoVerNumero({ leadId, telefone, nome, className = "btn btn-ghost btn-sm", style, children }) {
+  const [abrindo, setAbrindo] = useState(false);
+  if (!leadId || !numeroMascarado(telefone)) return null;
+  async function ver(e) {
+    e?.preventDefault?.(); e?.stopPropagation?.();
+    if (abrindo) return;
+    setAbrindo(true);
+    try {
+      const r = await verNumeroLead(leadId);
+      setAbrindo(false);
+      if (r?.numero) await mostrarNumeroPC(r.numero, nome ? `Número de ${nomeCurto(nome)}` : "Número do cliente");
+    } catch (err) {
+      setAbrindo(false);
+      await alertDialog(String(err?.message || "").includes("403") || /não é seu/.test(err?.message || "") ? "Esse lead não é seu." : "Não foi possível mostrar o número agora. Tente de novo.");
+    }
+  }
+  return (
+    <button type="button" className={className} style={style} onClick={ver} disabled={abrindo} title="Ver o número completo do cliente">
+      {abrindo ? <span className="spinner" /> : <i className="ti ti-eye" />}{children ?? "Ver número"}
+    </button>
   );
 }

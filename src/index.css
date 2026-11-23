@@ -1913,3 +1913,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 .rot-nome-txt{flex:0 0 240px;width:240px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rot-nome-txt .rot-fone{margin-right:4px}
 @media(max-width:600px){.rot-nome-txt{flex:0 0 52%;width:52%}}
+
+/* 2026-11-23 (Felipe): "Ver numero" na Rotina, pequeno na linha do carro (a fileira de botoes ja esta cheia). */
+.rot-ver-numero{display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:2px 8px;min-height:24px;border:1px solid var(--brand-line);
+  border-radius:999px;background:var(--brand-soft);color:var(--brand);font:inherit;font-size:12px;font-weight:700;cursor:pointer;vertical-align:middle}
+.rot-ver-numero i{font-size:13px}
+.rot-ver-numero:disabled{opacity:.6;cursor:default}
