@@ -702,7 +702,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
               <BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/>
             </div>
             {/* 2026-11-23 (Felipe): "Ver numero" pra o vendedor chamar lead antigo pelo proprio telefone (nao conta como ligacao). */}
-            {getRole()==="vendedor"&&<BotaoVerNumero leadId={lead.id} telefone={telAtual} nome={lead.nome} className="btn btn-ghost" style={{width:"100%",marginBottom:10}}/>}
+            {getRole()==="vendedor"&&<BotaoVerNumero leadId={lead.id} telefone={telAtual} nome={lead.nome} origem="crm" className="btn btn-ghost" style={{width:"100%",marginBottom:10}}/>}
             {/* 2026-11-09 (Felipe): ja falou pelo celular particular? escolhe a coluna e o lead sai de Responder agora. */}
             {!["fechado_ganho","fechado_perdido","bau","pos_venda","fornecedor"].includes(lead.estagio)&&
               <BotaoAtendiCelular leadId={lead.id} nome={lead.nome} className="btn btn-ghost rot-celular" style={{width:"100%",marginBottom:14}}

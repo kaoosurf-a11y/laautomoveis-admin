@@ -1919,3 +1919,6 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
   border-radius:999px;background:var(--brand-soft);color:var(--brand);font:inherit;font-size:12px;font-weight:700;cursor:pointer;vertical-align:middle}
 .rot-ver-numero i{font-size:13px}
 .rot-ver-numero:disabled{opacity:.6;cursor:default}
+/* 2026-11-23: linha do Ver numero no cartao do vendedor (gerente/dono), embaixo do "Hoje", alinhada a direita. */
+.rot-vend-linha2>.rot-vend-num{display:flex;margin-left:auto}
+@media(max-width:600px){.rot-vend-linha2>.rot-vend-num{margin-left:0}}

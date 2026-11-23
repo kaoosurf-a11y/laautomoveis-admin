@@ -157,7 +157,7 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
         </div>
         <div className="rot-lead-sub">{l.veiculo || "ainda não escolheu o carro"}</div>
         {/* 2026-11-23 (Felipe): ver o numero inteiro pra chamar pelo proprio telefone (nao conta como ligacao). */}
-        <BotaoVerNumero leadId={l.id} telefone={l.telefone} nome={l.nome} className="rot-ver-numero" />
+        <BotaoVerNumero leadId={l.id} telefone={l.telefone} nome={l.nome} origem="rotina" className="rot-ver-numero" />
         {sub && <div className={`rot-espera ${subTom || ""}`}>{sub}</div>}
       </div>
       <div className="rot-acoes">
@@ -209,6 +209,14 @@ function tempoPainel(min) {
 // coloca tambem o tempo de permanencia no painel, quantos cards ele moveu e quantos cards o sistema moveu automatico
 // pra ele"). Cada métrica mostra quantas vezes e quantos pontos já rendeu; mensagem e ligação contam a que pontuou
 // (1 por cliente por dia). Embaixo, o dia dele no painel (sem pontos).
+// 2026-11-23 (Felipe: "quantos estao vendo o numero e entrando em contato pelo particular"). O WhatsApp particular nao
+// aparece pra gente; "contato registrado" = depois de ver, no mesmo dia, marcou Ja atendi pelo meu WhatsApp, o resultado
+// de uma ligacao ou mudou a coluna desse cliente.
+function textoVistos(n) {
+  const x = n || {};
+  return `Botão Ver número: ${x.dia || 0} cliente(s) hoje, ${x.dia_contato || 0} com contato registrado depois (Já atendi pelo meu WhatsApp, ligação ou mudou a coluna). ${x.mes || 0} no mês.`;
+}
+
 function FeitoHoje({ v, jogo, pontos }) {
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
   // 2026-11-19b (Felipe: bonus da rapidez): a primeira resposta vale 15, 10 ou 5 conforme a rapidez, entao soma os
@@ -238,6 +246,8 @@ function FeitoHoje({ v, jogo, pontos }) {
         <span title={v.acoes ? detalheAcoes(v.acoes_area) : "abrir e não fazer nada não conta"}><i className="ti ti-circle-check" />Ações <b>{v.acoes || 0}</b></span>
         <span><i className="ti ti-robot" />Sistema moveu <b>{v.sistema_moveu || 0}</b></span>
         <span title={`${tr.fez_mes || 0} no mês, pode 3 por dia`}><i className="ti ti-arrow-forward-up" />Transferiu <b>{tr.fez_dia || 0}</b></span>
+        {/* 2026-11-23 (Felipe): quantos numeros viu pelo botao Ver numero (clientes diferentes) e com quantos registrou contato depois. */}
+        <span title={textoVistos(v.numero_visto)}><i className="ti ti-eye" />Viu número <b>{v.numero_visto?.dia || 0}</b></span>
       </div>
     </div>
   );
@@ -427,6 +437,13 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
           <FezItem n={jogo.cliques.mensagem} um="mensagem" varios="mensagens" />
           <FezItem n={jogo.cliques.ligar} um="ligação" varios="ligações" />
           <FezItem n={v.transferencias?.fez_dia || 0} um="transferência" varios="transferências" />
+        </span>
+        {/* 2026-11-23 (Felipe): botao Ver numero. Linha propria pra nao quebrar a grade do "Hoje". */}
+        <span className="rot-vend-fez rot-vend-num">
+          <span className="rot-fez-rot">Ver número</span>
+          <FezItem n={v.numero_visto?.dia || 0} um="número visto" varios="números vistos" title={textoVistos(v.numero_visto)} />
+          <FezItem n={v.numero_visto?.dia_contato || 0} um="com contato depois" varios="com contato depois" title={textoVistos(v.numero_visto)} />
+          <FezItem n={v.numero_visto?.mes || 0} um="no mês" varios="no mês" title={textoVistos(v.numero_visto)} />
         </span>
         </span>
       </div>

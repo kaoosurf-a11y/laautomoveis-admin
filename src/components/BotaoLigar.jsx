@@ -124,7 +124,7 @@ export default function BotaoLigar({ leadId, telefone, origem, nome, className =
 // numero esta mascarado pra quem esta vendo (gerente e dono ja veem o numero completo).
 export function numeroMascarado(tel) { return /^\*{4}\d{4}$/.test(String(tel || "")); }
 
-export function BotaoVerNumero({ leadId, telefone, nome, className = "btn btn-ghost btn-sm", style, children }) {
+export function BotaoVerNumero({ leadId, telefone, nome, origem, className = "btn btn-ghost btn-sm", style, onVisto, children }) {
   const [abrindo, setAbrindo] = useState(false);
   if (!leadId || !numeroMascarado(telefone)) return null;
   async function ver(e) {
@@ -132,8 +132,9 @@ export function BotaoVerNumero({ leadId, telefone, nome, className = "btn btn-gh
     if (abrindo) return;
     setAbrindo(true);
     try {
-      const r = await verNumeroLead(leadId);
+      const r = await verNumeroLead(leadId, origem);
       setAbrindo(false);
+      onVisto?.();
       if (r?.numero) await mostrarNumeroPC(r.numero, nome ? `Número de ${nomeCurto(nome)}` : "Número do cliente");
     } catch (err) {
       setAbrindo(false);
