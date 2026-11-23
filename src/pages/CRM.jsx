@@ -6,7 +6,7 @@ import { lembrado } from "../memoria.js";
 import { getRole } from "../auth.js";
 import { LeadPhoneChatwoot } from "../components/ChatwootLink.jsx";
 import { VendChip } from "../components/VendChip.jsx";
-import BotaoLigar, { BotaoVerNumero } from "../components/BotaoLigar.jsx";
+import BotaoLigar, { BotaoVerNumero, formatarTel } from "../components/BotaoLigar.jsx";
 import BotaoFotosCarro from "../components/BotaoFotosCarro.jsx";
 import BotaoRepassar from "../components/BotaoRepassar.jsx";
 import { confirmDialog, alertDialog } from "../components/Dialog.jsx";
@@ -438,6 +438,7 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
   // onChange (igual temperatura); demais usam dirty + ✓.
   const[telAtual,setTelAtual]=useState(lead.telefone||"");
   const[telInput,setTelInput]=useState(lead.telefone||"");
+  const[numeroVisto,setNumeroVisto]=useState(null);const[copiado,setCopiado]=useState(false);
   const[salvandoTel,setSalvandoTel]=useState(false);
   async function salvarTel(){
     if(telInput===telAtual)return;
@@ -695,14 +696,18 @@ function LeadModal({lead,onClose,onMover,onAtualizado,readOnly,estagios,role}){
           telAtual&&<>
             <div className="lead-acoes">
               {/* Sempre Chatwoot — nunca wa.me / WhatsApp Web do vendedor. */}
-              <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{telAtual}</LeadPhoneChatwoot>
+              <LeadPhoneChatwoot lead={{...lead,telefone:telAtual}}>{numeroVisto?formatarTel(numeroVisto):telAtual}</LeadPhoneChatwoot>
               {getRole()==="vendedor"&&<BotaoLigar leadId={lead.id} telefone={telAtual} nome={lead.nome} origem="crm"
                 onResultado={async r=>{if(r.tipo==="lig_atendeu"){await alertDialog(`Pronto. ${r.pontos?`+${r.pontos} pontos. `:""}O lead foi pra ${r.label}.`,{title:"Atendeu"});onAtualizado?.();onClose?.();}}}/>}
               {/* 2026-11-09 (Felipe): "Transferir" pro proximo vendedor da loja (limites no backend), na mesma linha do Ligar. */}
               <BotaoRepassar leadId={lead.id} estagio={lead.estagio} nome={lead.nome} onRepassado={()=>{onAtualizado?.();onClose?.();}}/>
             </div>
             {/* 2026-11-23 (Felipe): "Ver numero" pra o vendedor chamar lead antigo pelo proprio telefone (nao conta como ligacao). */}
-            {getRole()==="vendedor"&&<BotaoVerNumero leadId={lead.id} telefone={telAtual} nome={lead.nome} origem="crm" className="btn btn-ghost" style={{width:"100%",marginBottom:10}}/>}
+            {/* 2026-11-23b (Felipe): o numero aparece no botao azul; depois de ver, o botao vira Copiar numero. */}
+            {getRole()==="vendedor"&&(numeroVisto
+              ?<button type="button" className="btn btn-ghost" style={{width:"100%",marginBottom:10}} onClick={async()=>{try{await navigator.clipboard.writeText(formatarTel(numeroVisto).replace(/\D/g,""));setCopiado(true);setTimeout(()=>setCopiado(false),2000);}catch{/* o numero ja esta na tela */}}}>
+                  <i className={`ti ${copiado?"ti-check":"ti-copy"}`}/>{copiado?"Copiado":"Copiar número"}</button>
+              :<BotaoVerNumero leadId={lead.id} telefone={telAtual} nome={lead.nome} origem="crm" onNumero={setNumeroVisto} className="btn btn-ghost" style={{width:"100%",marginBottom:10}}/>)}
             {/* 2026-11-09 (Felipe): ja falou pelo celular particular? escolhe a coluna e o lead sai de Responder agora. */}
             {!["fechado_ganho","fechado_perdido","bau","pos_venda","fornecedor"].includes(lead.estagio)&&
               <BotaoAtendiCelular leadId={lead.id} nome={lead.nome} className="btn btn-ghost rot-celular" style={{width:"100%",marginBottom:14}}

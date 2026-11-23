@@ -19,7 +19,7 @@ export function temTelefone(tel) {
 function ehPC() {
   try { return window.matchMedia("(pointer: fine)").matches && !window.matchMedia("(pointer: coarse)").matches; } catch { return false; }
 }
-function formatarTel(e164) {
+export function formatarTel(e164) {
   let d = String(e164 || "").replace(/\D/g, "");
   if (d.startsWith("55") && d.length >= 12) d = d.slice(2);
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
@@ -124,7 +124,7 @@ export default function BotaoLigar({ leadId, telefone, origem, nome, className =
 // numero esta mascarado pra quem esta vendo (gerente e dono ja veem o numero completo).
 export function numeroMascarado(tel) { return /^\*{4}\d{4}$/.test(String(tel || "")); }
 
-export function BotaoVerNumero({ leadId, telefone, nome, origem, className = "btn btn-ghost btn-sm", style, onVisto, children }) {
+export function BotaoVerNumero({ leadId, telefone, nome, origem, className = "btn btn-ghost btn-sm", style, onVisto, onNumero, children }) {
   const [abrindo, setAbrindo] = useState(false);
   if (!leadId || !numeroMascarado(telefone)) return null;
   async function ver(e) {
@@ -135,6 +135,8 @@ export function BotaoVerNumero({ leadId, telefone, nome, origem, className = "bt
       const r = await verNumeroLead(leadId, origem);
       setAbrindo(false);
       onVisto?.();
+      // 2026-11-23b (Felipe): no card o numero aparece no proprio botao azul (Chatwoot), sem janela.
+      if (r?.numero && onNumero) { onNumero(r.numero); return; }
       if (r?.numero) await mostrarNumeroPC(r.numero, nome ? `Número de ${nomeCurto(nome)}` : "Número do cliente");
     } catch (err) {
       setAbrindo(false);

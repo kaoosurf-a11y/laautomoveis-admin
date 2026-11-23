@@ -162,12 +162,12 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
       </div>
       <div className="rot-acoes">
         {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : <span className="rot-vago" aria-hidden="true" />}
+        {/* 2026-11-23b (Felipe): Transferir logo a direita de Mensagem; sem Transferir nao fica lacuna (bloco alinhado a direita,
+            Ligar, Fotos e a setinha sempre no mesmo lugar). */}
+        <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
         <BotaoLigar leadId={l.id} telefone={l.telefone} nome={l.nome} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }}
           onResultado={r => { if (r.tipo === "lig_atendeu") { setPorLigacao(true); setAtendido(r.label); } onCelular?.(l, r.pontos, r.tipo); }} />
-        {/* 2026-11-23 (Felipe): Transferir entre Ligar e Fotos; sem Transferir o lugar dele fica vazio (botoes sempre no mesmo lugar). */}
-        <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")}
-          vago={<span className="rot-vago rot-vago-transf" aria-hidden="true" />} />
         {/* 2026-11-11 (Felipe): "Fotos" manda as fotos de um carro do estoque pro cliente, sem galeria. Conta como Mensagem. */}
         {temTelefone(l.telefone) && <BotaoFotosCarro leadId={l.id} veiculoInteresse={l.veiculo} className="btn btn-ghost btn-sm rot-btn rot-fotos" onEnviado={() => onAcao?.(l, "mensagem")} />}
         <Link className="btn btn-ghost btn-sm btn-icon rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir o card no CRM" title="Abrir o card no CRM"><i className="ti ti-external-link" /></Link>
