@@ -27,7 +27,7 @@ function perguntar(id) {
 }
 const MOTIVOS = [["folga", "Estou de folga", "ti-beach"], ["ocupado", "Ocupado com outro cliente", "ti-users"], ["outro", "Outro motivo", "ti-dots"]];
 
-export default function BotaoRepassar({ leadId, estagio, nome, className = "btn btn-ghost btn-sm", onRepassado, children }) {
+export default function BotaoRepassar({ leadId, estagio, nome, className = "btn btn-ghost btn-sm", onRepassado, vago = null, children }) {
   const [aberto, setAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [pode, setPode] = useState(false);
@@ -37,7 +37,8 @@ export default function BotaoRepassar({ leadId, estagio, nome, className = "btn 
     if (vendedor && leadId) perguntar(leadId).then(ok => { if (vivo) setPode(ok); });
     return () => { vivo = false; };
   }, [leadId, estagio, vendedor]);
-  if (!leadId || !vendedor || !pode) return null;
+  // 2026-11-23 (Felipe): na Rotina o lugar do Transferir fica reservado (vago) pra os botoes nao mudarem de lugar.
+  if (!leadId || !vendedor || !pode) return vago;
 
   async function escolher(motivo) {
     if (enviando) return;

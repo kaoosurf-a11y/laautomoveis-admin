@@ -165,9 +165,11 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
         <BotaoLigar leadId={l.id} telefone={l.telefone} nome={l.nome} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }}
           onResultado={r => { if (r.tipo === "lig_atendeu") { setPorLigacao(true); setAtendido(r.label); } onCelular?.(l, r.pontos, r.tipo); }} />
+        {/* 2026-11-23 (Felipe): Transferir entre Ligar e Fotos; sem Transferir o lugar dele fica vazio (botoes sempre no mesmo lugar). */}
+        <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")}
+          vago={<span className="rot-vago rot-vago-transf" aria-hidden="true" />} />
         {/* 2026-11-11 (Felipe): "Fotos" manda as fotos de um carro do estoque pro cliente, sem galeria. Conta como Mensagem. */}
         {temTelefone(l.telefone) && <BotaoFotosCarro leadId={l.id} veiculoInteresse={l.veiculo} className="btn btn-ghost btn-sm rot-btn rot-fotos" onEnviado={() => onAcao?.(l, "mensagem")} />}
-        <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
         <Link className="btn btn-ghost btn-sm btn-icon rot-btn" to={`/crm?lead=${l.id}`} aria-label="Abrir o card no CRM" title="Abrir o card no CRM"><i className="ti ti-external-link" /></Link>
       </div>
       {celular && <BotaoAtendiCelular leadId={l.id} nome={l.nome} className="btn btn-ghost btn-sm rot-celular"
