@@ -1922,9 +1922,9 @@ a:focus-visible,.nav-item:focus-visible,.bnav-btn:focus-visible,input:focus-visi
 /* 2026-11-23: linha do Ver numero no cartao do vendedor (gerente/dono), embaixo do "Hoje", alinhada a direita. */
 .rot-vend-linha2>.rot-vend-num{display:flex;margin-left:auto}
 @media(max-width:600px){.rot-vend-linha2>.rot-vend-num{margin-left:0}}
-/* 2026-11-23b (Felipe: "o Transferir deve ficar a direita de Mensagem, pra nao ficar lacuna quando nao tem"). Ordem:
-   Mensagem, Transferir (quando pode), Ligar, Fotos, setinha. Bloco com largura de 4 (534px) alinhado a direita: sem Transferir,
-   Mensagem encosta no Ligar; Ligar, Fotos e a setinha ficam sempre no mesmo lugar. Celular: os botoes dividem a linha e a
+/* 2026-11-23b (Felipe: "o Transferir deve ficar a direita de Mensagem, pra nao ficar lacuna quando nao tem"). Ordem
+   (ajustada 10:30, Transferir a esquerda): Transferir (quando pode), Mensagem, Ligar, Fotos, setinha. Bloco de 534px alinhado a
+   direita: sem Transferir nao fica lacuna e Mensagem, Ligar, Fotos e a setinha ficam sempre no mesmo lugar. Celular: os botoes dividem a linha e a
    setinha vai pro canto de cima do cartao. */
 @media(min-width:601px){.rot-lead .rot-acoes{width:534px;flex:0 0 534px;justify-content:flex-end}.rot-lead .rot-acoes>.btn-icon{margin-left:0}}
 @media(max-width:600px){

@@ -161,10 +161,10 @@ function LinhaCliente({ l, inbox, sub, subTom, feito, onAcao, celular, onCelular
         {sub && <div className={`rot-espera ${subTom || ""}`}>{sub}</div>}
       </div>
       <div className="rot-acoes">
-        {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : <span className="rot-vago" aria-hidden="true" />}
-        {/* 2026-11-23b (Felipe): Transferir logo a direita de Mensagem; sem Transferir nao fica lacuna (bloco alinhado a direita,
-            Ligar, Fotos e a setinha sempre no mesmo lugar). */}
+        {/* 2026-11-23b (Felipe): Transferir a esquerda de Mensagem (23/11 10:30); sem Transferir nao fica lacuna
+            (bloco alinhado a direita: Mensagem, Ligar, Fotos e a setinha sempre no mesmo lugar). */}
         <BotaoRepassar leadId={l.id} estagio={l.estagio} nome={l.nome} className="btn btn-ghost btn-sm rot-btn" onRepassado={r => setPassadoPara(r?.para?.nome || "outro vendedor")} />
+        {l.conv_id ? <ChatwootLink conv_id={l.conv_id} inbox_id={inbox} onClick={() => onAcao?.(l, "mensagem")}>Mensagem</ChatwootLink> : <span className="rot-vago" aria-hidden="true" />}
         {/* 2026-11-06: numero mascarado pro vendedor; o botao pede o numero ao backend (fica registrado) e abre o discador. */}
         <BotaoLigar leadId={l.id} telefone={l.telefone} nome={l.nome} origem="rotina" className="btn btn-ghost btn-sm rot-btn" onLigou={() => { setLigou(true); onAcao?.(l, "ligar"); }}
           onResultado={r => { if (r.tipo === "lig_atendeu") { setPorLigacao(true); setAtendido(r.label); } onCelular?.(l, r.pontos, r.tipo); }} />
