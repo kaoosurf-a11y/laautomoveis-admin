@@ -152,11 +152,14 @@ function leadsDaColuna(est,kanban){
 // placeholder "Buscar..." sugerir que buscava por nome/telefone. `||""` cobre
 // nome/veiculo_interesse/telefone null; telefone comparado sem formatação (só
 // dígitos) já que o campo já vem só-dígitos do backend.
+// 2026-11-23 (Felipe): "moni" não achava "Mônica Aguilar". Busca agora ignora acento
+// e maiúscula dos dois lados (semAcento, definida mais abaixo junto do preço do card).
 function leadBate(l,busca){
   if(!busca)return true;
-  const q=busca.toLowerCase();
-  return (l.nome||"").toLowerCase().includes(q)
-    || (l.veiculo_interesse||"").toLowerCase().includes(q)
+  const q=semAcento(busca.trim());
+  if(!q)return true;
+  return semAcento(l.nome).includes(q)
+    || semAcento(l.veiculo_interesse).includes(q)
     || (l.telefone||"").includes(busca.replace(/\D/g,"")||busca);
 }
 function colunaVisual(estagios,estagioReal){
@@ -1075,7 +1078,7 @@ export default function CRM(){
   // Sempre abre no início do board (coluna "Novo lead") — sem isso o scroll horizontal
   // podia ficar parado numa posição do carregamento anterior e dar a impressão de que
   // colunas diferentes aparecem pra cada pessoa, quando é só a posição do scroll.
-  useEffect(()=>{if(boardRef.current)boardRef.current.scrollLeft=0;},[loading]);
+  useEffect(()=>{if(boardRef.current)boardRef.current.scrollLeft=0;},[loading,busca]);
   const load=useCallback((silent)=>{
     const k0=lembrado(`kanban:${lojaFiltro||""}`);
     if(k0){setKanban(k0);setLoading(false);}
@@ -1219,7 +1222,9 @@ export default function CRM(){
           onMouseDown={onBoardMouseDown} onMouseMove={onBoardMouseMove}
           onMouseUp={onBoardMouseUpOrLeave} onMouseLeave={onBoardMouseUpOrLeave}
         >
-          {estagiosKanban.map(est=>{
+          {/* 2026-11-23 (Felipe): com busca, só aparecem as colunas que têm resultado,
+          pra o cartão achado ficar na frente e não escondido lá na direita. */}
+          {estagiosKanban.filter(est=>!busca.trim()||leadsDaColuna(est,kanban).some(l=>leadBate(l,busca))).map(est=>{
             const leads=leadsDaColuna(est,kanban).filter(l=>leadBate(l,busca));
             const precos=leads.map(l=>precoDoLead(l,indiceEstoque));
             const soma=precos.reduce((t,p)=>t+(p?p.valor:0),0);
