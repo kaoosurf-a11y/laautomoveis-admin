@@ -228,6 +228,16 @@ function textoDestino(d) {
     `Vale mover o cartão no CRM ou o "Já atendi pelo meu WhatsApp" escolhendo a coluna. IA e sistema movendo não contam.`;
 }
 
+// 2026-11-25 (Felipe: "precisamos ter certeza se pelo menos eles clicam no painel pra pegar o numero"): leads passados nos
+// ultimos 7 dias e o que o proprio vendedor fez depois da passagem. O numero inteiro so sai pelo painel (Ver numero/Ligar).
+function textoContato(c) {
+  const x = c || {};
+  return `Leads passados nos últimos 7 dias (com 1 hora de loja aberta): ${x.recebidos || 0}. ` +
+    `Com algum contato registrado: ${x.com_contato || 0}. Sem nenhum: ${x.sem_contato || 0}. ` +
+    `Como: respondeu no Chatwoot ${x.respondeu || 0}, viu o número ${x.viu_numero || 0}, ligou pelo painel ${x.ligou || 0}, ` +
+    `usou a Rotina ${x.rotina || 0}, mudou o cartão ${x.moveu || 0}. Ver como não conta.`;
+}
+
 function FeitoHoje({ v, jogo, pontos }) {
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
   // 2026-11-19b (Felipe: bonus da rapidez): a primeira resposta vale 15, 10 ou 5 conforme a rapidez, entao soma os
@@ -445,6 +455,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
             ? <><span className="badge badge-danger">{plural(lista.length, "sem resposta", "sem resposta")}</span>
                 {antigo?.espera && <span className={`rot-espera ${tomEspera(antigo.espera_min)}`}>mais antigo {antigo.espera.replace("esperando ", "")}</span>}</>
             : <span className="badge badge-success">em dia</span>}
+          {v.contato?.sem_contato > 0 && <span className="badge badge-danger" title={textoContato(v.contato)}>{plural(v.contato.sem_contato, "sem nenhum contato", "sem nenhum contato")}</span>}
           {v.destino?.sem_destino > 0 && <span className="badge badge-danger" title={textoDestino(v.destino)}>{plural(v.destino.sem_destino, "sem destino", "sem destino")}</span>}
           {v.aguardando?.length > 0 && <span className="badge badge-muted">{plural(v.aguardando.length, "aguardando cliente", "aguardando cliente")}</span>}
           {v.retomar_total > 0 && <span className="badge badge-muted">{plural(v.retomar_total, "negociação parada", "negociações paradas")}</span>}
@@ -471,6 +482,13 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
           <FezItem n={v.destino?.recebidos || 0} um="recebido" varios="recebidos" title={textoDestino(v.destino)} />
           <FezItem n={v.destino?.definidos || 0} um="definido" varios="definidos" title={textoDestino(v.destino)} />
           <FezItem n={v.destino?.sem_destino || 0} um="sem destino" varios="sem destino" title={textoDestino(v.destino)} />
+        </span>
+        {/* 2026-11-25 (Felipe): contato registrado por lead passado (7 dias): Chatwoot, Ver numero, Ligar, Rotina, cartao. */}
+        <span className="rot-vend-fez rot-vend-num">
+          <span className="rot-fez-rot">Contato 7 dias</span>
+          <FezItem n={v.contato?.recebidos || 0} um="recebido" varios="recebidos" title={textoContato(v.contato)} />
+          <FezItem n={v.contato?.com_contato || 0} um="com contato" varios="com contato" title={textoContato(v.contato)} />
+          <FezItem n={v.contato?.sem_contato || 0} um="sem nenhum" varios="sem nenhum" title={textoContato(v.contato)} />
         </span>
         </span>
       </div>
