@@ -219,6 +219,15 @@ function textoVistos(n) {
   return `Botão Ver número: ${x.dia || 0} cliente(s) hoje, ${x.dia_contato || 0} com contato registrado depois (Já atendi pelo meu WhatsApp, ligação ou mudou a coluna). ${x.mes || 0} no mês.`;
 }
 
+// 2026-11-25 (Felipe: "mesmo que atenda pelo particular, o vendedor tem que levar o lead pra um desfecho nas colunas"):
+// lead passado ha mais de 1 dia de expediente e cujo cartao o vendedor ainda nao moveu. So marca, nao manda mensagem.
+function textoDestino(d) {
+  const x = d || {};
+  return `Leads passados desde 25/11: ${x.recebidos || 0}. Você definiu a coluna de ${x.definidos || 0}. ` +
+    `${x.sem_destino || 0} passaram de 1 dia de expediente sem você mover o cartão; ${x.no_prazo || 0} ainda no prazo. ` +
+    `Vale mover o cartão no CRM ou o "Já atendi pelo meu WhatsApp" escolhendo a coluna. IA e sistema movendo não contam.`;
+}
+
 function FeitoHoje({ v, jogo, pontos }) {
   const conta = (k) => jogo.missoes.filter(m => m.missao === k).length;
   // 2026-11-19b (Felipe: bonus da rapidez): a primeira resposta vale 15, 10 ou 5 conforme a rapidez, entao soma os
@@ -268,6 +277,14 @@ function Tarefas({ v, inbox, jogo, onAcao, onCelular, parado }) {
         <Lista itens={lista} render={l => (
           <LinhaCliente key={l.id} l={l} inbox={inbox} sub={subEspera(l)}
             subTom={tomEspera(l.espera_min)} feito={tocados.has(l.id)} onAcao={onAcao} celular onCelular={onCelular} />)} />
+      </>}
+
+      {/* 2026-11-25 (Felipe): cartao que o vendedor ainda nao levou pra uma coluna, 1 dia de expediente depois da passagem. */}
+      {v.definir_destino?.length > 0 && <>
+        <h3 className="rot-sec" title={textoDestino(v.destino)}><span className="rot-dot rot-danger" />Definir destino<span className="rot-num">{v.definir_destino.length}</span></h3>
+        <Lista itens={v.definir_destino} render={l => (
+          <LinhaCliente key={l.id} l={l} inbox={inbox} onAcao={onAcao} feito={tocados.has(l.id)} celular onCelular={onCelular}
+            sub={`passado ${quando(l.passado_em)}, mova o cartão pra uma coluna`} subTom="rot-tarde" />)} />
       </>}
 
       {/* 2026-11-09e (Felipe: todo lead passado pro vendedor aparece na rotina): ja respondido, esperando o cliente. */}
@@ -428,6 +445,7 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
             ? <><span className="badge badge-danger">{plural(lista.length, "sem resposta", "sem resposta")}</span>
                 {antigo?.espera && <span className={`rot-espera ${tomEspera(antigo.espera_min)}`}>mais antigo {antigo.espera.replace("esperando ", "")}</span>}</>
             : <span className="badge badge-success">em dia</span>}
+          {v.destino?.sem_destino > 0 && <span className="badge badge-danger" title={textoDestino(v.destino)}>{plural(v.destino.sem_destino, "sem destino", "sem destino")}</span>}
           {v.aguardando?.length > 0 && <span className="badge badge-muted">{plural(v.aguardando.length, "aguardando cliente", "aguardando cliente")}</span>}
           {v.retomar_total > 0 && <span className="badge badge-muted">{plural(v.retomar_total, "negociação parada", "negociações paradas")}</span>}
           {v.transferencias?.fez_mes > 0 && <span className="badge badge-muted" title={`Recebeu ${v.transferencias.recebeu_mes || 0} de colegas no mês`}>{plural(v.transferencias.fez_mes, "transferido no mês", "transferidos no mês")}</span>}
@@ -446,6 +464,13 @@ function LinhaVendedor({ v, inbox, parado, avisar }) {
           <FezItem n={v.numero_visto?.dia || 0} um="número visto" varios="números vistos" title={textoVistos(v.numero_visto)} />
           <FezItem n={v.numero_visto?.dia_contato || 0} um="com contato depois" varios="com contato depois" title={textoVistos(v.numero_visto)} />
           <FezItem n={v.numero_visto?.mes || 0} um="no mês" varios="no mês" title={textoVistos(v.numero_visto)} />
+        </span>
+        {/* 2026-11-25 (Felipe): quantos leads passados ele levou pra uma coluna (desde 25/11). */}
+        <span className="rot-vend-fez rot-vend-num">
+          <span className="rot-fez-rot">Destino</span>
+          <FezItem n={v.destino?.recebidos || 0} um="recebido" varios="recebidos" title={textoDestino(v.destino)} />
+          <FezItem n={v.destino?.definidos || 0} um="definido" varios="definidos" title={textoDestino(v.destino)} />
+          <FezItem n={v.destino?.sem_destino || 0} um="sem destino" varios="sem destino" title={textoDestino(v.destino)} />
         </span>
         </span>
       </div>
